@@ -15,6 +15,8 @@ export interface StoredCard {
 }
 export interface DeckRecord { id: string; name: string }
 export interface MediaRecord { key: string; data: Uint8Array; type: string } // key = `${deck}\0${filename}`
+export interface LessonRecord { id: string; completedAt: Date; plays: number; bestAccuracy: number }
+export interface ActivityRecord { date: string; xp: number; lessons: number } // date = local YYYY-MM-DD
 export interface ReviewRecord {
   id?: number
   cardId: string
@@ -27,11 +29,13 @@ interface Schema extends DBSchema {
   reviews: { key: number; value: ReviewRecord; indexes: { 'by-card': string } }
   decks: { key: string; value: DeckRecord }
   media: { key: string; value: MediaRecord }
+  lessons: { key: string; value: LessonRecord }
+  activity: { key: string; value: ActivityRecord }
 }
 export type Db = IDBPDatabase<Schema>
 
 export const openDb = (name = 'nihongo') =>
-  openDB<Schema>(name, 2, {
+  openDB<Schema>(name, 3, {
     upgrade(db, old) {
       if (old < 1) {
         db.createObjectStore('cards', { keyPath: 'id' }).createIndex('by-deck', 'deck')
@@ -40,6 +44,10 @@ export const openDb = (name = 'nihongo') =>
       if (old < 2) {
         db.createObjectStore('decks', { keyPath: 'id' })
         db.createObjectStore('media', { keyPath: 'key' })
+      }
+      if (old < 3) {
+        db.createObjectStore('lessons', { keyPath: 'id' })
+        db.createObjectStore('activity', { keyPath: 'date' })
       }
     },
   })

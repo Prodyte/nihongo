@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest'
-import { readBool, writeBool } from './settings'
+import { readBool, readInt, writeBool, writeInt } from './settings'
 
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear() })
 
@@ -16,4 +16,18 @@ it('survives storage that throws (private mode / blocked)', () => {
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
   expect(readBool('k', true)).toBe(true)
   expect(() => writeBool('k', false)).not.toThrow()
+})
+
+it('ints round-trip, default, and reject non-integers or throwing storage', () => {
+  expect(readInt('goal', 20)).toBe(20)
+  writeInt('goal', 50)
+  expect(readInt('goal', 20)).toBe(50)
+  localStorage.setItem('goal', 'lots')
+  expect(readInt('goal', 20)).toBe(20)
+  localStorage.setItem('goal', '2.5')
+  expect(readInt('goal', 20)).toBe(20)
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked') })
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
+  expect(readInt('goal', 20)).toBe(20)
+  expect(() => writeInt('goal', 10)).not.toThrow()
 })

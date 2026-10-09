@@ -14,3 +14,19 @@ export const writeBool = (key: string, value: boolean) => {
     /* the setting just won't persist */
   }
 }
+
+export const readInt = (key: string, fallback: number) => {
+  try {
+    const n = Number(localStorage.getItem(key))
+    return localStorage.getItem(key) !== null && Number.isInteger(n) ? n : fallback
+  } catch {
+    return fallback
+  }
+}
+export const writeInt = (key: string, value: number) => {
+  try {
+    localStorage.setItem(key, String(value))
+  } catch {
+    /* the setting just won't persist */
+  }
+}
