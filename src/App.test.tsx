@@ -34,7 +34,7 @@ it('opens on Today; Review studies a flashcard end to end (full-screen), and rev
 
   await user.click(screen.getByRole('button', { name: /^Good/ }))
   await screen.findByText('19 left')
-  await user.click(screen.getByRole('button', { name: '← Exit' }))
+  await user.click(screen.getByRole('button', { name: 'Exit' }))
   expect(current()).toBe('Review') // back where the session started
 
   await user.selectOptions(screen.getByRole('combobox', { name: 'Mode' }), 'quiz')
@@ -51,7 +51,7 @@ it('a lesson started from Today is full-screen, and Exit returns to Today', asyn
   await user.click(await screen.findByRole('button', { name: /^Next lesson:/ }))
   await screen.findByRole('button', { name: 'Got it' })
   expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
-  await user.click(screen.getByRole('button', { name: '← Exit' }))
+  await user.click(screen.getByRole('button', { name: 'Exit' }))
   expect(current()).toBe('Today')
 })
 
@@ -60,7 +60,7 @@ it('a lesson started from Path returns to Path; More leads to Decks, Stats and S
   render(<App />)
   await user.click(await screen.findByRole('button', { name: /^Path$/ }))
   await user.click(await screen.findByRole('button', { name: /^Continue:/ }))
-  await user.click(await screen.findByRole('button', { name: '← Exit' }))
+  await user.click(await screen.findByRole('button', { name: 'Exit' }))
   expect(current()).toBe('Path')
   for (const [item, heading] of [['Grammar', 'Grammar'], ['Decks', 'Decks'], ['Stats', 'JLPT progress'], ['Settings', 'Settings'], ['Credits', 'Credits']]) {
     await user.click(tab('More'))

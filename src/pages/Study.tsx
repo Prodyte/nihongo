@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ExitButton } from '../icons'
 import { Rating, type Grade } from 'ts-fsrs'
 import { BUILTIN_DECKS, DAILY_NEW, gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db/db'
 import { Cloze } from '../modes/Cloze'
@@ -81,7 +82,7 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
   return (
     <>
       <div className="bar">
-        <button onClick={onExit}>← Exit</button>
+        <ExitButton onClick={onExit} />
         <span>{queue.length} left</span>
       </div>
       {error && <p role="alert" className="bad">{error}</p>}

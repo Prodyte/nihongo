@@ -38,12 +38,14 @@ it('with cards due, reviewing leads; XP, goal and streak show', async () => {
   const user = userEvent.setup()
   render(<Today db={db} onReview={onReview} onLesson={() => {}} />)
   await screen.findByText('Daily goal: 30 / 20 XP')
-  expect(screen.getByRole('heading', { name: 'Goal met today ✓' })).toBeTruthy()
+  expect(screen.getByText(/goal met today ✓/)).toBeTruthy()
   expect(screen.getByText(/1-day streak/)).toBeTruthy()
+  expect(screen.getByTitle('XP today').textContent).toBe(' 30 XP today')
   const [first, second] = buttons()
-  expect(first).toEqual([expect.stringMatching(/^Review 1 due/), true])
+  expect(first).toEqual(['Review', true]) // reviews first, as the primary action
+  expect(screen.getByText('1 review due')).toBeTruthy()
   expect(second).toEqual([`Next lesson: ${LESSONS[2].title}`, false])
-  await user.click(screen.getByRole('button', { name: /^Review 1 due/ }))
+  await user.click(screen.getByRole('button', { name: 'Review' }))
   expect(onReview).toHaveBeenCalled()
 })
 

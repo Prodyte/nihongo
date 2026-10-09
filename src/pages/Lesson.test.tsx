@@ -16,6 +16,8 @@ beforeEach(() => localStorage.clear())
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 const user = () => userEvent.setup({ delay: null })
+/** A summary tile's value by its label (XP, Right first time, Streak). */
+const tile = (label: string) => [...document.querySelectorAll('.tile')].find((t) => t.querySelector('small')!.textContent === label)?.querySelector('strong')!.textContent
 // option text without the ✓/✗ mark and the 1-4 key hint
 const optionText = (b: HTMLElement) => (b.textContent ?? '').replace(/^[✓✗]\s*/, '').replace(/\s*\d$/, '').trim()
 const mount = (db: Db, lesson: LessonT, extra: Partial<Parameters<typeof Lesson>[0]> = {}) =>
@@ -37,8 +39,8 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
   const items = lesson.items.map((id) => ITEMS.get(id))
   let wrongPending = wrongFirst
   for (let i = 0; i < 150; i++) {
-    await waitFor(() => expect(screen.queryByText('Lesson complete 🎉') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByText('Build the sentence') ?? screen.queryByRole('textbox') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
-    if (screen.queryByText('Lesson complete 🎉')) return
+    await waitFor(() => expect(screen.queryByText('Lesson complete') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByText('Build the sentence') ?? screen.queryByRole('textbox') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
+    if (screen.queryByText('Lesson complete')) return
     const got = screen.queryByRole('button', { name: 'Got it' })
     if (got) { await u.click(got); continue }
     if (stopAfterIntros) return
@@ -81,8 +83,8 @@ it('a flawless kana lesson: summary, 15 XP, items graded Good, lesson recorded',
   const u = user()
   mount(db, lesson)
   await drive(u, lesson)
-  expect(screen.getByText('+15 XP')).toBeTruthy()
-  expect(screen.getByText(/100% right first time · 1-day streak/)).toBeTruthy()
+  expect(tile('XP')).toBe('+15')
+  expect([tile('Right first time'), tile('Streak')]).toEqual(['100%', '1 day'])
   expect(screen.getByRole('button', { name: /Next lesson: か き く け こ/ })).toBeTruthy()
   expect(await db.get('lessons', 'hira-basic-1')).toMatchObject({ plays: 1, bestAccuracy: 1 })
   for (const id of lesson.items) expect((await db.get('cards', id))!.fsrs.state).not.toBe(State.New)
@@ -96,8 +98,8 @@ it('a wrong answer shows the right one, repeats once, costs accuracy and XP, and
   const u = user()
   mount(db, lesson)
   await drive(u, lesson, { wrongFirst: true })
-  expect(screen.getByText('+10 XP')).toBeTruthy()
-  expect(screen.queryByText(/100% right first time/)).toBeNull()
+  expect(tile('XP')).toBe('+10')
+  expect(tile('Right first time')).not.toBe('100%')
   const grades = (await db.getAll('reviews')).map((r) => r.grade).sort()
   expect(grades).toEqual([Rating.Hard, Rating.Good, Rating.Good, Rating.Good, Rating.Good].sort())
 })
@@ -134,7 +136,7 @@ it('listening: the voice speaks on arrival, a replay button is shown, and the le
   await u.click(screen.getByRole('button', { name: 'Play sound' }))
   expect(spoken.length).toBe(before + 1) // replay
   await drive(u, lesson, { spoken })
-  expect(screen.getByText('+15 XP')).toBeTruthy()
+  expect(tile('XP')).toBe('+15')
 })
 
 it('a vocabulary lesson creates the words as cards and shows reading and meaning on the intro', async () => {
@@ -157,7 +159,7 @@ it('Loading is never a dead end: Exit is there even if the lesson never finishes
   vi.spyOn(db, 'getAll').mockImplementation((() => new Promise(() => {})) as typeof db.getAll) // the progress read hangs
   mount(db, lessonById('hira-basic-1')!, { onExit })
   await screen.findByText('Loading…')
-  await user().click(screen.getByRole('button', { name: '← Exit' }))
+  await user().click(screen.getByRole('button', { name: 'Exit' }))
   expect(onExit).toHaveBeenCalled()
 })
 
@@ -177,7 +179,7 @@ it('leaving mid-lesson saves nothing', async () => {
   const u = user()
   mount(db, lessonById('hira-basic-1')!, { onExit })
   await u.click(await screen.findByRole('button', { name: 'Got it' }))
-  await u.click(screen.getByRole('button', { name: '← Exit' }))
+  await u.click(screen.getByRole('button', { name: 'Exit' }))
   expect(onExit).toHaveBeenCalled()
   expect(await db.count('lessons')).toBe(0)
   expect(await db.count('reviews')).toBe(0)
@@ -209,7 +211,7 @@ it('a failed save keeps the finished lesson, explains, and "Try again" saves it'
   expect(await db.count('lessons')).toBe(0)
   spy.mockRestore()
   await u.click(screen.getByRole('button', { name: 'Try again' }))
-  await screen.findByText('Lesson complete 🎉')
+  await screen.findByText('Lesson complete')
   expect(await db.count('lessons')).toBe(1)
 })
 
@@ -222,8 +224,8 @@ it('if only the streak read fails after a successful save, the summary still sho
   const real = db.getAll.bind(db)
   vi.spyOn(db, 'getAll').mockImplementation(((store: string) => (store === 'activity' ? Promise.reject(new Error('read failed')) : real(store as 'cards'))) as typeof db.getAll)
   await drive(u, lesson)
-  expect(screen.getByText('+15 XP')).toBeTruthy()
-  expect(screen.getByText(/100% right first time$/)).toBeTruthy() // no streak text, no error
+  expect(tile('XP')).toBe('+15')
+  expect([tile('Right first time'), tile('Streak')]).toEqual(['100%', undefined]) // no streak tile, no error
   expect(screen.queryByRole('alert')).toBeNull()
   vi.restoreAllMocks() // the injected failure must not hit our own assertions below
   expect(await db.get('lessons', lesson.id)).toMatchObject({ plays: 1 })
@@ -274,8 +276,8 @@ it('a grammar lesson, start to finish: explanation, translate, gap, build, say, 
   await screen.findByRole('heading', { name: 'A は B です: “A is B”' }) // the title is split into language-tagged spans
   expect(screen.getAllByText(/わたしは がくせいです。/).length).toBeGreaterThan(0) // an example sentence on the card
   await drive(u, lesson)
-  expect(screen.getByText('+15 XP')).toBeTruthy()
-  expect(screen.getByText(/100% right first time/)).toBeTruthy()
+  expect(tile('XP')).toBe('+15')
+  expect(tile('Right first time')).toBe('100%')
   expect(await db.getAllFromIndex('cards', 'by-deck', 'grammar')).toHaveLength(6)
   expect(await db.get('decks', 'grammar')).toEqual({ id: 'grammar', name: 'Grammar sentences' })
   expect(await db.get('lessons', 'grammar-1-1')).toMatchObject({ plays: 1, bestAccuracy: 1 })
@@ -291,7 +293,7 @@ it('a grammar lesson with a voice adds listening to whole sentences (and speaks 
   const u = user()
   mount(db, lesson)
   await drive(u, lesson, { spoken })
-  expect(screen.getByText('+15 XP')).toBeTruthy()
+  expect(tile('XP')).toBe('+15')
   const sentences = lesson.items.map((id) => ITEMS.get(id)!.jp)
   expect(spoken.length).toBeGreaterThanOrEqual(2)
   expect(spoken.slice(0, 2).every((s) => sentences.includes(s))).toBe(true) // whole sentences, as displayed
@@ -323,8 +325,8 @@ it('a wrong word-bank answer shows the right sentence, repeats once, and costs a
   await screen.findByText(`✗ Correct answer: ${target.jp}`)
   await u.click(screen.getByRole('button', { name: 'Continue' }))
   await drive(u, lesson)
-  expect(screen.getByText('+10 XP')).toBeTruthy()
-  expect(screen.queryByText(/100% right first time/)).toBeNull()
+  expect(tile('XP')).toBe('+10')
+  expect(tile('Right first time')).not.toBe('100%')
   expect((await db.getAllFromIndex('reviews', 'by-card', target.id))[0].grade).toBe(Rating.Hard)
 })
 

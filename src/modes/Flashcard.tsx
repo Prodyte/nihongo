@@ -3,13 +3,15 @@ import { Rating, type Grade } from 'ts-fsrs'
 import { Html } from '../anki/media'
 import { speak } from '../audio'
 import { Ruby } from '../path/ui/Ruby'
+import { intervals } from '../srs/scheduler'
 import { SpeakButton } from './SpeakButton'
 import type { ModeProps } from './types'
 
-const GRADES: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']]
+const GRADES: [Grade, string, string][] = [[Rating.Again, 'Again', 'again'], [Rating.Hard, 'Hard', 'hard'], [Rating.Good, 'Good', 'good-g'], [Rating.Easy, 'Easy', 'easy']]
 
 export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
   const [shown, setShown] = useState(false)
+  const [next] = useState(() => intervals(card.fsrs))
   const slot = useRef<HTMLDivElement>(null)
   // Move focus to the revealed answer, not a grade button: a held Enter would auto-repeat onto it and grade by accident.
   useEffect(() => {
@@ -42,9 +44,9 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
           <>
             {card.reading && <div className="reading" lang="ja">{card.reading}</div>}
             {!card.html && <div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>}
-            <div className="row">
-              {GRADES.map(([g, label], i) => (
-                <button key={label} onClick={() => onGrade(g)}>{label} <kbd aria-hidden="true">{i + 1}</kbd></button>
+            <div className="grades">
+              {GRADES.map(([g, label, cls], i) => (
+                <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small aria-label={`next in ${next[g]}`}>{next[g]}<kbd aria-hidden="true">{i + 1}</kbd></small></button>
               ))}
             </div>
           </>

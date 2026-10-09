@@ -41,7 +41,7 @@ export function Match({ pairs, onDone }: { pairs: Pair[]; onDone: (missed: strin
         <div>{jp.map((p) => btn('jp', p))}</div>
         <div>{gloss.map((p) => btn('gloss', p))}</div>
       </div>
-      <div role="status" className={finished ? 'feedback good' : note.startsWith('✗') ? 'feedback bad' : ''}>{finished ? '✓ All matched' : note}</div>
+      <div role="status" className={finished ? 'feedback inline good' : note.startsWith('✗') ? 'feedback inline bad' : ''}>{finished ? '✓ All matched' : note}</div>
       {finished && <button className="primary" autoFocus onKeyDown={(e) => e.repeat && e.preventDefault()} onClick={() => onDone(missed)}>Continue</button>}
     </div>
   )

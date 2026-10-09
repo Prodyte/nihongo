@@ -257,3 +257,13 @@ export const SECTIONS = [...new Set(UNITS.map((u) => u.section))]
 /** Every lesson in course order; a lesson unlocks when the one before it is done. */
 export const LESSONS: Lesson[] = UNITS.flatMap((u) => u.lessons)
 export const lessonById = (id: string) => LESSONS.find((l) => l.id === id)
+
+/** What a lesson teaches, for badges: kana, words, kanji or grammar, with a glyph (its first kana or kanji, 語, 文). */
+export function lessonKind(l: Lesson): { kind: 'kana' | 'words' | 'kanji' | 'grammar'; glyph: string; label: string } {
+  const first = ITEMS.get(l.items[0])!
+  if (first.kind === 'kana') return { kind: 'kana', glyph: first.jp[0], label: first.script === 'kata' ? 'Katakana' : 'Hiragana' }
+  if (first.kind === 'kanji') return { kind: 'kanji', glyph: first.jp, label: 'Kanji' }
+  if (first.kind === 'sentence') return { kind: 'grammar', glyph: '文', label: 'Grammar' }
+  return { kind: 'words', glyph: '語', label: 'Words' }
+}
+export const unitOf = (l: Lesson) => UNITS.find((u) => u.lessons.includes(l))

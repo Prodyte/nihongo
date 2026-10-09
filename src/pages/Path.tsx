@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Db } from '../db/db'
-import { LESSONS, SECTIONS, UNITS } from '../path/course'
+import { lessonKind, LESSONS, SECTIONS, UNITS } from '../path/course'
 import { currentLesson, getProgress, isUnlocked } from '../path/progress'
+import { Icon } from '../icons'
 import { readBool } from '../settings'
 
 const INDEX = new Map(LESSONS.map((l, i) => [l.id, i]))
@@ -60,7 +61,7 @@ export function Path({ db, onStart, onTest }: { db: Db; onStart: (lessonId: stri
               const doneCount = u.lessons.filter((l) => done.has(l.id)).length
               return (
                 <Fold key={u.id} className="card unit" open={current !== null && u.lessons.includes(current)}
-                  summary={<><strong>{u.title}</strong> <small>{doneCount === u.lessons.length ? '✓' : `${doneCount}/${u.lessons.length}`}</small></>}>
+                  summary={<><strong>{u.title}</strong><progress className="mini" max={u.lessons.length} value={doneCount} aria-hidden="true" /><small>{doneCount === u.lessons.length ? '✓' : `${doneCount}/${u.lessons.length}`}</small></>}>
                   {() => (
                     <>
                       <p>{u.blurb}</p>
@@ -74,8 +75,9 @@ export function Path({ db, onStart, onTest }: { db: Db; onStart: (lessonId: stri
                           return (
                             <li key={l.id}>
                               <button ref={l === current ? hereRef : undefined} disabled={!open} className={l === current ? 'primary' : isDone ? 'done' : ''} onClick={() => onStart(l.id)}>
-                                <span lang="ja">{l.title}</span>
-                                <small>{isDone ? '✓ Done · practise' : open ? 'Start' : '🔒 Locked'}</small>
+                                <span className="node" lang="ja" aria-hidden="true">{isDone ? <Icon name="check" size={20} /> : open ? lessonKind(l).glyph : <Icon name="lock" size={18} />}</span>
+                                <span className="label" lang="ja">{l.title}</span>
+                                <small>{l === current ? 'Start' : isDone ? 'Done · practise' : open ? 'Start' : 'Locked'}</small>
                               </button>
                             </li>
                           )

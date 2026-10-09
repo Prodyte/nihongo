@@ -5,6 +5,7 @@ import { readBool } from '../settings'
 import { Speak } from '../path/ui/Speak'
 import { Write } from '../path/ui/Write'
 import { sfx } from '../sfx'
+import { ExitButton } from '../icons'
 import { type Db } from '../db/db'
 import { ITEMS, LESSONS, type Lesson as LessonT } from '../path/course'
 import { accuracy, advance, buildLesson, startRun, type RunState } from '../path/lesson'
@@ -65,22 +66,30 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
       <button onClick={onExit}>Back</button>
     </div>
   )
-  if (!run) return <><button onClick={onExit}>← Exit</button><p>Loading…</p></> // never a dead end, even if loading hangs
+  if (!run) return <><div className="bar"><ExitButton onClick={onExit} /></div><p>Loading…</p></> // never a dead end, even if loading hangs
 
   if (summary) {
     const idx = LESSONS.findIndex((l) => l.id === lesson.id)
     const next = LESSONS[idx + 1]
+    const pct = Math.round(summary.accuracy * 100)
     return (
-      <div className="card">
-        <h2>Lesson complete 🎉</h2>
-        <p className="counts">+{summary.xp} XP{summary.first ? '' : ' (practice)'}</p>
-        <p>{Math.round(summary.accuracy * 100)}% right first time{summary.streak !== null && ` · ${summary.streak}-day streak`}</p>
-        {next && <button className="primary" autoFocus onClick={() => onStart(next.id)}>Next lesson: <span lang="ja">{next.title}</span></button>}
-        <button className={next ? '' : 'primary'} onClick={onExit}>Done</button>
+      <div className="card done-card">
+        <Confetti />
+        <p className="eyebrow">{summary.first ? 'Lesson complete' : 'Practice complete'}</p>
+        <h2>{pct === 100 ? 'Perfect!' : pct >= 80 ? 'Great work!' : 'Nice effort!'}</h2>
+        <div className="tiles">
+          <div className="tile xp"><small>XP</small><strong>+{summary.xp}</strong></div>
+          <div className="tile acc"><small>Right first time</small><strong>{pct}%</strong></div>
+          {summary.streak !== null && <div className="tile streak"><small>Streak</small><strong>{summary.streak} day{summary.streak === 1 ? '' : 's'}</strong></div>}
+        </div>
+        <div className="actions">
+          {next && <button className="primary big" autoFocus onClick={() => onStart(next.id)}>Next lesson: <span lang="ja">{next.title}</span></button>}
+          <button className={next ? '' : 'primary big'} onClick={onExit}>Done</button>
+        </div>
       </div>
     )
   }
-  if (run.queue.length === 0) return <><button onClick={onExit}>← Exit</button><p role="status">Saving…</p></>
+  if (run.queue.length === 0) return <><div className="bar"><ExitButton onClick={onExit} /></div><p role="status">Saving…</p></>
 
   const ex = run.queue[0]
   const done = (missed: string[]) => { setRun((r) => advance(r!, missed)); setStep((s) => s + 1) }
@@ -92,7 +101,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
   return (
     <>
       <div className="bar">
-        <button onClick={onExit}>← Exit</button>
+        <ExitButton onClick={onExit} />
         <progress max={run.initial} value={run.initial - run.queue.length} aria-label="Lesson progress" />
       </div>
       {ex.type === 'intro' ? (ex.item.kind === 'kanji' ? <KanjiIntro key={step} item={ex.item} onDone={done} /> : <Intro key={step} item={ex.item} autoplay={autoplay} onDone={done} />)
@@ -105,4 +114,11 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         : <Choice key={step} ex={ex} autoplay={autoplay} onDone={done} />}
     </>
   )
+}
+
+const COLORS = ['var(--accent)', 'var(--gold)', 'var(--good)', 'var(--indigo)']
+/** A short burst of confetti (CSS only; hidden when the system asks for reduced motion). */
+function Confetti() {
+  const [bits] = useState(() => Array.from({ length: 28 }, (_, i) => ({ left: `${(i * 37) % 100}%`, delay: `${(i % 7) * 0.08}s`, color: COLORS[i % COLORS.length], rotate: `${(i * 47) % 360}deg` })))
+  return <div className="confetti" aria-hidden="true">{bits.map((b, i) => <i key={i} style={{ left: b.left, animationDelay: b.delay, background: b.color, rotate: b.rotate }} />)}</div>
 }

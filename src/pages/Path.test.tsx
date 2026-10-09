@@ -13,7 +13,7 @@ const freshDb = async () => { const db = await openDb(`path-ui-${n++}`); await s
 beforeEach(() => localStorage.clear())
 afterEach(cleanup)
 
-const lessonButton = (title: string) => screen.getAllByRole('button').find((b) => b.textContent!.startsWith(title) && b.closest('ul.lessons'))!
+const lessonButton = (title: string) => screen.getAllByRole('button').find((b) => b.querySelector('.label')?.textContent === title && b.closest('ul.lessons'))!
 
 it('a new learner: first lesson open, the rest locked, first unit expanded', async () => {
   render(<Path db={await freshDb()} onStart={() => {}} onTest={() => {}} />)
@@ -23,7 +23,7 @@ it('a new learner: first lesson open, the rest locked, first unit expanded', asy
   const second = lessonButton(LESSONS[1].title)
   expect((first as HTMLButtonElement).disabled).toBe(false)
   expect((second as HTMLButtonElement).disabled).toBe(true)
-  expect(second.textContent).toContain('🔒 Locked')
+  expect(second.textContent).toContain('Locked')
   const units = [...document.querySelectorAll<HTMLDetailsElement>('details.unit')]
   const kana = UNITS.filter((u) => u.section === 'Kana').length
   expect(units).toHaveLength(kana) // folded sections render nothing inside until opened
@@ -59,7 +59,7 @@ it('after a lesson: it shows as done and the next unlocks', async () => {
   await completeLesson(db, LESSONS[0], ITEMS, {}, 1)
   render(<Path db={db} onStart={() => {}} onTest={() => {}} />)
   await screen.findByText(`1 of ${LESSONS.length} lessons done`)
-  expect(lessonButton(LESSONS[0].title).textContent).toContain('✓ Done')
+  expect(lessonButton(LESSONS[0].title).textContent).toContain('Done · practise')
   expect((lessonButton(LESSONS[1].title) as HTMLButtonElement).disabled).toBe(false)
   expect((lessonButton(LESSONS[2].title) as HTMLButtonElement).disabled).toBe(true)
   expect(screen.getByRole('button', { name: new RegExp(`^Continue: ${LESSONS[1].title}`) })).toBeTruthy()

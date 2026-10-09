@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ExitButton } from '../icons'
 import type { Db } from '../db/db'
 import { ITEMS, LESSONS, type Unit } from '../path/course'
 import { buildTest, TEST_PASS, type Exercise } from '../path/lesson'
@@ -42,7 +43,7 @@ export function TestOut({ db, unit, onExit }: { db: Db; unit: Unit; onExit: () =
   }, [db, exs, step, misses, result, unit])
 
   if (error) return <div className="card"><p role="alert" className="bad">{error}</p><button onClick={onExit}>Back</button></div>
-  if (!exs) return <><button onClick={onExit}>← Exit</button><p>Loading…</p></>
+  if (!exs) return <><ExitButton onClick={onExit} /><p>Loading…</p></>
   if (result) return (
     <div className="card">
       <h2>{result.passed ? 'Passed 🎉' : 'Not this time'}</h2>
@@ -61,7 +62,7 @@ export function TestOut({ db, unit, onExit }: { db: Db; unit: Unit; onExit: () =
   return (
     <>
       <div className="bar">
-        <button onClick={onExit}>← Exit</button>
+        <ExitButton onClick={onExit} />
         <progress max={exs.length} value={step} aria-label="Test progress" />
       </div>
       <p className="hint test-label">Test: {unit.title} · covers {todo} lesson{todo === 1 ? '' : 's'}</p>

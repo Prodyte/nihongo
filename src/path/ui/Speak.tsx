@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { SpeakButton } from '../../modes/SpeakButton'
+import { Icon } from '../../icons'
 import { listen, saidIt, SpeechError } from '../../speech'
 import { written } from '../course'
 import { spokenForms, type Exercise } from '../lesson'
@@ -40,7 +41,7 @@ export function Speak({ ex, onDone, onSkip }: { ex: Ex; onDone: (missed: string[
       {error && <p role="alert" className="bad">{error}</p>}
       {result === null && (
         <div className="row2">
-          <button className="primary mic" disabled={state === 'listening'} onClick={start}>🎤 {state === 'heard' ? 'Try again' : 'Tap and speak'}</button>
+          <button className="primary mic" disabled={state === 'listening'} onClick={start}><Icon name="mic" /> {state === 'heard' ? 'Try again' : 'Tap and speak'}</button>
           {state === 'heard' && <button onClick={() => setResult(true)}>I said it right</button>}
           {state === 'heard' && <button onClick={() => setResult(false)}>Show me</button>}
           <button onClick={() => { stop.current(); onSkip() }}>Can’t speak now</button>
