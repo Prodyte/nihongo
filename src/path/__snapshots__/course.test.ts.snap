@@ -47,8 +47,10 @@ exports[`course structure > lesson ids map to the same words as when progress wa
     "w:図書館",
     "w:レストラン",
     "w:開く",
+    "w:熱い",
     "w:散歩",
-    "w:遠い",
   ],
 }
 `;
+
+exports[`course structure > lesson ids map to the same words as when progress was first saved (a data edit must not shift them) 2`] = `"9861f00c1510ebc89ecdf0666311e4eb57fd55547e3f76f0dca5c22ddc241942"`;

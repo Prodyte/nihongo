@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
 import { kanaToRomaji } from './romaji'
@@ -57,6 +58,10 @@ describe('course structure', () => {
   it('lesson ids map to the same words as when progress was first saved (a data edit must not shift them)', () => {
     const sample = Object.fromEntries(['n5-v-1', 'n5-v-50', 'n4-v-1', 'n4-v-100', 'n3-v-1', 'n3-v-300'].map((id) => [id, LESSONS.find((l) => l.id === id)?.items]))
     expect(sample).toMatchSnapshot()
+    // and every JLPT lesson: if this changes, saved progress would point at other words. Append new words at the end of a
+    // level (or migrate saved lessons) instead of regenerating the order.
+    const all = LESSONS.filter((l) => /^n\d-/.test(l.id)).map((l) => `${l.id}=${l.items.join(',')}`).join('\n')
+    expect(createHash('sha256').update(all).digest('hex')).toMatchSnapshot()
   })
   it('every lesson has 1-6 items that all exist, and ids/titles are unique and non-empty', () => {
     for (const l of LESSONS) {
@@ -93,6 +98,7 @@ describe('JLPT words', () => {
     expect(starterTwin('有る', 'ある', 'to be, to have', starter)?.id).toBe('vocab:aru')
     expect(starterTwin('灰', 'はい', 'ash', starter)).toBeUndefined() // a homophone is a different word
     expect(starterTwin('厚い', 'あつい', 'thick', starter)).toBeUndefined()
+    expect(starterTwin('暑い', 'あつい', 'hot (weather)', starter)).toBeUndefined() // the kanji tell two words apart: teach them
     expect(ITEMS.has('w:水')).toBe(false)
     expect(ITEMS.get('w:灰')).toMatchObject({ jp: 'はい', written: '灰', gloss: 'ash', level: 3 })
   })

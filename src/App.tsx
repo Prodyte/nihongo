@@ -49,11 +49,11 @@ export default function App() {
       })
       .catch((e) => setError(String(e)))
   }, [])
-  useEffect(() => { window.scrollTo(0, 0) }, [view])
+  useEffect(() => { window.scrollTo(0, 0) }, [view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
   useEffect(() => {
     // refreshed on every screen change, so a finished kanji lesson drops its furigana straight away
     if (db) void getProgress(db).then((p) => setKnown(new Set([...learnedItems(LESSONS, p.done)].filter((id) => id.startsWith('kanji:')).map((id) => id.slice(6)))), () => {})
-  }, [db, view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
+  }, [db, view])
 
   const startLesson = (id: string) => { setBack(view); setLessonId(id); setView('lesson') }
   const study = (from: View, c: Config) => { setSession(c); setBack(from); setView('study') }

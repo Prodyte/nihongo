@@ -92,12 +92,15 @@ const WORDS_PER_LESSON = 6 // like the starter units: about 20 steps a lesson
 const LESSONS_PER_UNIT = 10
 /** Source spellings of starter words that the automatic match below can't see (different gloss wording). */
 const STARTER_ALIASES: Record<string, string> = { 有る: 'vocab:aru', 居る: 'vocab:iru', 為る: 'vocab:suru', 易しい: 'vocab:yasashii', 優しい: 'vocab:yasashii' }
+/** Words that look like a starter twin but are taught separately: the starter あつい "hot" doesn't teach 暑い (weather) vs 熱い (things). */
+const NOT_TWINS = new Set(['暑い', '熱い'])
 
 const STOP = new Set(['to', 'the', 'and', 'for', 'of', 'an', 'in', 'on', 'at', 'be'])
 const contentWords = (gloss: string) => new Set(gloss.toLowerCase().match(/[a-z]{2,}/g)?.filter((w) => !STOP.has(w))) // "no" and "do" count
 /** The starter item a JLPT word duplicates, if any: same reading, and the same kanji or (lacking one) an overlapping meaning. */
 export function starterTwin(written: string, reading: string, gloss: string, starter: Item[]): Item | undefined {
   if (STARTER_ALIASES[written]) return starter.find((s) => s.id === STARTER_ALIASES[written])
+  if (NOT_TWINS.has(written)) return undefined
   const mine = contentWords(gloss)
   return starter.find((s) => s.jp === reading && ((s.kanji && s.kanji === written) || ((!s.kanji || written === reading) && [...contentWords(s.gloss)].some((w) => mine.has(w)))))
 }
