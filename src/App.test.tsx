@@ -16,6 +16,7 @@ it('studies a hiragana flashcard end to end', async () => {
   await user.click(screen.getAllByRole('button', { name: 'Study' })[1])
 
   await screen.findByText('20 left') // daily new-card cap
+  expect(screen.getByRole('navigation', { name: 'Main' }).querySelector('[aria-current="page"]')!.textContent).toBe('Study')
   const front = document.querySelector('.kana')!.textContent!
   await user.click(screen.getByRole('button', { name: /show answer/i }))
   const expected = KANA.find((k) => k.id === `hira:${front}`)!.romaji[0]

@@ -9,14 +9,17 @@ export function Quiz({ card, pool, onGrade }: ModeProps) {
   const right = card.back[0]
   return (
     <div className="card">
-      <div className="kana">{card.front}</div>
+      <div className="kana" lang="ja">{card.front}</div>
       <div className="grid">
         {options.map((o) => (
           <button key={o} disabled={picked !== null} onClick={() => setPicked(o)}
             className={picked === null ? '' : o === right ? 'good' : o === picked ? 'bad' : ''}>
-            {o}
+            {picked !== null && (o === right ? '✓ ' : o === picked ? '✗ ' : '')}{o}
           </button>
         ))}
+      </div>
+      <div role="status" className={picked === null ? '' : picked === right ? 'answer good' : 'answer bad'}>
+        {picked === null ? '' : picked === right ? '✓ Correct' : `✗ Incorrect, the answer is ${right}`}
       </div>
       {picked !== null && (
         <button className="primary" autoFocus onClick={() => onGrade(picked === right ? Rating.Good : Rating.Again)}>Next</button>

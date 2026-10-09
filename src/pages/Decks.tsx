@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApkgError, parseApkg } from '../anki/apkg'
 import { loadSql } from '../anki/sql'
+import { Backup } from './Backup'
 import { deleteDeck, saveImport, type Db, type DeckRecord } from '../db/db'
 
 const MAX_BYTES = 500 * 1024 * 1024 // ponytail: crude guard against memory exhaustion; stream media if bigger decks matter
@@ -49,6 +50,7 @@ export function Decks({ db }: { db: Db }) {
   }
 
   return (
+    <>
     <div className="card">
       <h2>Decks</h2>
       <p>Import an Anki <code>.apkg</code> from AnkiWeb or your own collection. It's read in your browser and never uploaded.</p>
@@ -67,5 +69,7 @@ export function Decks({ db }: { db: Db }) {
         ))}
       </ul>
     </div>
+    <Backup db={db} onRestored={reload} />
+    </>
   )
 }

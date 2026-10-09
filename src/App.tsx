@@ -17,6 +17,7 @@ export default function App() {
     openDb()
       .then(async (d) => {
         await seedKana(d)
+        void navigator.storage?.persist?.() // best effort: stops the browser evicting progress under storage pressure
         setDb(d)
       })
       .catch((e) => setError(String(e)))
@@ -27,11 +28,11 @@ export default function App() {
   return (
     <main>
       <header>
-        <h1>日本語 <small>nihongo</small></h1>
-        <nav>
-          <button aria-current={view === 'home'} onClick={() => setView('home')}>Study</button>
-          <button aria-current={view === 'decks'} onClick={() => setView('decks')}>Decks</button>
-          <button aria-current={view === 'stats'} onClick={() => setView('stats')}>Stats</button>
+        <h1><span lang="ja">日本語</span> <small>nihongo</small></h1>
+        <nav aria-label="Main">
+          <button aria-current={view === 'home' || view === 'study' ? 'page' : undefined} onClick={() => setView('home')}>Study</button>
+          <button aria-current={view === 'decks' ? 'page' : undefined} onClick={() => setView('decks')}>Decks</button>
+          <button aria-current={view === 'stats' ? 'page' : undefined} onClick={() => setView('stats')}>Stats</button>
         </nav>
       </header>
       {view === 'study' ? (

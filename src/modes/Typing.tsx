@@ -13,11 +13,13 @@ export function Typing({ card, onGrade }: ModeProps) {
   }
   return (
     <form className="card" onSubmit={submit}>
-      <div className="kana">{card.front}</div>
+      <div className="kana" lang="ja">{card.front}</div>
       <input autoFocus autoCapitalize="none" autoComplete="off" spellCheck={false} aria-label="romaji answer"
         onKeyDown={(e) => e.key === 'Enter' && e.repeat && e.preventDefault()}
         value={typed} onChange={(e) => setTyped(e.target.value)} readOnly={ok !== null} placeholder="type the romaji" />
-      {ok !== null && <div className={ok ? 'answer good' : 'answer bad'}>{ok ? 'Correct' : `Answer: ${card.back.join(' / ')}`}</div>}
+      <div role="status" className={ok === null ? '' : ok ? 'answer good' : 'answer bad'}>
+        {ok === null ? '' : ok ? '✓ Correct' : `✗ Answer: ${card.back.join(' / ')}`}
+      </div>
       <button className="primary" type="submit">{ok === null ? 'Check' : 'Next'}</button>
     </form>
   )

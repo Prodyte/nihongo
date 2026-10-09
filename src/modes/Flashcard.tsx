@@ -24,20 +24,21 @@ export function Flashcard({ db, card, onGrade }: ModeProps) {
       {card.html ? (
         <Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} />
       ) : (
-        <div className="kana">{card.front}</div>
+        <div className="kana" lang="ja">{card.front}</div>
       )}
-      {shown ? (
-        <>
-          {!card.html && <div className="answer">{card.back[0]}</div>}
-          <div className="row">
-            {GRADES.map(([g, label], i) => (
-              <button key={label} onClick={() => onGrade(g)}>{label} <kbd>{i + 1}</kbd></button>
-            ))}
-          </div>
-        </>
-      ) : (
-        <button className="primary" onClick={() => setShown(true)}>Show answer <kbd>space</kbd></button>
-      )}
+      <div className="answer-slot" aria-live="polite">
+        {shown && (
+          <>
+            {!card.html && <div className="answer">{card.back[0]}</div>}
+            <div className="row">
+              {GRADES.map(([g, label], i) => (
+                <button key={label} autoFocus={g === Rating.Good} onClick={() => onGrade(g)}>{label} <kbd aria-hidden="true">{i + 1}</kbd></button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      {!shown && <button className="primary" autoFocus onClick={() => setShown(true)}>Show answer <kbd aria-hidden="true">space</kbd></button>}
     </div>
   )
 }
