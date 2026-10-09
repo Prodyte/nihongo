@@ -27,14 +27,16 @@ async function makeApkg(extra: Record<string, Uint8Array | string> = {}) {
   ])
   const note = (id: number, mid: number, flds: string[]) => db.run('insert into notes values (?,?,?,0,0,"",?,"",0,0,"")', [id, `g${id}`, mid, flds.join('\x1f')])
   const card = (id: number, nid: number, ord: number) => db.run('insert into cards values (?,?,10,?,0,0,0,0,0,0,0,0,0,0,0,0,0,"")', [id, nid, ord])
-  note(100, 1, ['犬[いぬ]', 'dog <img src="dog.png">']); card(1000, 100, 0); card(1001, 100, 1)
+  note(100, 1, ['犬[いぬ]', 'dog <img src="dog.png"><img src=a&amp;b.png><img src="が.png">']); card(1000, 100, 0); card(1001, 100, 1)
   note(101, 2, ['{{c1::Tokyo}} is the capital']); card(1002, 101, 0)
   note(102, 1, ['', '']); card(1003, 102, 0) // blank question
   const zip = new JSZip()
   zip.file('collection.anki2', db.export())
-  zip.file('media', JSON.stringify({ 0: 'dog.png', 1: 'unused.png' }))
+  zip.file('media', JSON.stringify({ 0: 'dog.png', 1: 'unused.png', 2: 'a&b.png', 3: 'か\u3099.png' }))
   zip.file('0', new Uint8Array([137, 80, 78, 71]))
   zip.file('1', new Uint8Array([1]))
+  zip.file('2', new Uint8Array([2]))
+  zip.file('3', new Uint8Array([3]))
   for (const [k, v] of Object.entries(extra)) zip.file(k, v)
   return zip.generateAsync({ type: 'uint8array' })
 }
@@ -47,7 +49,7 @@ describe('parseApkg', () => {
     expect(p.skipped).toBe(1)
     const [fwd, rev, cloze] = p.cards
     expect(fwd.front).toBe('犬[いぬ]')
-    expect(fwd.back).toBe('犬[いぬ]<hr id=answer>dog <img src="dog.png">')
+    expect(fwd.back).toContain('dog <img src="dog.png">')
     expect(rev.back).toContain('<ruby>犬<rt>いぬ</rt></ruby>') // reverse card answer uses furigana filter
     expect(cloze.front).toBe('<span class="cloze">[...]</span> is the capital')
     expect(p.media.get('dog.png')).toEqual(new Uint8Array([137, 80, 78, 71]))
@@ -78,6 +80,8 @@ describe('saveImport / deleteDeck', () => {
     expect(await studyCards(db, 'anki:10', 'typing')).toHaveLength(0)
     expect(await db.get('media', 'anki:10\0dog.png')).toMatchObject({ type: 'image/png' })
     expect(await db.get('media', 'anki:10\0unused.png')).toBeUndefined() // not referenced by any card
+    expect(await db.get('media', 'anki:10\0a&b.png')).toBeDefined() // unquoted src + &amp; entity
+    expect(await db.get('media', 'anki:10\0が.png')).toBeDefined() // NFD manifest name, NFC html name
 
     await deleteDeck(db, 'anki:10')
     expect(await getDeck(db, 'anki:10')).toHaveLength(0)

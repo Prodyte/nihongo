@@ -58,7 +58,7 @@ export async function parseApkg(bytes: ArrayBuffer | Uint8Array, SQL: SqlJsStati
     await Promise.all(
       Object.entries(map).map(async ([num, name]) => {
         const f = zip.file(num)
-        if (f) media.set(name, await f.async('uint8array'))
+        if (f) media.set(name.normalize('NFC'), await f.async('uint8array'))
       }),
     )
     return { decks: [...used].map((id) => ({ id, name: deckNames[id]?.name ?? `Deck ${id}` })), cards, media, skipped }

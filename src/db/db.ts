@@ -87,7 +87,7 @@ export async function gradeCard(db: Db, id: string, grade: Grade, now = new Date
   return updated
 }
 
-export const mediaKey = (deck: string, name: string) => `${deck}\0${name}`
+export const mediaKey = (deck: string, name: string) => `${deck}\0${name.normalize('NFC')}` // macOS filenames are often NFD
 const MIME: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
   mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac',
@@ -109,16 +109,18 @@ export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs
   // Each deck gets only the files its cards reference (subdecks share a package, not necessarily media).
   // ponytail: re-import never removes cards/media dropped upstream; a card moved between decks restarts.
   const refs = new Map<string, Set<string>>()
+  const unescape = (s: string) => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
   for (const c of p.cards)
-    for (const m of (c.front + c.back).matchAll(/(?:src=["']|\[sound:)([^"'\]]+)/g)) {
+    for (const m of (c.front + c.back).matchAll(/src=(?:"([^"]*)"|'([^']*)'|([^\s>]+))|\[sound:([^\]]+)\]/g)) {
+      const raw = unescape(m[1] ?? m[2] ?? m[3] ?? m[4]).normalize('NFC')
       const names = refs.get(c.deckId) ?? new Set<string>()
-      names.add(m[1])
-      try { names.add(decodeURIComponent(m[1])) } catch { /* keep raw */ }
+      names.add(raw)
+      try { names.add(decodeURIComponent(raw)) } catch { /* keep raw */ }
       refs.set(c.deckId, names)
     }
   for (const [deckId, names] of refs)
     for (const name of names) {
-      const data = p.media.get(name)
+      const data = p.media.get(name) // parseApkg keys media by NFC name
       if (data) await tx.objectStore('media').put({ key: mediaKey(`anki:${deckId}`, name), data, type: MIME[name.split('.').pop()!.toLowerCase()] ?? 'application/octet-stream' })
     }
   await tx.done
