@@ -66,6 +66,7 @@ describe('buildLesson invariants, over every lesson', () => {
               continue
             }
             touched.add(e.item.id)
+            if (e.type === 'speak') continue
             expect(e.options.length, where).toBeGreaterThanOrEqual(2)
             expect(e.options.length, where).toBeLessThanOrEqual(4)
             expect(new Set(e.options).size, where).toBe(e.options.length) // no repeated option
@@ -93,6 +94,17 @@ describe('buildLesson invariants, over every lesson', () => {
           for (const e of exs) if (e.type === 'match') for (const p of e.pairs) expect(dupGloss(ITEMS.get(p.id)!), where).toBe(false)
         })
       })
+})
+
+describe('speaking', () => {
+  it('with recognition on: 2 speaking exercises in word and grammar lessons, none in kana or kanji lessons; none without it', () => {
+    for (const id of ['greetings-1', 'n5-v-3', 'grammar-1-2', 'n5-g-4', 'hira-basic-2', 'n5-k-1']) {
+      const l = lessonById(id)!
+      const kinds = (canListen: boolean) => buildLesson(l, ITEMS, { canSpeak: true, canListen, learned: new Set(), rand: seeded(5) }).filter((e) => e.type === 'speak').length
+      expect(kinds(true), id).toBe(/^(hira|n5-k)/.test(id) ? 0 : 2)
+      expect(kinds(false), id).toBe(0)
+    }
+  })
 })
 
 describe('kanji lessons', () => {

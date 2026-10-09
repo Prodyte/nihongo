@@ -1,6 +1,6 @@
 import { shuffle } from '../modes/choices'
 import { written, type Item, type Lesson } from './course'
-import { displayJp, PARTICLES } from './romaji'
+import { displayJp, PARTICLES, surfaceOf } from './romaji'
 
 export type Exercise = (
   | { type: 'intro'; item: Item }
@@ -9,6 +9,7 @@ export type Exercise = (
   | { type: 'listen'; item: Item; options: string[]; answer: string; readings?: Readings } // hear item.jp, pick it
   | { type: 'match'; pairs: { id: string; jp: string; reading?: string; gloss: string }[] }
   | { type: 'build'; item: Item; bank: string[]; answer: string[]; alts: string[][] } // put the chunks of a sentence in order
+  | { type: 'speak'; item: Item } // say it aloud; the browser's speech recognition checks it
   | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp' | 'toReading'; prompt: string } // kana: type the romaji; words: type the English, or the Japanese via romaji; toReading: a kanji word's reading
 ) & { retry?: boolean }
 
@@ -17,6 +18,7 @@ export type Readings = Record<string, string>
 
 export interface BuildOpts {
   canSpeak: boolean // a Japanese voice exists; otherwise there are no listening exercises
+  canListen?: boolean // speech recognition is available and switched on: add speaking exercises
   learned: ReadonlySet<string> // item ids from lessons already completed (no intro; used as distractors)
   rand?: () => number
 }
@@ -85,6 +87,7 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   out.push(...shuffle(mine, rand).map(toGloss))
   if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: written(it), ...(it.written && { reading: it.jp }), gloss: it.gloss })) })
   if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, ...shuffled(item, 'jp', 'sound'), answer: written(item) })))
+  if (opts.canListen && mine[0]?.kind === 'word') out.push(...shuffle(mine, rand).slice(0, 2).map((item): Exercise => ({ type: 'speak', item })))
   out.push(...shuffle(askable, rand).slice(0, canSpeak ? 3 : 4).map(toJp))
   // typing comes last: it is the hardest. Kana: type the romaji. Words: type the English, and type the Japanese from the English.
   const typed = (item: Item, dir: 'toRomaji' | 'toGloss' | 'toJp'): Exercise => ({ type: 'type', item, dir, prompt: dir === 'toJp' ? item.gloss : written(item) })
@@ -111,7 +114,7 @@ export function bankFor(tokens: string[], extras: string[], rand: () => number):
  * A grammar lesson: the explanation, then every sentence is met by recognising it (translate, fill the gap, listen) and
  * produced (build it, type it). With six sentences o0..o5 each one gets at least one of each.
  */
-function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, mine: Item[], items: ReadonlyMap<string, Item>, { canSpeak, learned, rand = Math.random }: BuildOpts): Exercise[] {
+function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, mine: Item[], items: ReadonlyMap<string, Item>, { canSpeak, canListen, learned, rand = Math.random }: BuildOpts): Exercise[] {
   const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? [])
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)]
   const o = shuffle(mine, rand)
@@ -132,6 +135,7 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
   if (mine.some((it) => !learned.has(it.id))) out.push({ type: 'explain', title: explain.title, body: explain.body, examples: explain.examples.flatMap((id) => items.get(id) ?? []) })
   out.push(...pick(0, 1, 2).map(translate), ...pick(3, 4, 5, 0).map(gap), ...pick(1, 2, 3, 4).map(build))
   if (canSpeak) out.push(...pick(2, 4).map(listen))
+  if (canListen) out.push(...pick(0, 3).map((item): Exercise => ({ type: 'speak', item })))
   out.push(...pick(1, 3).map(say), ...pick(5, 0).map(typed))
   return out.filter((e) => !('options' in e) || e.options.length >= 2)
 }
@@ -233,3 +237,7 @@ export function buildTest(lessons: Lesson[], items: ReadonlyMap<string, Item>, r
     return { type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...o('gloss'), answer: it.gloss }
   }).filter((e) => !('options' in e) || e.options.length >= 2)
 }
+
+/** What counts as saying an item aloud: its kana, its written form, its kanji, and any other word order. */
+export const spokenForms = (it: Item): string[] =>
+  [it.jp, surfaceOf(written(it)), it.kanji ?? '', ...(it.alts ?? []).map((a) => surfaceOf(displayJp(a)))]

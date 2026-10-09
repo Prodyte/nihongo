@@ -327,3 +327,24 @@ it('a wrong word-bank answer shows the right sentence, repeats once, and costs a
   expect(screen.queryByText(/100% right first time/)).toBeNull()
   expect((await db.getAllFromIndex('reviews', 'by-card', target.id))[0].grade).toBe(Rating.Hard)
 })
+
+it('"Can’t speak now" drops every speaking exercise left in the lesson, unscored', async () => {
+  class Rec { lang = ''; maxAlternatives = 1; interimResults = true; onresult = null; onerror = null; onend = null; start() {} abort() {} }
+  vi.stubGlobal('webkitSpeechRecognition', Rec)
+  const u = user()
+  mount(await freshDb(), lessonById('greetings-1')!)
+  for (let i = 0; i < 80 && !screen.queryByText('Say it in Japanese'); i++) {
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByRole('group', { name: 'Answers' }) ?? screen.queryByText('Say it in Japanese')).toBeTruthy())
+    const got = screen.queryByRole('button', { name: 'Got it' })
+    if (got) { await u.click(got); continue }
+    if (screen.queryByText('Say it in Japanese')) break
+    if (screen.queryByText('Match the pairs')) { await solveMatch(u, lessonById('greetings-1')!.items.map((id) => ITEMS.get(id))); await u.click(await screen.findByRole('button', { name: 'Continue' })); continue }
+    await u.click(within(screen.getByRole('group', { name: 'Answers' })).getAllByRole('button')[0])
+    await u.click(await screen.findByRole('button', { name: 'Continue' }))
+  }
+  const bar = screen.getByRole('progressbar', { name: 'Lesson progress' }) as HTMLProgressElement
+  const max = bar.max
+  await u.click(screen.getByRole('button', { name: 'Can’t speak now' }))
+  await waitFor(() => expect(screen.queryByText('Say it in Japanese')).toBeNull())
+  expect(bar.max).toBe(max - 2) // both speaking exercises are gone from the lesson
+})

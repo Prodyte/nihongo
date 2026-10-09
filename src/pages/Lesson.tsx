@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useJaVoice } from '../audio'
+import { canRecognise } from '../speech'
+import { readBool } from '../settings'
+import { Speak } from '../path/ui/Speak'
 import { sfx } from '../sfx'
 import { type Db } from '../db/db'
 import { ITEMS, LESSONS, type Lesson as LessonT } from '../path/course'
@@ -17,6 +20,7 @@ interface Summary { xp: number; first: boolean; accuracy: number; streak: number
 
 export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; lesson: LessonT; autoplay: boolean; onExit: () => void; onStart: (id: string) => void }) {
   const [canSpeak] = useState(useJaVoice()) // snapshot: a voice appearing later must not reshuffle a lesson in progress
+  const [canListen] = useState(() => canRecognise() && readBool('nihongo.speaking', true))
   const [run, setRun] = useState<RunState | null>(null)
   const [step, setStep] = useState(0)
   const [summary, setSummary] = useState<Summary | null>(null)
@@ -28,12 +32,12 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
   useEffect(() => {
     let live = true
     void getProgress(db)
-      .then((p) => live && setRun(startRun(buildLesson(lesson, ITEMS, { canSpeak, learned: learnedItems(LESSONS, p.done) }))))
+      .then((p) => live && setRun(startRun(buildLesson(lesson, ITEMS, { canSpeak, canListen, learned: learnedItems(LESSONS, p.done) }))))
       .catch((e) => live && setError(`Couldn't open this lesson (${e}).`))
     return () => {
       live = false
     }
-  }, [db, lesson, canSpeak])
+  }, [db, lesson, canSpeak, canListen])
 
   // Save once the last exercise is done. A failed save keeps the run so nothing is lost; "Try again" retries.
   useEffect(() => {
@@ -78,6 +82,11 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
 
   const ex = run.queue[0]
   const done = (missed: string[]) => { setRun((r) => advance(r!, missed)); setStep((s) => s + 1) }
+  // "Can't speak now": drop every speaking exercise left in this lesson, unscored (like Duolingo)
+  const skipSpeaking = () => {
+    setRun((r) => { const queue = r!.queue.filter((e) => e.type !== 'speak'); const gone = r!.queue.length - queue.length; return { ...r!, queue, total: r!.total - gone, initial: r!.initial - gone } })
+    setStep((s) => s + 1)
+  }
   return (
     <>
       <div className="bar">
@@ -89,6 +98,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         : ex.type === 'build' ? <Build key={step} ex={ex} onDone={done} />
         : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={done} />
         : ex.type === 'type' ? <Type key={step} ex={ex} autoplay={autoplay} onDone={done} />
+        : ex.type === 'speak' ? <Speak key={step} ex={ex} onDone={done} onSkip={skipSpeaking} />
         : <Choice key={step} ex={ex} autoplay={autoplay} onDone={done} />}
     </>
   )

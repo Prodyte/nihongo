@@ -2,12 +2,14 @@ import { useState } from 'react'
 import type { Db } from '../db/db'
 import { applyTheme, GOALS, readBool, readGoal, readStr, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
 import { FURIGANA, type Furigana } from '../path/ui/furigana'
+import { canRecognise } from '../speech'
 import { Backup } from './Backup'
 
 export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { db: Db; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void }) {
   const [goal, setGoal] = useState(readGoal)
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
+  const [speaking, setSpeaking] = useState(() => readBool('nihongo.speaking', true))
   const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
 
   return (
@@ -42,6 +44,12 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
           <input type="checkbox" checked={sounds} onChange={(e) => { setSounds(e.target.checked); writeBool('nihongo.sfx', e.target.checked) }} />
           Sound effects and vibration
         </label>
+        {canRecognise() && (
+          <label className="check">
+            <input type="checkbox" checked={speaking} onChange={(e) => { setSpeaking(e.target.checked); writeBool('nihongo.speaking', e.target.checked) }} />
+            <span>Speaking exercises <small className="hint">(your browser sends the recording to its speech service, e.g. Google or Apple)</small></span>
+          </label>
+        )}
         <label className="check">
           <input type="checkbox" checked={skipAhead} onChange={(e) => { setSkipAhead(e.target.checked); writeBool('nihongo.skipAhead', e.target.checked) }} />
           Let me choose any lesson on the path
