@@ -54,7 +54,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
     <div className="card">
       <p role="alert" className="bad">{error}</p>
       {run && run.queue.length === 0 && <button className="primary" onClick={() => { setError(null); setAttempt((a) => a + 1) }}>Try again</button>}
-      <button onClick={onExit}>Back to path</button>
+      <button onClick={onExit}>Back</button>
     </div>
   )
   if (!run) return <><button onClick={onExit}>← Exit</button><p>Loading…</p></> // never a dead end, even if loading hangs
@@ -68,7 +68,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         <p className="counts">+{summary.xp} XP{summary.first ? '' : ' (practice)'}</p>
         <p>{Math.round(summary.accuracy * 100)}% right first time{summary.streak !== null && ` · ${summary.streak}-day streak`}</p>
         {next && <button className="primary" autoFocus onClick={() => onStart(next.id)}>Next lesson: <span lang="ja">{next.title}</span></button>}
-        <button className={next ? '' : 'primary'} onClick={onExit}>Back to path</button>
+        <button className={next ? '' : 'primary'} onClick={onExit}>Done</button>
       </div>
     )
   }

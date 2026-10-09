@@ -1,16 +1,21 @@
 # Nihongo
 
-Learn Japanese in the browser: a guided path from hiragana and katakana, through your first 144 words and phrases, to simple sentences, spaced-repetition review, and import for Anki decks (with their audio and images). Everything runs on your device. There is no account and no server, and your progress is stored in your browser.
+Learn Japanese in the browser, from hiragana to JLPT N3: a guided path through kana, 3,400 words, 612 kanji and N5 grammar, spaced-repetition review, and import for Anki decks (with their audio and images). Everything runs on your device. There is no account and no server, and your progress is stored in your browser.
 
 **Live:** https://prodyte.github.io/nihongo/ (installable as an app, works offline after the first visit)
 
 ## What it does
 
-- **Learning path:** 68 short lessons in 15 units: hiragana (basic, voiced, combined sounds), katakana, starter vocabulary (greetings, numbers, family, food, places, time, verbs, adjectives), then a grammar unit. Each lesson introduces a few items, then practises them with multiple choice (both directions), matching pairs, listening (needs a Japanese voice on your device), and typing. Wrong answers come back once. You earn XP, keep a daily streak and work towards a daily goal. Lessons unlock in order; "Let me choose any lesson" lets you skip ahead.
+- **Today:** one screen with the next step: due reviews first, then the next lesson; streak, daily goal, and progress on the level you're learning.
+- **Learning path:** about 750 short lessons in sections: kana (hiragana, katakana), first words and sentences, then **JLPT N5, N4 and N3**. Each level mixes word lessons (6 words, most common first), kanji lessons (5 kanji) and, at N5, grammar lessons, each placed after the words it uses. Lessons practise with multiple choice (both directions), matching, listening (needs a Japanese voice on your device) and typing; wrong answers come back once. XP, a daily streak and a daily goal; lessons unlock in order, or choose any in Settings.
+- **Kanji:** stroke-order animation, meanings, on and kun readings, and course words that use each kanji; questions on meaning and on reading words written with it.
+- **Furigana:** readings over kanji you haven't had a lesson for yet (or always, or never: Settings).
 - **Typing:** type the romaji for a kana; type the English for a word; or type the Japanese for an English word and watch the kana appear as you go (`mizu` becomes みず), like a Japanese keyboard. One wrong letter in a longer English answer is forgiven; Japanese must be exact, so the particle は is typed `ha`, as on a Japanese keyboard. If you already have a Japanese keyboard enabled, typing kana directly works too.
-- **Grammar:** four lessons of simple sentences: A は B です and questions with か; の and も; verbs with を; い-adjectives. Each opens with a short explanation, then you translate, fill the missing particle, build sentences from a word bank, listen, and type them. Sentences become Review cards in a "Grammar sentences" deck.
+- **Grammar:** 4 starter lessons (は/です, の/も, を/ます, い-adjectives) and 24 N5 lessons: これ/それ/あれ, あります/います, negatives and past tense, な-adjectives, に/へ/で/と/や/から/まで, question words, counters, が with 好き/上手/分かる, 欲しい, たい, ましょう, て-form (ください, ている, てもいい, てはいけません, sequences), comparisons, 前に/後で, から/が, でしょう, もう/まだ. Each opens with a short explanation, then you translate, fill the gap, build sentences from a word bank, listen, and type them. Sentences become Review cards.
+- **Lookup:** search every word and kanji by kanji, kana, romaji or English; see readings, stroke order, your learning state and a Jisho link.
+- **Stats:** JLPT progress per level (words, kanji, grammar) and how many cards you know (remembered 3+ weeks).
 - **Path and Review work together:** finishing a lesson puts its items into the same spaced-repetition scheduler that Review uses, so what you learn on the path comes back when it is due. Replaying a lesson for practice never inflates the schedule.
-- **Review:** 104 hiragana and 104 katakana cards plus the words you have learned. Flashcards, type-the-answer, and multiple choice.
+- **Review:** all due cards across decks by default: kana, the path's words, kanji and sentences, and imported decks. Flashcards, type-the-answer (romaji for kana, the meaning for words), and multiple choice.
 - **Scheduling:** [FSRS](https://github.com/open-spaced-repetition/ts-fsrs), the algorithm modern Anki uses. 20 new cards a day.
 - **Sound:** kana are spoken with your device's Japanese voice (if it has one). Imported decks play their own audio automatically, like Anki; a setting turns that off.
 - **Anki import:** `.apkg` files in the latest and the older Anki formats, including cloze cards, furigana, images and audio. Imported decks study as flashcards.
@@ -35,7 +40,16 @@ npm run build    # type-check and build to dist/
 
 To check the importer against a real deck: `REAL_APKG=/path/to/deck.apkg npm test -- real`.
 
-The starter vocabulary (`src/path/vocab.ts`) and the grammar unit (`src/path/grammar.ts`) are written for this app. Tests check every romaji against its kana, that sentences use only taught words and correctly derived ます-forms, and that nothing is duplicated, but they can't judge a translation or an explanation, so corrections are welcome.
+The starter vocabulary (`src/path/vocab.ts`) and the grammar (`src/path/grammar.ts`, `src/path/grammarN5.ts`) are written for this app. Tests check every romaji against its kana, that every sentence word is a course word taught before its lesson, that furigana match the word readings, and that nothing is duplicated, but they can't judge a translation or an explanation, so corrections are welcome.
+
+The JLPT words, kanji and stroke order come from open data, cleaned by `scripts/build_course_data.py` and `scripts/build_strokes.py`; sources, licences and how to rebuild are in `data/raw/README.md`. Lesson ids are snapshot-tested: saved progress refers to them, so a data change must not reshuffle existing lessons.
+
+## Credits and licences
+
+- JLPT word lists and kanji levels: Jonathan Waller ([tanos.co.uk](http://www.tanos.co.uk/jlpt/)), CC BY, via [open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks).
+- Kanji meanings and readings: [KANJIDIC2](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) (EDRDG), CC BY-SA 4.0, via [kanji-data](https://github.com/davidluzgouveia/kanji-data). `src/data/jlpt/kanji.json` is shared under CC BY-SA 4.0.
+- Stroke order: [KanjiVG](https://kanjivg.tagaini.net) by Ulrich Apel, CC BY-SA 3.0. `public/strokes.json` is shared under CC BY-SA 3.0.
+- Word order uses frequencies from [wordfreq](https://github.com/rspeer/wordfreq) (build time only).
 
 Pushes to `main` run lint, tests and build, then deploy to GitHub Pages (`.github/workflows/deploy.yml`).
 
@@ -44,7 +58,8 @@ Pushes to `main` run lint, tests and build, then deploy to GitHub Pages (`.githu
 | Path | What |
 |---|---|
 | `src/data/kana.ts` | the kana tables (katakana derived from hiragana) |
-| `src/path/` | course data, vocabulary and grammar, exercise engine, typing (romaji to kana, answer checking), progress/XP/streak, exercise components |
+| `src/path/` | course structure, starter vocabulary and grammar, exercise engine, typing (romaji to kana, answer checking), lookup, progress/XP/streak, exercise components |
+| `src/data/jlpt/`, `public/strokes.json` | generated JLPT words, kanji and stroke data (see `data/raw/README.md`) |
 | `src/srs/` | scheduler wrapper around ts-fsrs |
 | `src/db/` | IndexedDB layer, backup and restore |
 | `src/anki/` | `.apkg` parsing, template rendering, media and sanitizing |
