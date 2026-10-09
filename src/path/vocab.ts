@@ -1,5 +1,5 @@
 // Starter vocabulary, written for this app. Each word: [kana as normally written, Hepburn romaji (long vowels as
-// ou/uu/ii/aa so it matches how it is typed), English, optional kanji shown as a small extra]. Content tests check the
+// ou/uu/ii/aa so it matches how it is typed; ' marks ん before a vowel or y: kin'youbi is きんようび, kinyoubi would be きにょうび), English, optional kanji shown as a small extra]. Content tests check the
 // romaji against the kana and that every English gloss and kana spelling is unique (so no quiz has two right answers).
 type W = [jp: string, romaji: string, en: string, kanji?: string]
 export interface VocabUnit { id: string; title: string; blurb: string; words: W[] } // 18 words = 3 lessons of 6
@@ -60,7 +60,7 @@ export const VOCAB_UNITS: VocabUnit[] = [
     ['きょう', 'kyou', 'today', '今日'], ['あした', 'ashita', 'tomorrow', '明日'], ['きのう', 'kinou', 'yesterday', '昨日'], ['いま', 'ima', 'now', '今'],
     ['あさ', 'asa', 'morning', '朝'], ['ひる', 'hiru', 'daytime, noon', '昼'], ['よる', 'yoru', 'night', '夜'], ['まいにち', 'mainichi', 'every day', '毎日'],
     ['げつようび', 'getsuyoubi', 'Monday', '月曜日'], ['かようび', 'kayoubi', 'Tuesday', '火曜日'], ['すいようび', 'suiyoubi', 'Wednesday', '水曜日'],
-    ['もくようび', 'mokuyoubi', 'Thursday', '木曜日'], ['きんようび', 'kinyoubi', 'Friday', '金曜日'], ['どようび', 'doyoubi', 'Saturday', '土曜日'],
+    ['もくようび', 'mokuyoubi', 'Thursday', '木曜日'], ['きんようび', "kin'youbi", 'Friday', '金曜日'], ['どようび', 'doyoubi', 'Saturday', '土曜日'],
     ['にちようび', 'nichiyoubi', 'Sunday', '日曜日'], ['しゅうまつ', 'shuumatsu', 'weekend', '週末'], ['ことし', 'kotoshi', 'this year', '今年'],
     ['らいしゅう', 'raishuu', 'next week', '来週'],
   ] },

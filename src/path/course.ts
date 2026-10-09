@@ -48,8 +48,8 @@ function kanaUnits(script: 'hira' | 'kata'): Unit[] {
 function vocabUnits(): Unit[] {
   return VOCAB_UNITS.map((u) => {
     const ids = u.words.map(([jp, romaji, en, kanji]) => {
-      const id = `vocab:${romaji.replace(/ /g, '-')}`
-      ITEMS.set(id, { id, kind: 'word', jp, gloss: en, romaji, sound: romaji.replace(/ /g, ''), kanji })
+      const id = `vocab:${romaji.replace(/'/g, '').replace(/ /g, '-')}` // ids ignore the apostrophe so they stay stable
+      ITEMS.set(id, { id, kind: 'word', jp, gloss: en, romaji, sound: romaji.replace(/[ ']/g, ''), kanji })
       return id
     })
     return { id: u.id, title: u.title, blurb: u.blurb, lessons: chunk(ids, 6).map((items, i) => ({ id: `${u.id}-${i + 1}`, title: `${u.title} ${i + 1}`, items })) }

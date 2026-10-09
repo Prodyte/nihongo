@@ -37,13 +37,13 @@ describe('vocabulary content', () => {
     for (const u of VOCAB_UNITS) expect(u.words, u.id).toHaveLength(18)
   })
   it('every romaji matches its kana', () => {
-    const bad = words.filter(([jp, romaji]) => toRomaji(jp) !== romaji.replace(/ /g, '')).map(([jp, romaji]) => `${jp}: written ${romaji}, kana says ${toRomaji(jp)}`)
+    const bad = words.filter(([jp, romaji]) => toRomaji(jp) !== romaji.replace(/[ ']/g, '')).map(([jp, romaji]) => `${jp}: written ${romaji}, kana says ${toRomaji(jp)}`)
     expect(bad).toEqual([])
   })
   it('is kana only, with clean romaji, and has no empty fields', () => {
     for (const [jp, romaji, en, kanji] of words) {
       expect(jp, jp).toMatch(/^[ぁ-ゖァ-ヺー]+$/)
-      expect(romaji, romaji).toMatch(/^[a-z]+( [a-z]+)*$/)
+      expect(romaji, romaji).toMatch(/^[a-z']+( [a-z']+)*$/)
       expect(en.trim(), jp).not.toBe('')
       if (kanji !== undefined) expect(kanji, jp).toMatch(/[一-鿿]/)
     }
@@ -91,5 +91,6 @@ describe('course structure', () => {
     expect(ITEMS.get('kata:キャ')).toMatchObject({ script: 'kata', gloss: 'kya' })
     expect(ITEMS.get('vocab:mizu')).toMatchObject({ kind: 'word', jp: 'みず', gloss: 'water', kanji: '水' })
     expect(ITEMS.get('vocab:yoroshiku-onegaishimasu')).toBeTruthy()
+    expect(ITEMS.get('vocab:kinyoubi')).toMatchObject({ romaji: "kin'youbi", sound: 'kinyoubi' }) // stable id, apostrophe only in the reading
   })
 })
