@@ -7,6 +7,7 @@ import { Backup } from './Backup'
 export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { db: Db; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void }) {
   const [goal, setGoal] = useState(readGoal)
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
+  const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
   const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
 
   return (
@@ -36,6 +37,10 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
         <label className="check">
           <input type="checkbox" checked={autoplay} onChange={(e) => onAutoplay(e.target.checked)} />
           Play audio automatically
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={sounds} onChange={(e) => { setSounds(e.target.checked); writeBool('nihongo.sfx', e.target.checked) }} />
+          Sound effects and vibration
         </label>
         <label className="check">
           <input type="checkbox" checked={skipAhead} onChange={(e) => { setSkipAhead(e.target.checked); writeBool('nihongo.skipAhead', e.target.checked) }} />

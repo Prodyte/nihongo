@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useJaVoice } from '../audio'
+import { sfx } from '../sfx'
 import { type Db } from '../db/db'
 import { ITEMS, LESSONS, type Lesson as LessonT } from '../path/course'
 import { accuracy, advance, buildLesson, startRun, type RunState } from '../path/lesson'
@@ -44,6 +45,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
           // Saved. Reading the streak is cosmetic and must never reach the retry path below (it would award XP twice).
           const streak = await getProgress(db).then((p) => p.streak, () => null)
           setSummary({ xp: r.xp, first: r.first, accuracy: accuracy(run), streak })
+          sfx('done')
         },
         (e) => setError(`Couldn't save your progress (${e}).`),
       )

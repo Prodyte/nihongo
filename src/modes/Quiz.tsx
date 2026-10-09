@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Rating } from 'ts-fsrs'
 import { speak } from '../audio'
+import { sfx } from '../sfx'
 import { choices } from './choices'
 import { Ruby } from '../path/ui/Ruby'
 import { SpeakButton } from './SpeakButton'
@@ -18,7 +19,7 @@ export function Quiz({ card, pool, autoplay, onGrade }: ModeProps) {
       <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
       <div className="grid">
         {options.map((o) => (
-          <button key={o} disabled={picked !== null} onClick={() => setPicked(o)}
+          <button key={o} disabled={picked !== null} onClick={() => { setPicked(o); sfx(o === right ? 'right' : 'wrong') }}
             className={picked === null ? '' : o === right ? 'good' : o === picked ? 'bad' : ''}>
             {picked !== null && (o === right ? '✓ ' : o === picked ? '✗ ' : '')}{o}
           </button>

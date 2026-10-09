@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Rating } from 'ts-fsrs'
 import { speak } from '../audio'
+import { sfx } from '../sfx'
 import { matches } from '../data/kana'
 import { checkEnglish, type Check } from '../path/typing'
 import { Ruby } from '../path/ui/Ruby'
@@ -20,7 +21,11 @@ export function Typing({ card, autoplay, onGrade }: ModeProps) {
   }, [result, autoplay, sound])
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (result === null) setResult(kana ? { ok: matches(card.back, typed) } : checkEnglish(typed, card.back))
+    if (result === null) {
+      const r = kana ? { ok: matches(card.back, typed) } : checkEnglish(typed, card.back)
+      setResult(r)
+      sfx(r.ok ? 'right' : 'wrong')
+    }
     else onGrade(result.ok ? Rating.Good : Rating.Again)
   }
   return (

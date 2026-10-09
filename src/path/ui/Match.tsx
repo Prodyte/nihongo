@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { shuffle } from '../../modes/choices'
+import { sfx } from '../../sfx'
 import type { Exercise } from '../lesson'
 import { Ruby } from './Ruby'
 
@@ -19,9 +20,9 @@ export function Match({ pairs, onDone }: { pairs: Pair[]; onDone: (missed: strin
     if (matched.has(id) || finished) return
     if (!sel || sel.side === side) { setSel({ side, id }); setNote(''); return }
     if (sel.id === id) { // the other half of the same pair
-      setMatched(new Set([...matched, id])); setSel(null); setNote('✓ Match')
+      setMatched(new Set([...matched, id])); setSel(null); setNote('✓ Match'); sfx(matched.size + 1 === pairs.length ? 'done' : 'right')
     } else {
-      setMissed([...missed, sel.id, id]); setSel(null); setNote('✗ Not a match, try again')
+      setMissed([...missed, sel.id, id]); setSel(null); setNote('✗ Not a match, try again'); sfx('wrong')
     }
   }
   const btn = (side: Pick['side'], p: Pair) => {

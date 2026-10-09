@@ -1,9 +1,14 @@
 import { toKata } from '../../data/kana'
+import { useEffect } from 'react'
+import { sfx } from '../../sfx'
 import { written, type Item } from '../course'
 import { Ruby } from './Ruby'
 
 /** Result line (always mounted so screen readers announce changes) plus a Continue button once answered. */
 export function Feedback({ result, item, answer, note, onContinue }: { result: boolean | null; item: Item; answer: string; note?: string; onContinue: () => void }) {
+  useEffect(() => {
+    if (result !== null) sfx(result ? 'right' : 'wrong')
+  }, [result])
   return (
     <>
       <div role="status" className={result === null ? '' : result ? 'feedback good' : 'feedback bad'}>
