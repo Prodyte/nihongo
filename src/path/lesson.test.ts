@@ -15,6 +15,7 @@ const learnedBefore = (i: number) => new Set(LESSONS.slice(0, i).flatMap((l) => 
 const learnedFor = (mode: 'none' | 'earlier' | 'repeat', i: number) => (mode === 'none' ? new Set<string>() : learnedBefore(mode === 'earlier' ? i : i + 1))
 // gloss of a Japanese option string within an item's script bucket (for "two right answers" checks)
 const glossOfJp = (jp: string, like: Item) => [...ITEMS.values()].find((x) => x.jp === jp && x.kind === like.kind && x.script === like.script)?.gloss
+const dupSound = (it: Item) => [...ITEMS.values()].filter((x) => x.kind === it.kind && x.script === it.script && x.sound === it.sound).length > 1
 const dupGloss = (it: Item) => [...ITEMS.values()].filter((x) => x.kind === it.kind && x.script === it.script && x.gloss === it.gloss).length > 1
 
 describe('buildLesson invariants, over every lesson', () => {
@@ -45,6 +46,7 @@ describe('buildLesson invariants, over every lesson', () => {
             expect(e.options.length, where).toBeLessThanOrEqual(4)
             expect(new Set(e.options).size, where).toBe(e.options.length) // no repeated option
             expect(e.options.filter((o) => o === e.answer), where).toHaveLength(1)
+            if (e.type === 'listen') expect(dupSound(e.item), `${where}: ${e.item.jp} sounds like another kana, must not be asked by ear`).toBe(false)
             if (e.type === 'listen' || e.dir === 'toJp') {
               expect(dupGloss(e.item), `${where}: ${e.item.jp} has a twin sound, must not be asked by sound or in reverse`).toBe(false)
               // no distractor reads the same as the answer, and all options share the answer's script
@@ -60,6 +62,24 @@ describe('buildLesson invariants, over every lesson', () => {
 })
 
 describe('buildLesson specifics', () => {
+  it('never offers を as an answer to hearing お (both sound "o"), nor asks を by ear', () => {
+    const o = lessonById('hira-basic-1')!
+    const rest = new Set(LESSONS.slice(1, 9).flatMap((l) => l.items)) // を is in here
+    for (let seed = 1; seed <= 60; seed++) {
+      for (const e of buildLesson(o, ITEMS, { canSpeak: true, learned: rest, rand: seeded(seed) })) if (e.type === 'listen') expect(e.options).not.toContain('を')
+      for (const e of buildLesson(lessonById('hira-basic-9')!, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(seed) })) if (e.type === 'listen') expect(e.item.jp).not.toBe('を')
+    }
+    expect(ITEMS.get('hira:を')).toMatchObject({ gloss: 'wo', sound: 'o' })
+    expect(ITEMS.get('hira:を')!.note).toMatch(/pronounced "o"/)
+  })
+  it('throws a clear error for an unknown item id', () => {
+    expect(() => buildLesson({ id: 'x', title: 'x', items: ['hira:nope'] }, ITEMS, { canSpeak: true, learned: new Set() })).toThrow('Unknown item hira:nope in lesson x')
+  })
+  it('never emits a question with fewer than two options (tiny pool)', () => {
+    const one = new Map([['w:a', { id: 'w:a', kind: 'word' as const, jp: 'あ', gloss: 'a', romaji: 'a', sound: 'a' }]])
+    const exs = buildLesson({ id: 'tiny', title: 'tiny', items: ['w:a'] }, one, { canSpeak: true, learned: new Set() })
+    expect(exs.map((e) => e.type)).toEqual(['intro'])
+  })
   const lesson = lessonById('hira-voiced-3')! // だ ぢ づ で ど: ぢ and づ sound like じ and ず
   const exs = buildLesson(lesson, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(7) })
   it('only asks twin-sound kana kana -> romaji, and never in matching', () => {

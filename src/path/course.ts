@@ -9,7 +9,9 @@ export interface Item {
   jp: string
   gloss: string
   romaji: string
+  sound: string // what it sounds like: items with the same sound can't be told apart by ear (お/を are both "o")
   kanji?: string
+  note?: string // shown on the intro card
 }
 export interface Lesson { id: string; title: string; items: string[] }
 export interface Unit { id: string; title: string; blurb: string; lessons: Lesson[] }
@@ -22,7 +24,9 @@ const chars = (s: string) => s.match(/.[ゃゅょ]?/gu)!
 const chunk = <T,>(a: T[], n: number) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n))
 
 export const ITEMS = new Map<string, Item>()
-for (const k of KANA) ITEMS.set(k.id, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0] })
+const NOTES: Record<string, string> = { 'hira:を': 'Written "wo" but pronounced "o". Mostly used as a grammar particle.', 'kata:ヲ': 'Written "wo" but pronounced "o". Rare in katakana.' }
+for (const k of KANA)
+  ITEMS.set(k.id, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: NOTES[k.id] })
 
 function kanaUnits(script: 'hira' | 'kata'): Unit[] {
   const name = script === 'hira' ? 'Hiragana' : 'Katakana'
@@ -45,7 +49,7 @@ function vocabUnits(): Unit[] {
   return VOCAB_UNITS.map((u) => {
     const ids = u.words.map(([jp, romaji, en, kanji]) => {
       const id = `vocab:${romaji.replace(/ /g, '-')}`
-      ITEMS.set(id, { id, kind: 'word', jp, gloss: en, romaji, kanji })
+      ITEMS.set(id, { id, kind: 'word', jp, gloss: en, romaji, sound: romaji.replace(/ /g, ''), kanji })
       return id
     })
     return { id: u.id, title: u.title, blurb: u.blurb, lessons: chunk(ids, 6).map((items, i) => ({ id: `${u.id}-${i + 1}`, title: `${u.title} ${i + 1}`, items })) }

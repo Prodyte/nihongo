@@ -15,41 +15,52 @@ export interface BuildOpts {
 }
 
 const sameBucket = (a: Item, b: Item) => a.kind === b.kind && a.script === b.script
-const key = (it: Item) => `${it.kind}|${it.script}|${it.gloss}`
+const key = (it: Item, by: 'gloss' | 'sound') => `${it.kind}|${it.script}|${it[by]}`
 
 /** `n` shuffled options: the answer plus distractors from `pool` (taken in order, so put the closest items first). */
-function options(answer: Item, field: 'jp' | 'gloss', pool: Item[], n = 4): string[] {
+function options(answer: Item, field: 'jp' | 'gloss', pool: Item[], same: 'gloss' | 'sound', n = 4): string[] {
   const picked = [answer[field]]
   for (const it of pool) {
     if (picked.length === n) break
     if (it.id === answer.id || !sameBucket(it, answer)) continue // never mix hiragana into a katakana question
-    if (it.gloss === answer.gloss) continue // would be a second right answer (e.g. じ and ぢ are both "ji")
+    if (it[same] === answer[same]) continue // would be a second right answer (じ/ぢ are both "ji"; お/を both sound "o")
     if (picked.includes(it[field])) continue
     picked.push(it[field])
   }
   return picked
 }
 
+const fail = (msg: string): never => {
+  throw new Error(msg)
+}
+
 export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, { canSpeak, learned, rand = Math.random }: BuildOpts): Exercise[] {
-  const mine = lesson.items.map((id) => items.get(id)!)
+  const mine = lesson.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${lesson.id}`))
   const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? [])
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)] // lesson items make the likeliest distractors
 
-  // Items sharing a gloss with another item of their kind can't be asked by sound or in reverse (two right answers).
-  const glossCount = new Map<string, number>()
-  for (const it of items.values()) glossCount.set(key(it), (glossCount.get(key(it)) ?? 0) + 1)
-  const askable = shuffle(mine.filter((it) => glossCount.get(key(it)) === 1), rand)
+  // Items sharing a gloss with another item of their kind can't be asked in reverse or matched (two right answers);
+  // items sharing a sound can't be asked by ear either.
+  const count = (by: 'gloss' | 'sound') => {
+    const m = new Map<string, number>()
+    for (const it of items.values()) m.set(key(it, by), (m.get(key(it, by)) ?? 0) + 1)
+    return (it: Item) => m.get(key(it, by)) === 1
+  }
+  const [uniqueGloss, uniqueSound] = [count('gloss'), count('sound')]
+  const askable = shuffle(mine.filter(uniqueGloss), rand)
+  const audible = shuffle(askable.filter(uniqueSound), rand)
 
-  const shuffled = (it: Item, field: 'jp' | 'gloss') => shuffle(options(it, field, pool), rand)
+  const shuffled = (it: Item, field: 'jp' | 'gloss', same: 'gloss' | 'sound' = 'gloss') => shuffle(options(it, field, pool, same), rand)
   const toGloss = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, options: shuffled(it, 'gloss'), answer: it.gloss })
   const toJp = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, options: shuffled(it, 'jp'), answer: it.jp })
 
   const out: Exercise[] = mine.filter((it) => !learned.has(it.id)).map((item) => ({ type: 'intro', item }))
   out.push(...shuffle(mine, rand).map(toGloss))
   if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss })) })
-  if (canSpeak) out.push(...askable.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, options: shuffled(item, 'jp'), answer: item.jp })))
+  if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, options: shuffled(item, 'jp', 'sound'), answer: item.jp })))
   out.push(...shuffle(askable, rand).slice(0, canSpeak ? 4 : 5).map(toJp))
-  return out
+  // a question needs at least two options (a course edit could leave a tiny pool)
+  return out.filter((e) => e.type === 'intro' || e.type === 'match' || e.options.length >= 2)
 }
 
 export interface RunState {
