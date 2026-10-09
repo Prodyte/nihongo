@@ -213,14 +213,15 @@ function jlptUnits(): Unit[] {
   const starter = [...ITEMS.values()].filter((i) => i.kind === 'word')
   const words = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
   for (const [level, written, reading, gloss] of jlptWords as [5 | 4 | 3, string, string, string][]) {
-    if (starterTwin(written || reading, reading, gloss, starter)) continue // already taught (and carded) by the starter units
+    const twin = starterTwin(written || reading, reading, gloss, starter)
+    if (twin) { twin.level ??= level; continue } // already taught (and carded) by the starter units, which now count toward this level
     const romaji = kanaToRomaji(reading)
     const id = `w:${written || reading}`
     registerItem(ITEMS, { id, kind: 'word', jp: reading, written: written || undefined, gloss, romaji, sound: romaji, level })
     words.get(level)!.push(id)
   }
   const allWords = [...ITEMS.values()].filter((i) => i.kind === 'word') // starter first, then N5 -> N3, most common first
-  words.set(5, pullForward(words.get(5)!, N5_GRAMMAR, allWords.filter((w) => !w.level || w.level === 5)))
+  words.set(5, pullForward(words.get(5)!, N5_GRAMMAR, allWords.filter((w) => w.id.startsWith('vocab:') || w.level === 5)))
   const kanji = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
   for (const [char, level, meanings, on, kun, strokes] of jlptKanji as [string, 5 | 4 | 3, string[], string[], string[], number][]) {
     const examples = allWords.filter((w) => (w.written ?? w.kanji ?? '').includes(char)).slice(0, 3).map((w) => w.id)
@@ -235,7 +236,7 @@ function jlptUnits(): Unit[] {
       id: `n${level}-k-${i + 1}`, title: `Kanji ${items.map((id) => id.slice(6)).join(' ')}`, items,
     }))
     let path = interleave(vocab, kanjiLessons)
-    if (level === 5) path = placeGrammar(path, N5_GRAMMAR.map((spec, i) => grammarLesson(spec, `n5-g-${i + 1}`, 5)), allWords.filter((w) => !w.level || w.level === 5))
+    if (level === 5) path = placeGrammar(path, N5_GRAMMAR.map((spec, i) => grammarLesson(spec, `n5-g-${i + 1}`, 5)), allWords.filter((w) => w.id.startsWith('vocab:') || w.level === 5))
     return chunk(path, LESSONS_PER_UNIT).map((lessons, u): Unit => {
       const chars = lessons.filter((l) => l.id.includes('-k-')).flatMap((l) => l.items.map((id) => id.slice(6)))
       const nWords = lessons.filter((l) => l.id.includes('-v-')).flatMap((l) => l.items).length

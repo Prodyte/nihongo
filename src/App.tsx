@@ -6,6 +6,7 @@ import { Credits } from './pages/Credits'
 import { Decks } from './pages/Decks'
 import { Home, type Config } from './pages/Home'
 import { Lesson } from './pages/Lesson'
+import { Lookup } from './pages/Lookup'
 import { Path } from './pages/Path'
 import { Settings } from './pages/Settings'
 import { Stats } from './pages/Stats'
@@ -16,10 +17,10 @@ import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
 
-type Tab = 'today' | 'path' | 'review' | 'more'
+type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
 type View = Tab | 'lesson' | 'study' | 'decks' | 'stats' | 'settings' | 'credits'
-const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', review: 'review', study: 'review', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more' }
+const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', review: 'review', study: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more' }
 const MORE: [View, string, string][] = [
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
   ['stats', 'Stats', 'Your reviews and cards'],
@@ -75,6 +76,8 @@ export default function App() {
           <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} />
         ) : view === 'path' ? (
           <Path db={db} onStart={startLesson} />
+        ) : view === 'lookup' ? (
+          <Lookup db={db} />
         ) : view === 'decks' ? (
           <Decks db={db} />
         ) : view === 'stats' ? (

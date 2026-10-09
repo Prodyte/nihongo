@@ -24,6 +24,8 @@ it('a new learner: no streak, the first lesson leads, new kana offered for revie
   expect(buttons()).toEqual([[`Next lesson: ${LESSONS[0].title}`, true], ['Study 20 new cards', false]])
   await user.click(screen.getByRole('button', { name: /^Next lesson/ }))
   expect(onLesson).toHaveBeenCalledWith(LESSONS[0].id)
+  expect(screen.getByRole('heading', { name: 'N5' })).toBeTruthy() // progress on the level being learned
+  expect(screen.getByRole('progressbar', { name: 'N5 kanji' })).toBeTruthy()
 })
 
 it('with cards due, reviewing leads; XP, goal and streak show', async () => {

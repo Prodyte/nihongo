@@ -112,3 +112,18 @@ export async function getProgress(db: Db, now = new Date()) {
 function failWith(msg: string): never {
   throw new Error(msg)
 }
+
+export interface LevelCoverage { level: 5 | 4 | 3; words: [number, number]; kanji: [number, number]; grammar: [number, number] } // [learned, total]
+
+/** How much of each JLPT level the finished lessons cover: words, kanji and grammar lessons (learned of total). */
+export function coverage(lessons: readonly Lesson[], items: ReadonlyMap<string, Item>, done: ReadonlySet<string>): LevelCoverage[] {
+  const learned = learnedItems(lessons, done)
+  return ([5, 4, 3] as const).map((level) => {
+    const of = (kind: Item['kind']): [number, number] => {
+      const all = [...items.values()].filter((i) => i.kind === kind && i.level === level && i.kind !== 'sentence')
+      return [all.filter((i) => learned.has(i.id)).length, all.length]
+    }
+    const grammar = lessons.filter((l) => l.id.startsWith(`n${level}-g-`))
+    return { level, words: of('word'), kanji: of('kanji'), grammar: [grammar.filter((l) => done.has(l.id)).length, grammar.length] }
+  })
+}

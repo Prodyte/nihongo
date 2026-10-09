@@ -5,7 +5,7 @@ import { readingOf, surfaceOf } from './romaji'
 
 const lessons = LESSONS.filter((l) => l.id.startsWith('n5-g-'))
 const sentences = lessons.flatMap((l) => l.items.map((id) => ITEMS.get(id)!))
-const words = [...ITEMS.values()].filter((w) => w.kind === 'word' && (!w.level || w.level === 5))
+const words = [...ITEMS.values()].filter((w) => w.kind === 'word' && (w.id.startsWith('vocab:') || w.level === 5))
 const HAN = /\p{Script=Han}/u
 
 describe('N5 grammar', () => {

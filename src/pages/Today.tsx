@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { reviewCounts, type Db } from '../db/db'
-import { LESSONS } from '../path/course'
-import { currentLesson, dailyGoalProgress, getProgress } from '../path/progress'
+import { Levels } from './Levels'
+import { ITEMS, LESSONS } from '../path/course'
+import { coverage, currentLesson, dailyGoalProgress, getProgress, type LevelCoverage } from '../path/progress'
 import { readGoal } from '../settings'
 
-interface State { streak: number; xpToday: number; next: (typeof LESSONS)[number] | null; due: number; fresh: number }
+interface State { streak: number; xpToday: number; next: (typeof LESSONS)[number] | null; due: number; fresh: number; level: LevelCoverage }
 
 /** The home screen: one obvious next step. Reviews come first (they are what keeps words in memory), then the next lesson. */
 export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void; onLesson: (id: string) => void }) {
@@ -14,7 +15,13 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
   useEffect(() => {
     let live = true
     void Promise.all([getProgress(db), reviewCounts(db, 'all', 'flashcard').catch(() => ({ due: 0, fresh: 0 }))]) // counts are a hint: never block the home screen
-      .then(([p, c]) => live && setS({ streak: p.streak, xpToday: p.xpToday, next: currentLesson(LESSONS, p.done), ...c }))
+      .then(([p, c]) => {
+        const next = currentLesson(LESSONS, p.done)
+        const levels = coverage(LESSONS, ITEMS, p.done)
+        // the level you are working on: the next lesson's, or the first not yet complete
+        const level = levels.find((l) => next?.id.startsWith(`n${l.level}-`)) ?? levels.find((l) => l.words[0] < l.words[1]) ?? levels[2]
+        if (live) setS({ streak: p.streak, xpToday: p.xpToday, next, ...c, level })
+      })
       .catch((e) => live && setError(`Couldn't load your progress (${e}).`))
     return () => {
       live = false
@@ -43,6 +50,9 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
         </label>
         {buttons.map(([label, go], i) => <button key={i} className={i === 0 ? 'primary big' : ''} onClick={go}>{label}</button>)}
         {!s.next && <p>You finished the whole path. 🎉{reviews ? '' : ' Nothing to review right now.'}</p>}
+      </section>
+      <section className="card form" aria-label="Level progress">
+        <Levels levels={[s.level]} />
       </section>
     </>
   )

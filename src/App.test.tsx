@@ -63,7 +63,7 @@ it('a lesson started from Path returns to Path; More leads to Decks, Stats and S
   await user.click(await screen.findByRole('button', { name: /^Continue:/ }))
   await user.click(await screen.findByRole('button', { name: '← Exit' }))
   expect(current()).toBe('Path')
-  for (const [item, heading] of [['Decks', 'Decks'], ['Stats', 'Stats'], ['Settings', 'Settings'], ['Credits', 'Credits']]) {
+  for (const [item, heading] of [['Decks', 'Decks'], ['Stats', 'JLPT progress'], ['Settings', 'Settings'], ['Credits', 'Credits']]) {
     await user.click(tab('More'))
     await user.click(screen.getByRole('button', { name: new RegExp(`^${item}`) }))
     await screen.findByRole('heading', { name: heading })
