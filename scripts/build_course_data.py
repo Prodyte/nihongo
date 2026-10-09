@@ -34,7 +34,17 @@ OVERRIDES = {
     ('支払', 'しはらい'): ('支払い', 'しはらい', 'payment'),  # standard spellings, so frequency ordering finds them
     ('知合い', 'しりあい'): ('知り合い', 'しりあい', 'acquaintance'),
     ('清む', 'すむ'): None,  # obscure variant of 澄む
+    # older spellings in the source -> today's standard ones (also what the grammar sentences use)
+    ('御飯', 'ごはん'): ('ご飯', 'ごはん', 'rice (cooked), meal'),
+    ('朝御飯', 'あさごはん'): ('朝ご飯', 'あさごはん', 'breakfast'),
+    ('昼御飯', 'ひるごはん'): ('昼ご飯', 'ひるごはん', 'lunch'),
+    ('晩御飯', 'ばんごはん'): ('晩ご飯', 'ばんごはん', 'dinner'),
+    ('終る', 'おわる'): ('終わる', 'おわる', 'to finish, to end'),
+    ('楽む', 'たのしむ'): ('楽しむ', 'たのしむ', 'to enjoy'),
+    ('ゆっくりと', 'ゆっくりと'): ('', 'ゆっくり', 'slowly, at ease'),
 }
+# Basic words the lists leave out (or put too late), added at N5: the grammar lessons need them.
+EXTRA_N5 = [('日本', 'にほん', 'Japan'), ('日本語', 'にほんご', 'Japanese (language)')]
 
 KANA = re.compile(r'^[぀-ヿー]+$')
 WRITTEN = re.compile(r'^[぀-ヿ一-鿿々ー]+$')
@@ -88,8 +98,10 @@ def words():
     out, seen, skipped = [], set(), []
     for level in LEVELS:
         rows = []
-        for i, row in enumerate(csv.DictReader(open(RAW / f'jlpt-n{level}.csv', encoding='utf-8'))):
-            c = clean(row['expression'], row['reading'], row['meaning'])
+        raw = list(csv.DictReader(open(RAW / f'jlpt-n{level}.csv', encoding='utf-8')))
+        extra = [{'expression': e, 'reading': r, 'meaning': m} for e, r, m in EXTRA_N5] if level == 5 else []
+        for i, row in enumerate(extra + raw):
+            c = (row['expression'], row['reading'], row['meaning']) if row in extra else clean(row['expression'], row['reading'], row['meaning'])
             if c is None:
                 skipped.append(row['expression'])
                 continue

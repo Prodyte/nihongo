@@ -72,10 +72,12 @@ describe('buildLesson invariants, over every lesson', () => {
             expect(e.options.filter((o) => o === e.answer), where).toHaveLength(1)
             if (e.type === 'choice' && e.dir === 'fill') {
               expect([...e.prompt].filter((c) => c === '＿'), where).toHaveLength(1)
-              expect(PARTICLES.has(e.answer), where).toBe(true)
-              for (const o of e.options) expect(PARTICLES.has(o), `${where}: ${o}`).toBe(true)
+              const g = e.item.gap
+              expect(e.answer, where).toBe(g ? e.item.tokens![g.at] : e.item.tokens!.find((t) => PARTICLES.has(t)))
+              if (g) expect([...e.options].sort(), where).toEqual([e.answer, ...g.wrong].sort()) // a curated gap: the English hint picks the form
+              else for (const o of e.options) expect(PARTICLES.has(o), `${where}: ${o}`).toBe(true)
               // a wrong particle must never make another sentence we teach
-              const taught = new Set([...ITEMS.values()].filter((x) => x.kind === 'sentence').map((x) => x.jp))
+              const taught = new Set([...ITEMS.values()].filter((x) => x.kind === 'sentence').map(written))
               for (const o of e.options.filter((x) => x !== e.answer)) expect(taught.has(e.prompt.replace('＿', o)), `${where}: ${o}`).toBe(false)
             }
             if (e.type === 'listen') expect(dupSound(e.item), `${where}: ${e.item.jp} sounds like another kana, must not be asked by ear`).toBe(false)
@@ -203,10 +205,10 @@ describe('buildLesson specifics', () => {
       expect(first.type === 'explain' && first.examples.map((x) => x.id)).toEqual(l.explain!.examples)
       expect(buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(l.items), rand: seeded(1) })[0].type).not.toBe('explain')
     })
-    it('the gap is the first particle; wrong particles never include a valid swap (は never offered も, を never offered は)', () => {
+    it('without a curated gap, the gap is the first particle; wrong particles never include a valid swap (は never offered も, を never offered は)', () => {
       const exs = grammar.flatMap((l) => buildLesson(l, ITEMS, { canSpeak: false, learned: new Set(), rand: seeded(11) }))
-      const gaps = exs.filter((e): e is Extract<Exercise, { type: 'choice' }> => e.type === 'choice' && e.dir === 'fill')
-      expect(gaps).toHaveLength(16)
+      const gaps = exs.filter((e): e is Extract<Exercise, { type: 'choice' }> => e.type === 'choice' && e.dir === 'fill' && !e.item.gap)
+      expect(gaps.length).toBeGreaterThan(16)
       for (const g of gaps) {
         const tokens = g.item.tokens!
         const at = tokens.findIndex((t) => PARTICLES.has(t))

@@ -24,13 +24,27 @@ export function kanaToRomaji(input: string): string {
   return syl.map((s, i) => (s === 'n' && /^[aiueoy]/.test(syl[i + 1] ?? '') ? "n'" : s)).join('')
 }
 
-/** The grammar particles in these lessons. は, を and へ are written one way and sound another. */
-export const PARTICLES = new Set(['は', 'の', 'も', 'を', 'か', 'が', 'に', 'で', 'へ', 'と'])
+/** The grammar particles in these lessons (な, after a な-adjective, spaces like one). は, を and へ are written one way and sound another. */
+export const PARTICLES = new Set(['は', 'の', 'も', 'を', 'か', 'が', 'に', 'で', 'へ', 'と', 'や', 'から', 'まで', 'より', 'な'])
 const READ_AS: Record<string, string> = { は: 'wa', を: 'o', へ: 'e' }
 
-/** How a sentence is pronounced: は is "wa" as a particle, を is "o". */
-export const tokensToRomaji = (tokens: string[]) => tokens.map((t) => READ_AS[t] ?? kanaToRomaji(t)).join(' ')
+// Sentence chunks may carry furigana as 漢字[かんじ] after each kanji run: 食[た]べます, 学校[がっこう].
+const FURI = /([\p{Script=Han}々]+)\[([^\]]+)\]/gu
+/** A chunk as read: 食[た]べます -> たべます. */
+export const readingOf = (token: string) => token.replace(FURI, '$2')
+/** A chunk as written: 食[た]べます -> 食べます. */
+export const surfaceOf = (token: string) => token.replace(FURI, '$1')
+/** Split marked-up text into plain runs and [kanji, reading] pairs, for rendering ruby. */
+export const furiganaParts = (text: string): (string | [string, string])[] =>
+  text.split(new RegExp(FURI.source, 'u')).reduce<(string | [string, string])[]>((out, part, i, all) => {
+    if (i % 3 === 0) { if (part) out.push(part) } else if (i % 3 === 1) out.push([part, all[i + 1]])
+    return out
+  }, [])
 
-/** The sentence as written for learners: a space after each particle, then 。 `blank` shows ＿ in place of that chunk. */
+/** How a sentence is pronounced: は is "wa" as a particle, を is "o". */
+export const tokensToRomaji = (tokens: string[]) => tokens.map(readingOf).map((t) => READ_AS[t] ?? kanaToRomaji(t)).join(' ')
+
+/** The sentence as written for learners: a space after each particle and て-form, then 。 `blank` shows ＿ in place of that chunk.
+ * Chunks keep their furigana markup; readingOf/surfaceOf the result give the kana or the kanji text. */
 export const displayJp = (tokens: string[], blank?: number) =>
-  tokens.map((t, i) => (i === blank ? '＿' : t)).map((t, i) => (i === blank || PARTICLES.has(t)) && i < tokens.length - 1 ? `${t} ` : t).join('') + '。'
+  tokens.map((t, i) => (i === blank ? '＿' : t)).map((t, i) => (i === blank || PARTICLES.has(t) || /[てで]$/.test(t)) && i < tokens.length - 1 ? `${t} ` : t).join('') + '。'

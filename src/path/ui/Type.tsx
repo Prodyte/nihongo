@@ -2,7 +2,7 @@ import { useEffect, useId, useState, type FormEvent } from 'react'
 import { speak } from '../../audio'
 import { matches } from '../../data/kana'
 import { glossAnswers } from '../progress'
-import { displayJp } from '../romaji'
+import { displayJp, readingOf } from '../romaji'
 import { checkEnglish, checkJapanese, toKana, type Check } from '../typing'
 import type { Exercise } from '../lesson'
 import { Feedback } from './Feedback'
@@ -33,7 +33,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
     setResult(
       dir === 'toRomaji' ? { ok: matches(item.accepts ?? [item.romaji], typed) }
       : dir === 'toGloss' ? checkEnglish(typed, glossAnswers(item.gloss))
-      : item.kind === 'sentence' && dir === 'toJp' ? checkJapanese(typed, item.jp, { tokens: item.tokens, alts: item.alts?.map((a) => displayJp(a)) })
+      : item.kind === 'sentence' && dir === 'toJp' ? checkJapanese(typed, item.jp, { tokens: item.tokens?.map(readingOf), alts: item.alts?.map((a) => displayJp(a.map(readingOf))) })
       : checkJapanese(typed, item.jp, { word: true }),
     )
   }

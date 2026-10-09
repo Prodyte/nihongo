@@ -6,6 +6,7 @@ export interface SentenceSpec {
   en: string
   bank?: string[] // extra wrong chunks for the word bank
   alts?: string[][] // other word orders that are also correct
+  gap?: { at: number; wrong: string[] } // the chunk to blank in the fill-the-gap question, and wrong options for it (default: the first particle)
 }
 export interface GrammarLessonSpec {
   title: string

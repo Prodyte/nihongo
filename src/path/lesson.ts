@@ -123,6 +123,8 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
   const listen = (item: Item): Exercise => ({ type: 'listen', item, ...opts(item, 'jp', 'sound'), answer: written(item) })
   const gap = (it: Item): Exercise => {
     const tokens = it.tokens ?? fail(`Sentence ${it.id} has no tokens`)
+    // a curated gap (a verb form, a counter...): the English hint says which form is meant
+    if (it.gap) return { type: 'choice', item: it, dir: 'fill', prompt: displayJp(tokens, it.gap.at), hint: it.gloss, options: shuffle([tokens[it.gap.at], ...it.gap.wrong], rand), answer: tokens[it.gap.at] }
     const at = tokens.findIndex((t) => PARTICLES.has(t))
     if (at < 0) fail(`Sentence ${it.id} has no particle to blank out`)
     const answer = tokens[at]

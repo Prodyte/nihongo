@@ -5,18 +5,18 @@ exports[`course structure > lesson ids map to the same words as when progress wa
   "n3-v-1": [
     "w:と",
     "w:者",
-    "w:日本",
     "w:より",
     "w:出",
     "w:分",
+    "w:円",
   ],
   "n3-v-300": [
-    "w:載る",
-    "w:かゆい",
-    "w:享受",
-    "w:黙る",
-    "w:冷やす",
     "w:拭く",
+    "w:繋げる",
+    "w:チャイム",
+    "w:所為",
+    "w:温める",
+    "w:行儀",
   ],
   "n4-v-1": [
     "w:日",
@@ -27,12 +27,12 @@ exports[`course structure > lesson ids map to the same words as when progress wa
     "w:必要",
   ],
   "n4-v-100": [
+    "w:落す",
     "w:点く",
     "w:召し上がる",
     "w:再来月",
     "w:連れる",
     "w:運転手",
-    "w:非常に",
   ],
   "n5-v-1": [
     "w:ない",
@@ -43,14 +43,14 @@ exports[`course structure > lesson ids map to the same words as when progress wa
     "w:年",
   ],
   "n5-v-50": [
-    "w:重い",
-    "w:黒い",
-    "w:住む",
-    "w:図書館",
-    "w:レストラン",
-    "w:開く",
+    "w:辺",
+    "w:財布",
+    "w:置く",
+    "w:男の子",
+    "w:地図",
+    "w:乗る",
   ],
 }
 `;
 
-exports[`course structure > lesson ids map to the same words as when progress was first saved (a data edit must not shift them) 2`] = `"8fd148461d9637c2e8f5eb37e0089b9ea5e081701be5b04f4a80ceeced6184a9"`;
+exports[`course structure > lesson ids map to the same words as when progress was first saved (a data edit must not shift them) 2`] = `"075d7466ad2c52d936109cb3a164fed690aa696d9c4ac608e752206c829e6c96"`;

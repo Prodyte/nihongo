@@ -23,3 +23,8 @@ it('always / never override that; kana words and missing readings never get ruby
   expect(html('always', [], 'ない', 'ない')).toBe('ない')
   expect(html('always', [], '時間')).toBe('時間')
 })
+
+it('marked-up sentences get ruby per kanji run, each judged on its own kanji', () => {
+  expect(html('auto', ['学', '校'], '学校[がっこう]に 行[い]きます')).toBe('学校に <ruby>行<rt>い</rt></ruby>きます')
+  expect(html('never', [], '学校[がっこう]に')).toBe('学校に')
+})

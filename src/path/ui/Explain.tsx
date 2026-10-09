@@ -1,6 +1,8 @@
 import { SpeakButton } from '../../modes/SpeakButton'
 import type { Exercise } from '../lesson'
+import { written } from '../course'
 import { JaText } from './JaText'
+import { Ruby } from './Ruby'
 
 type Ex = Extract<Exercise, { type: 'explain' }>
 
@@ -13,7 +15,7 @@ export function Explain({ ex, onDone }: { ex: Ex; onDone: (missed: string[]) => 
       <ul className="examples">
         {ex.examples.map((it) => (
           <li key={it.id}>
-            <div className="jpline"><span className="jp" lang="ja">{it.jp}</span><SpeakButton text={it.jp} /></div>
+            <div className="jpline"><span className="jp" lang="ja"><Ruby text={written(it)} /></span><SpeakButton text={it.jp} /></div>
             <small>{it.romaji}</small>
             <small>{it.gloss}</small>
           </li>

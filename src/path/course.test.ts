@@ -60,7 +60,7 @@ describe('course structure', () => {
         }
       }
       // spread out: never more than 2 kanji lessons in a row, nor a long run of word lessons without one
-      const kinds = lessons.map((l) => (l.id.includes('-k-') ? 'k' : 'v')).join('')
+      const kinds = lessons.map((l) => (l.id.includes('-k-') ? 'k' : l.id.includes('-g-') ? 'g' : 'v')).join('')
       expect(kinds, `N${level}`).not.toMatch(/kkk|v{12}/)
     }
     for (const u of UNITS.filter((x) => x.id.startsWith('n'))) expect(u.lessons.length, u.id).toBeLessThanOrEqual(10)
@@ -88,7 +88,7 @@ describe('course structure', () => {
     for (const k of KANA) expect(counts.get(k.id), k.id).toBe(1)
     expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('vocab:'))).toHaveLength(144)
     expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('w:')).length).toBeGreaterThan(3200)
-    expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('sent:'))).toHaveLength(24)
+    expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('sent:'))).toHaveLength(24 + 144)
     for (const [id, n] of counts) expect(n, id).toBe(1)
   })
   it('items carry the right fields', () => {

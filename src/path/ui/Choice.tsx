@@ -51,7 +51,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
       ) : toReading ? (
         <div className="prompt kana" lang="ja">{prompt}</div>
       ) : toGloss || fill ? (
-        <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja">{toGloss ? <Ruby text={prompt} reading={ex.item.written && ex.item.jp} /> : prompt}</div>
+        <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja"><Ruby text={prompt} reading={toGloss && ex.item.written ? ex.item.jp : undefined} /></div>
       ) : (
         <div className="prompt gloss">{prompt}</div>
       )}

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { SpeakButton } from '../../modes/SpeakButton'
 import type { Exercise } from '../lesson'
+import { surfaceOf } from '../romaji'
 import { Feedback } from './Feedback'
+import { Ruby } from './Ruby'
 
 type Ex = Extract<Exercise, { type: 'build' }>
 
@@ -21,17 +23,17 @@ export function Build({ ex, onDone }: { ex: Ex; onDone: (missed: string[]) => vo
       <div className="chips answer-row" role="group" aria-label="Your sentence">
         {words.length === 0 && <span className="placeholder">Tap the words below</span>}
         {picked.map((bankIndex, n) => (
-          <button key={bankIndex} type="button" lang="ja" disabled={locked} aria-label={`${ex.bank[bankIndex]}, remove`} onClick={() => setPicked(picked.filter((_, k) => k !== n))}>
-            {ex.bank[bankIndex]}
+          <button key={bankIndex} type="button" lang="ja" disabled={locked} aria-label={`${surfaceOf(ex.bank[bankIndex])}, remove`} onClick={() => setPicked(picked.filter((_, k) => k !== n))}>
+            <Ruby text={ex.bank[bankIndex]} />
           </button>
         ))}
       </div>
       <div className="chips" role="group" aria-label="Word bank">
         {ex.bank.map((t, i) => (
-          <button key={i} type="button" lang="ja" className={picked.includes(i) ? 'used' : ''} disabled={locked || picked.includes(i)} onClick={() => setPicked([...picked, i])}>{t}</button>
+          <button key={i} type="button" lang="ja" className={picked.includes(i) ? 'used' : ''} disabled={locked || picked.includes(i)} onClick={() => setPicked([...picked, i])}><Ruby text={t} /></button>
         ))}
       </div>
-      <div className="visually-hidden" role="status">{result === null ? `Your sentence: ${words.join(' ') || 'empty'}` : ''}</div>
+      <div className="visually-hidden" role="status">{result === null ? `Your sentence: ${words.map(surfaceOf).join(' ') || 'empty'}` : ''}</div>
       {!locked && (
         <div className="row2">
           <button className="primary" type="button" disabled={words.length === 0} onClick={() => setResult([ex.answer, ...ex.alts].some((a) => same(a, words)))}>Check</button>

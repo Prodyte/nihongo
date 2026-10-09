@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayJp, kanaToRomaji, PARTICLES, tokensToRomaji } from './romaji'
+import { displayJp, furiganaParts, kanaToRomaji, PARTICLES, readingOf, surfaceOf, tokensToRomaji } from './romaji'
 
 describe('kanaToRomaji', () => {
   it.each([
@@ -38,5 +38,18 @@ describe('sentences', () => {
   it('knows the particles', () => {
     for (const p of ['は', 'の', 'も', 'を', 'か']) expect(PARTICLES.has(p)).toBe(true)
     expect(PARTICLES.has('です')).toBe(false)
+  })
+})
+
+describe('furigana markup in sentence chunks', () => {
+  it('readingOf / surfaceOf split 漢字[かな] markup; furiganaParts gives ruby pairs', () => {
+    expect(readingOf('食[た]べます')).toBe('たべます')
+    expect(surfaceOf('朝[あさ]ご飯[はん]')).toBe('朝ご飯')
+    expect(furiganaParts('学校[がっこう]に 行[い]きます')).toEqual([['学校', 'がっこう'], 'に ', ['行', 'い'], 'きます'])
+    expect(tokensToRomaji(['学校[がっこう]', 'へ', '行[い]きます'])).toBe('gakkou e ikimasu')
+  })
+  it('displayJp spaces after particles and て-forms, keeping the markup', () => {
+    expect(displayJp(['ちょっと', '待[ま]って', 'ください'])).toBe('ちょっと待[ま]って ください。')
+    expect(displayJp(['静[しず]か', 'な', '所[ところ]', 'です'])).toBe('静[しず]かな 所[ところ]です。')
   })
 })

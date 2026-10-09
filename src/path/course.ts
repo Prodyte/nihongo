@@ -1,8 +1,9 @@
 import { KANA, toKata } from '../data/kana'
 import jlptKanji from '../data/jlpt/kanji.json'
 import jlptWords from '../data/jlpt/words.json'
-import { GRAMMAR_LESSONS, GRAMMAR_UNIT } from './grammar'
-import { displayJp, kanaToRomaji, tokensToRomaji } from './romaji'
+import { GRAMMAR_LESSONS, GRAMMAR_UNIT, type GrammarLessonSpec } from './grammar'
+import { N5_GRAMMAR } from './grammarN5'
+import { displayJp, kanaToRomaji, PARTICLES, readingOf, surfaceOf, tokensToRomaji } from './romaji'
 import { VOCAB_UNITS } from './vocab'
 
 /** One thing a lesson teaches. For kana, `gloss` is the romaji; for words it is the English meaning. */
@@ -26,6 +27,7 @@ export interface Item {
   tokens?: string[] // sentence: the chunks in order
   bank?: string[] // sentence: extra wrong chunks for the word bank
   alts?: string[][] // sentence: other correct orders
+  gap?: { at: number; wrong: string[] } // sentence: the chunk the fill-the-gap question blanks, and its wrong options (else the first particle)
 }
 export interface Explain { title: string; body: string[]; examples: string[] } // examples: sentence item ids
 export interface Lesson { id: string; title: string; items: string[]; explain?: Explain }
@@ -82,17 +84,22 @@ function vocabUnits(): Unit[] {
   })
 }
 
-function grammarUnits(): Unit[] {
-  const lessons = GRAMMAR_LESSONS.map((spec, n): Lesson => {
-    const ids = spec.sentences.map((s) => {
-      const romaji = tokensToRomaji(s.tokens)
-      const id = `sent:${romaji.replace(/'/g, '').replace(/ /g, '-')}`
-      registerItem(ITEMS, { id, kind: 'sentence', jp: displayJp(s.tokens), gloss: s.en, romaji, sound: romaji.replace(/ /g, ''), tokens: s.tokens, bank: s.bank, alts: s.alts })
-      return id
-    })
-    return { id: `${GRAMMAR_UNIT.id}-${n + 1}`, title: spec.title, items: ids, explain: { ...spec.explain, examples: spec.explain.examples.map((i) => ids[i]) } }
+/** Register a grammar lesson's sentences and make the lesson. Chunks may carry furigana (学校[がっこう]): jp is then the
+ * kana sentence (typed, spoken) and `written` the marked-up one (shown). */
+function grammarLesson(spec: GrammarLessonSpec, id: string, level?: 5): Lesson {
+  const ids = spec.sentences.map((s) => {
+    const romaji = tokensToRomaji(s.tokens)
+    const sid = `sent:${romaji.replace(/'/g, '').replace(/ /g, '-')}`
+    const jp = displayJp(s.tokens.map(readingOf))
+    const shown = displayJp(s.tokens)
+    registerItem(ITEMS, { id: sid, kind: 'sentence', jp, ...(shown !== jp && { written: shown }), gloss: s.en, romaji, sound: romaji.replace(/ /g, ''), tokens: s.tokens, bank: s.bank, alts: s.alts, gap: s.gap, level })
+    return sid
   })
-  return [{ ...GRAMMAR_UNIT, section: 'Starter', lessons }]
+  return { id, title: spec.title, items: ids, explain: { ...spec.explain, examples: spec.explain.examples.map((i) => ids[i]) } }
+}
+
+function grammarUnits(): Unit[] {
+  return [{ ...GRAMMAR_UNIT, section: 'Starter', lessons: GRAMMAR_LESSONS.map((spec, n) => grammarLesson(spec, `${GRAMMAR_UNIT.id}-${n + 1}`)) }]
 }
 
 // ---- JLPT words (src/data/jlpt, built by scripts/build_course_data.py) --------------------------------------------------
@@ -117,6 +124,38 @@ export function starterTwin(written: string, reading: string, gloss: string, sta
 
 const KANJI_PER_LESSON = 5
 
+/** Chunks a grammar lesson teaches itself rather than as vocabulary: endings, counters, set phrases. */
+export const GRAMMAR_CHUNKS = new Set(['です', 'でした', 'じゃありません', 'じゃありませんでした', 'でしょう', 'いけません', 'ほう', 'けど'])
+const COUNTED = /^[一二三四五六七八九十]+(人|本|枚|時|分)$/ // 五人, 二本, 三時: taught by the counters lesson
+const KANA_VERBS: Record<string, string> = { あります: 'ある', います: 'いる' } // forms of kana-only verbs (a prefix match would be too loose)
+
+/**
+ * The course word a sentence chunk is (a form of): 食べました -> 食べる, 寒くない -> 寒い, 電話して -> 電話,
+ * よくなかった -> いい. Undefined for particles, grammar chunks and anything not in the course.
+ */
+export function wordFor(chunk: string, words: Item[]): Item | undefined {
+  const t = surfaceOf(chunk)
+  const find = (w: string) => words.find((x) => x.written === w || x.kanji === w || x.jp === w)
+  const exact = find(t) ?? (KANA_VERBS[t] && find(KANA_VERBS[t]))
+  if (exact) return exact
+  if (/^よ(く|かった)/.test(t)) return find('いい') // いい conjugates from よい
+  if (/^(し|さ)/.test(t)) return find('する') // します, して, したい, したくない
+  // a conjugated verb or adjective: the dictionary form minus its last kana, which must include a kanji. Longest stem
+  // wins; on a tie a verb or い-adjective beats a noun (休みましょう is 休む, not 休み)
+  const score = (x: Item) => { const w = x.written ?? x.kanji ?? ''; return (w.length - 1) * 2 + (/[うくぐすつぬぶむるい]$/.test(w) ? 1 : 0) }
+  let best: Item | undefined
+  for (const x of words) {
+    const w = x.written ?? x.kanji ?? ''
+    const stem = w.slice(0, -1)
+    if (/[\p{Script=Han}]/u.test(stem) && /[ぁ-ん]$/.test(w) && t.startsWith(stem) && (!best || score(x) > score(best))) best = x
+  }
+  if (best) return best
+  const suru = t.match(/^(.{2,}?)(し|す|さ)(て|ま|た)/) // 電話して, 結婚しています: a noun (2+ characters) + する
+  return suru ? find(suru[1]) : undefined
+}
+/** Chunks of a sentence that must be taught words (not particles, endings or counters). */
+export const contentChunks = (tokens: string[]) => tokens.filter((t) => !PARTICLES.has(t) && !GRAMMAR_CHUNKS.has(surfaceOf(t)) && !COUNTED.test(surfaceOf(t)))
+
 /** Spread `b` evenly through `a`, each b-entry before the a-entry at its share of the way: [a1 b1 a2 a3 b2 a4 ...]. */
 export function interleave<T>(a: T[], b: T[]): T[] {
   const out: T[] = []
@@ -126,6 +165,48 @@ export function interleave<T>(a: T[], b: T[]): T[] {
     out.push(x)
   })
   return [...out, ...b.slice(j)]
+}
+
+/**
+ * Put each grammar lesson into the path after every word its sentences use has been taught, and no closer to the
+ * previous grammar lesson than an even spread allows.
+ */
+function placeGrammar(path: Lesson[], grammar: Lesson[], words: Item[]): Lesson[] {
+  const taughtAt = new Map(path.flatMap((l, i) => l.items.map((id): [string, number] => [id, i])))
+  const needs = grammar.map((g) => Math.max(-1, ...g.items.flatMap((id) => contentChunks(ITEMS.get(id)!.tokens!)).map((t) => {
+    const w = wordFor(t, words) ?? fail(`${g.id}: "${surfaceOf(t)}" is not a course word (add it, or to GRAMMAR_CHUNKS)`)
+    return taughtAt.get(w.id) ?? -1 // starter words come before the whole section
+  })))
+  const spacing = Math.floor(path.length / (grammar.length + 1))
+  const out: Lesson[] = []
+  let next = 0
+  let last = -Infinity
+  path.forEach((l, i) => {
+    out.push(l)
+    if (next < grammar.length && needs[next] <= i && i - last >= spacing) { out.push(grammar[next++]); last = i }
+  })
+  return [...out, ...grammar.slice(next)]
+}
+
+const fail = (msg: string): never => {
+  throw new Error(msg)
+}
+
+/**
+ * Word order for a level, adjusted so grammar lesson k's words are all taught by the share (k+1)/(n+1) of the way
+ * through: a sentence must not wait for a rare word at the end of the list. Other words keep their frequency order.
+ */
+export function pullForward(order: string[], grammar: GrammarLessonSpec[], words: Item[]): string[] {
+  const out = [...order]
+  grammar.forEach((g, k) => {
+    const by = Math.floor(((k + 1) * out.length) / (grammar.length + 1))
+    for (const t of g.sentences.flatMap((x) => contentChunks(x.tokens))) {
+      const id = wordFor(t, words)?.id
+      const at = id ? out.indexOf(id) : -1
+      if (at > by) { out.splice(at, 1); out.splice(by, 0, id!) }
+    }
+  })
+  return out
 }
 
 function jlptUnits(): Unit[] {
@@ -139,6 +220,7 @@ function jlptUnits(): Unit[] {
     words.get(level)!.push(id)
   }
   const allWords = [...ITEMS.values()].filter((i) => i.kind === 'word') // starter first, then N5 -> N3, most common first
+  words.set(5, pullForward(words.get(5)!, N5_GRAMMAR, allWords.filter((w) => !w.level || w.level === 5)))
   const kanji = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
   for (const [char, level, meanings, on, kun, strokes] of jlptKanji as [string, 5 | 4 | 3, string[], string[], string[], number][]) {
     const examples = allWords.filter((w) => (w.written ?? w.kanji ?? '').includes(char)).slice(0, 3).map((w) => w.id)
@@ -152,12 +234,15 @@ function jlptUnits(): Unit[] {
     const kanjiLessons = even(kanji.get(level)!, KANJI_PER_LESSON).map((items, i): Lesson => ({
       id: `n${level}-k-${i + 1}`, title: `Kanji ${items.map((id) => id.slice(6)).join(' ')}`, items,
     }))
-    return chunk(interleave(vocab, kanjiLessons), LESSONS_PER_UNIT).map((lessons, u): Unit => {
+    let path = interleave(vocab, kanjiLessons)
+    if (level === 5) path = placeGrammar(path, N5_GRAMMAR.map((spec, i) => grammarLesson(spec, `n5-g-${i + 1}`, 5)), allWords.filter((w) => !w.level || w.level === 5))
+    return chunk(path, LESSONS_PER_UNIT).map((lessons, u): Unit => {
       const chars = lessons.filter((l) => l.id.includes('-k-')).flatMap((l) => l.items.map((id) => id.slice(6)))
       const nWords = lessons.filter((l) => l.id.includes('-v-')).flatMap((l) => l.items).length
+      const grammar = lessons.filter((l) => l.explain).map((l) => l.title)
       return {
         id: `n${level}-u${u + 1}`, section: `N${level}`, title: `N${level} · Unit ${u + 1}`,
-        blurb: [nWords && `${nWords} words`, chars.length && `kanji ${chars.join(' ')}`].filter(Boolean).join(' · '),
+        blurb: [nWords && `${nWords} words`, chars.length && `kanji ${chars.join(' ')}`, grammar.length && `grammar: ${grammar.join(', ')}`].filter(Boolean).join(' · '),
         lessons,
       }
     })
