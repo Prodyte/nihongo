@@ -132,10 +132,10 @@ describe('JLPT words', () => {
 
 describe('interleave', () => {
   it('spreads the second list evenly through the first, keeping both orders and every entry', () => {
-    expect(interleave([1, 2, 3, 4], ['a', 'b'])).toEqual(['a', 1, 2, 'b', 3, 4])
-    expect(interleave([1, 2], [])).toEqual([1, 2])
-    expect(interleave([], ['a'])).toEqual(['a'])
-    expect(interleave([1], ['a', 'b', 'c'])).toEqual(['a', 1, 'b', 'c'])
+    expect(interleave<number | string>([1, 2, 3, 4], ['a', 'b'])).toEqual(['a', 1, 2, 'b', 3, 4])
+    expect(interleave<number>([1, 2], [])).toEqual([1, 2])
+    expect(interleave<string>([], ['a'])).toEqual(['a'])
+    expect(interleave<number | string>([1], ['a', 'b', 'c'])).toEqual(['a', 1, 'b', 'c'])
   })
 })
 

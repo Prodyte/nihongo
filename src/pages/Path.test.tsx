@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { openDb, seedKana } from '../db/db'
@@ -25,8 +25,10 @@ it('a new learner: first lesson open, the rest locked, first unit expanded', asy
   expect((second as HTMLButtonElement).disabled).toBe(true)
   expect(second.textContent).toContain('🔒 Locked')
   const units = [...document.querySelectorAll<HTMLDetailsElement>('details.unit')]
-  expect(units).toHaveLength(UNITS.length)
-  expect(units.map((u) => u.open)).toEqual([true, ...Array(UNITS.length - 1).fill(false)])
+  const kana = UNITS.filter((u) => u.section === 'Kana').length
+  expect(units).toHaveLength(kana) // folded sections render nothing inside until opened
+  expect(units.map((u) => u.open)).toEqual([true, ...Array(kana - 1).fill(false)])
+  expect(document.querySelectorAll('ul.lessons button')).toHaveLength(UNITS[0].lessons.length) // and so do folded units
 })
 
 it('sections by level: only the one holding the current lesson is open', async () => {
@@ -39,6 +41,8 @@ it('sections by level: only the one holding the current lesson is open', async (
   expect(sections.map((d) => d.open)).toEqual([false, false, true, false, false])
   expect(sections[0].querySelector('summary small')!.textContent).toBe('✓ Done')
   expect(screen.getByRole('button', { name: new RegExp(`^Continue: ${LESSONS[68].title}`) })).toBeTruthy()
+  await userEvent.click(sections[4].querySelector('summary')!) // opening a folded section shows its units
+  await waitFor(() => expect(sections[4].querySelectorAll('details.unit').length).toBe(UNITS.filter((u) => u.section === 'N3').length))
 })
 
 it('starting a lesson reports its id, from the Continue button or the list', async () => {
