@@ -29,6 +29,8 @@ export class SpeechError extends Error {
   }
 }
 
+const LISTEN_MS = 10_000
+
 /** Listen once in Japanese; resolves with what was heard (best guess first). `stop` aborts. */
 export function listen(): { result: Promise<string[]>; stop: () => void } {
   const R = Recognizer()
@@ -44,6 +46,8 @@ export function listen(): { result: Promise<string[]>; stop: () => void } {
     rec.onend = () => (heard.length ? resolve(heard) : reject(new SpeechError('no-speech')))
   })
   rec.start()
+  const timer = setTimeout(() => rec.abort(), LISTEN_MS) // a recogniser that never answers must not leave us "listening" forever
+  void result.finally(() => clearTimeout(timer)).catch(() => {})
   return { result, stop: () => rec.abort() }
 }
 

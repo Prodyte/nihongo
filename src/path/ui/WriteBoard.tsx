@@ -60,7 +60,7 @@ export function WriteBoard({ paths, samples, guide, onDone }: { paths: string[];
       <svg ref={svg} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={`Writing area. ${msg}`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
         <path d="M54.5 0V109M0 54.5H109" className="grid" />
         {guide && paths.map((d, i) => <path key={`g${i}`} d={d} className="guide" />)}
-        {!guide && hint && !finished && <path d={paths[next]} className="hint" />}
+        {!guide && hint && !finished && <path d={paths[next]} className="hint-stroke" />}
         {hint && !finished && <circle cx={expected[next][0][0]} cy={expected[next][0][1]} r={3} className="start" />}
         {paths.slice(0, next).map((d, i) => <path key={i} d={d} className="ink" />)}
         {line.length > 1 && <polyline points={line.map((p) => p.join(',')).join(' ')} className="pen" />}

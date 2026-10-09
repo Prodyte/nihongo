@@ -28,11 +28,11 @@ it('strokes in order complete the kanji; a wrong stroke is not drawn and is coun
   expect(document.querySelectorAll('path.ink')).toHaveLength(0)
   draw([...samples[0]].reverse() as Pt[]) // right line, backwards
   expect(screen.getByText(/Wrong direction/)).toBeTruthy()
-  expect(document.querySelector('path.hint')).toBeTruthy() // two misses: the stroke is shown as a hint
+  expect(document.querySelector('path.hint-stroke')).toBeTruthy() // two misses: the stroke is shown as a hint
   draw(samples[0])
   expect(screen.getByText('Stroke 2 of 2')).toBeTruthy()
   expect(document.querySelectorAll('path.ink')).toHaveLength(1)
-  expect(document.querySelector('path.hint')).toBeNull() // a new stroke starts without a hint
+  expect(document.querySelector('path.hint-stroke')).toBeNull() // a new stroke starts without a hint
   draw(samples[1])
   expect(onDone).toHaveBeenCalledWith(2)
   expect(screen.getByText('Done!')).toBeTruthy()

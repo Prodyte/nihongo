@@ -41,3 +41,13 @@ it('a blocked microphone or silence gives a helpful error', async () => {
   fakeRecognizer({ error: 'no-speech' })
   await expect(listen().result).rejects.toBeInstanceOf(SpeechError)
 })
+
+it('gives up after 10 seconds if the recogniser never answers', async () => {
+  vi.useFakeTimers()
+  class Silent { onresult = null; onerror = null; onend: (() => void) | null = null; start() {} abort() { this.onend?.() } }
+  vi.stubGlobal('webkitSpeechRecognition', Silent)
+  const r = listen().result
+  vi.advanceTimersByTime(10_000)
+  await expect(r).rejects.toThrow(/Didn’t hear anything/)
+  vi.useRealTimers()
+})
