@@ -3,9 +3,10 @@ import type { Db } from '../db/db'
 import { applyTheme, readBool, readSpeed, readStr, SPEEDS, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
 import { FURIGANA, type Furigana } from '../path/ui/furigana'
 import { canRecognise } from '../speech'
+import { Account } from './Account'
 import { Backup } from './Backup'
 
-export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { db: Db; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void }) {
+export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, onSynced = () => {} }: { db: Db; onSynced?: () => void; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void }) {
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
   const [speed, setSpeed] = useState(readSpeed)
@@ -60,7 +61,8 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
           Let me choose any lesson on the path
         </label>
       </div>
-      <Backup db={db} onRestored={() => {}} />
+      <Account db={db} onSynced={onSynced} />
+      <Backup db={db} onRestored={onSynced} />
     </>
   )
 }

@@ -23,6 +23,7 @@ import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
+import { maybeSignedIn, sync } from './sync'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
 type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
@@ -32,7 +33,7 @@ const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
   ['stats', 'Stats', 'Your reviews and cards'],
-  ['settings', 'Settings', 'Theme, audio, furigana, backup'],
+  ['settings', 'Settings', 'Sync, theme, audio, furigana, backup'],
   ['credits', 'Credits', 'Where the course data comes from'],
 ]
 
@@ -49,6 +50,7 @@ export default function App() {
   const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
   const [furigana, setFurigana] = useState<Furigana>(() => readStr('nihongo.furigana', FURIGANA, 'auto'))
   const [known, setKnown] = useState<ReadonlySet<string>>(new Set()) // kanji the learner has had a kanji lesson for
+  const [gen, setGen] = useState(0) // bumped when sync or a restore changes local data: screens remount and reload
   const [session, setSession] = useState<Config>(config) // what the running review studies (Today's doesn't change the Review tab)
 
   useEffect(() => {
@@ -63,10 +65,22 @@ export default function App() {
           else writeBool('nihongo.onboarded', true)
         }
         void navigator.storage?.persist?.()?.catch(() => {}) // best effort: stops the browser evicting progress under storage pressure
+        // signed in: pull other devices' progress before the first screen, so nobody starts a lesson on stale data
+        // ponytail: past 5 s it finishes in the background and remounts the screens; fine unless the network is very slow
+        if (maybeSignedIn()) {
+          const pulled = sync(d).then((c) => { if (c) setGen((g) => g + 1) }, () => {})
+          await Promise.race([pulled, new Promise((r) => setTimeout(r, 5000))])
+        }
         setDb(d)
       })
       .catch((e) => setError(String(e)))
   }, [])
+  useEffect(() => {
+    // leaving the app (switching tabs or apps) pushes what was just studied; nobody is mid-answer then
+    const away = () => { if (db && document.visibilityState === 'hidden' && maybeSignedIn()) void sync(db).catch(() => {}) }
+    document.addEventListener('visibilitychange', away)
+    return () => document.removeEventListener('visibilitychange', away)
+  }, [db])
   useEffect(() => { window.scrollTo(0, 0) }, [view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
   useEffect(() => {
     // refreshed on every screen change, so a finished kanji lesson drops its furigana straight away
@@ -92,7 +106,7 @@ export default function App() {
   }
   return (
     <FuriganaContext.Provider value={{ mode: furigana, known }}>
-      <main className={focused ? 'focused' : ''}>
+      <main key={gen} className={focused ? 'focused' : ''}>
         {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
         <header className={focused ? 'visually-hidden' : 'brand'}><h1><Logo /> Nihongo <small lang="ja">日本語</small></h1></header>
         {lesson ? (
@@ -120,7 +134,7 @@ export default function App() {
           <Stats db={db} />
         ) : view === 'settings' ? (
           <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
-            furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} />
+            furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} onSynced={() => setGen((g) => g + 1)} />
         ) : view === 'grammar' ? (
           <Grammar db={db} />
         ) : view === 'credits' ? (
