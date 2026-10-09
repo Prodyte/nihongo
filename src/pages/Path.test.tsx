@@ -16,7 +16,7 @@ afterEach(cleanup)
 const lessonButton = (title: string) => screen.getAllByRole('button').find((b) => b.textContent!.startsWith(title) && b.closest('ul.lessons'))!
 
 it('a new learner: first lesson open, the rest locked, first unit expanded', async () => {
-  render(<Path db={await freshDb()} onStart={() => {}} />)
+  render(<Path db={await freshDb()} onStart={() => {}} onTest={() => {}} />)
   await screen.findByRole('heading', { name: 'Your path' })
   expect(screen.getByText(`0 of ${LESSONS.length} lessons done`)).toBeTruthy()
   const first = lessonButton(LESSONS[0].title)
@@ -34,7 +34,7 @@ it('a new learner: first lesson open, the rest locked, first unit expanded', asy
 it('sections by level: only the one holding the current lesson is open', async () => {
   const db = await freshDb()
   for (const l of LESSONS.slice(0, 68)) await db.put('lessons', { id: l.id, completedAt: new Date(), plays: 1, bestAccuracy: 1 })
-  render(<Path db={db} onStart={() => {}} />)
+  render(<Path db={db} onStart={() => {}} onTest={() => {}} />)
   await screen.findByRole('heading', { name: 'JLPT N5' })
   const sections = [...document.querySelectorAll<HTMLDetailsElement>('details.section')]
   expect(sections.map((d) => d.querySelector('h2')!.textContent)).toEqual(['Kana', 'First words and sentences', 'JLPT N5', 'JLPT N4', 'JLPT N3'])
@@ -48,7 +48,7 @@ it('sections by level: only the one holding the current lesson is open', async (
 it('starting a lesson reports its id, from the Continue button or the list', async () => {
   const onStart = vi.fn()
   const user = userEvent.setup()
-  render(<Path db={await freshDb()} onStart={onStart} />)
+  render(<Path db={await freshDb()} onStart={onStart} onTest={() => {}} />)
   await user.click(await screen.findByRole('button', { name: /^Continue:/ }))
   await user.click(lessonButton(LESSONS[0].title))
   expect(onStart.mock.calls).toEqual([[LESSONS[0].id], [LESSONS[0].id]])
@@ -57,7 +57,7 @@ it('starting a lesson reports its id, from the Continue button or the list', asy
 it('after a lesson: it shows as done and the next unlocks', async () => {
   const db = await freshDb()
   await completeLesson(db, LESSONS[0], ITEMS, {}, 1)
-  render(<Path db={db} onStart={() => {}} />)
+  render(<Path db={db} onStart={() => {}} onTest={() => {}} />)
   await screen.findByText(`1 of ${LESSONS.length} lessons done`)
   expect(lessonButton(LESSONS[0].title).textContent).toContain('✓ Done')
   expect((lessonButton(LESSONS[1].title) as HTMLButtonElement).disabled).toBe(false)
@@ -67,7 +67,7 @@ it('after a lesson: it shows as done and the next unlocks', async () => {
 
 it('"Let me choose any lesson" (set in Settings) unlocks everything', async () => {
   localStorage.setItem('nihongo.skipAhead', '1')
-  render(<Path db={await freshDb()} onStart={() => {}} />)
+  render(<Path db={await freshDb()} onStart={() => {}} onTest={() => {}} />)
   await screen.findByRole('heading', { name: 'Your path' })
   expect([...document.querySelectorAll<HTMLButtonElement>('ul.lessons button')].every((b) => !b.disabled)).toBe(true)
 })
@@ -75,7 +75,18 @@ it('"Let me choose any lesson" (set in Settings) unlocks everything', async () =
 it('when every lesson is done there is a finish message and no Continue button', async () => {
   const db = await freshDb()
   for (const l of LESSONS) await db.put('lessons', { id: l.id, completedAt: new Date(), plays: 1, bestAccuracy: 1 })
-  render(<Path db={db} onStart={() => {}} />)
+  render(<Path db={db} onStart={() => {}} onTest={() => {}} />)
   await screen.findByText(/You finished the whole path/)
   expect(screen.queryByRole('button', { name: /^Continue:/ })).toBeNull()
+})
+
+it('a locked unit offers a test-out; an unlocked one does not', async () => {
+  const onTest = vi.fn()
+  const user = userEvent.setup()
+  render(<Path db={await freshDb()} onStart={() => {}} onTest={onTest} />)
+  await screen.findByRole('heading', { name: 'Your path' })
+  expect(screen.queryByRole('button', { name: /Test out/ })).toBeNull() // the open unit is the current one
+  await user.click(document.querySelectorAll('details.unit summary')[1] as HTMLElement)
+  await user.click(await screen.findByRole('button', { name: 'Already know this? Test out' }))
+  expect(onTest).toHaveBeenCalledWith(UNITS[1].id)
 })

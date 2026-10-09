@@ -19,7 +19,7 @@ function Fold({ open: initial, className, summary, children }: { open: boolean; 
 
 const SECTION_NAMES: Record<string, string> = { Kana: 'Kana', Starter: 'First words and sentences', N5: 'JLPT N5', N4: 'JLPT N4', N3: 'JLPT N3' }
 
-export function Path({ db, onStart }: { db: Db; onStart: (lessonId: string) => void }) {
+export function Path({ db, onStart, onTest }: { db: Db; onStart: (lessonId: string) => void; onTest: (unitId: string) => void }) {
   const [done, setDone] = useState<ReadonlySet<string> | null>(null)
   const [skipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +64,9 @@ export function Path({ db, onStart }: { db: Db; onStart: (lessonId: string) => v
                   {() => (
                     <>
                       <p>{u.blurb}</p>
+                      {!isUnlocked(LESSONS, INDEX.get(u.lessons[0].id)!, done, skipAhead) && (
+                        <button className="test-out" onClick={() => onTest(u.id)}>Already know this? Test out</button>
+                      )}
                       <ul className="lessons">
                         {u.lessons.map((l) => {
                           const open = isUnlocked(LESSONS, INDEX.get(l.id)!, done, skipAhead)

@@ -210,3 +210,26 @@ export function advance(s: RunState, missed: string[] = []): RunState {
 }
 
 export const accuracy = (s: RunState) => (s.total ? s.correct / s.total : 1)
+
+// ---- test out (skip ahead) ---------------------------------------------------------------------
+
+export const TEST_QUESTIONS = 15
+export const TEST_PASS = 0.8
+
+/**
+ * A placement test over `lessons`: up to 15 questions spread evenly over their items, one per item, in the hardest
+ * form each kind allows without a voice: kana are typed, words and kanji asked both ways, sentences filled in.
+ */
+export function buildTest(lessons: Lesson[], items: ReadonlyMap<string, Item>, rand: () => number = Math.random): Exercise[] {
+  const all = lessons.flatMap((l) => l.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${l.id}`)))
+  const picked = shuffle(all, rand).slice(0, TEST_QUESTIONS)
+  const unique = uniqueBy(items, 'gloss')
+  return picked.map((it, i): Exercise => {
+    const pool = shuffle(all.filter((x) => x.kind === it.kind), rand)
+    const o = (field: 'jp' | 'gloss') => { const r = options(it, field, pool, 'gloss'); return { ...r, options: shuffle(r.options, rand) } }
+    if (it.kind === 'kana') return i % 2 ? { type: 'type', item: it, dir: 'toRomaji', prompt: it.jp } : { type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, ...o('gloss'), answer: it.gloss }
+    if (it.kind === 'sentence') return gapFor(it, rand)
+    if (i % 2 && unique(it)) return { type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...o('jp'), answer: written(it) }
+    return { type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...o('gloss'), answer: it.gloss }
+  }).filter((e) => !('options' in e) || e.options.length >= 2)
+}

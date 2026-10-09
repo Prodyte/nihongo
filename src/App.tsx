@@ -12,16 +12,17 @@ import { Path } from './pages/Path'
 import { Settings } from './pages/Settings'
 import { Stats } from './pages/Stats'
 import { MISTAKES, Study } from './pages/Study'
+import { TestOut } from './pages/TestOut'
 import { Today } from './pages/Today'
-import { lessonById, LESSONS } from './path/course'
+import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
-type View = Tab | 'lesson' | 'study' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
+type View = Tab | 'lesson' | 'test' | 'study' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', review: 'review', study: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more' }
 const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
@@ -36,6 +37,7 @@ export default function App() {
   const [view, setView] = useState<View>('today')
   const [back, setBack] = useState<View>('today') // where a lesson or review session returns to
   const [lessonId, setLessonId] = useState<string | null>(null)
+  const [testUnit, setTestUnit] = useState<string | null>(null)
   const [autoplay, setAutoplay] = useState(() => readBool('nihongo.autoplay', true))
   const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
   const [furigana, setFurigana] = useState<Furigana>(() => readStr('nihongo.furigana', FURIGANA, 'auto'))
@@ -61,7 +63,8 @@ export default function App() {
   const startLesson = (id: string) => { setBack(view); setLessonId(id); setView('lesson') }
   const study = (from: View, c: Config) => { setSession(c); setBack(from); setView('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
-  const focused = !!lesson || view === 'study' // lessons and reviews are full-screen: no tabs to wander off to
+  const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
+  const focused = !!lesson || !!unit || view === 'study' // lessons and reviews are full-screen: no tabs to wander off to
 
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
   if (!db) return <main><p>Loading…</p></main>
@@ -72,12 +75,14 @@ export default function App() {
         <header className={focused ? 'visually-hidden' : ''}><h1><span lang="ja">日本語</span> <small>nihongo</small></h1></header>
         {lesson ? (
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
+        ) : unit ? (
+          <TestOut key={unit.id} db={db} unit={unit} onExit={() => setView('path')} />
         ) : view === 'study' ? (
           <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => setView(back)} />
         ) : view === 'review' ? (
           <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })} />
         ) : view === 'path' ? (
-          <Path db={db} onStart={startLesson} />
+          <Path db={db} onStart={startLesson} onTest={(id) => { setTestUnit(id); setView('test') }} />
         ) : view === 'lookup' ? (
           <Lookup db={db} />
         ) : view === 'decks' ? (

@@ -50,7 +50,7 @@ const rateByMisses = (misses: number): Grade => (misses === 0 ? Rating.Good : mi
  * so replaying a lesson can't inflate FSRS stability), record the lesson, and add XP.
  */
 export async function completeLesson(
-  db: Db, lesson: Lesson, items: ReadonlyMap<string, Item>, misses: Record<string, number>, accuracy: number, now = new Date(),
+  db: Db, lesson: Lesson, items: ReadonlyMap<string, Item>, misses: Record<string, number>, accuracy: number, now = new Date(), award = true,
 ) {
   const lessonItems = lesson.items.map((id) => items.get(id) ?? failWith(`Unknown item ${id} in lesson ${lesson.id}`)) // before any write
   const tx = db.transaction(['cards', 'reviews', 'lessons', 'activity', 'decks'], 'readwrite')
@@ -81,10 +81,12 @@ export async function completeLesson(
   await tx.objectStore('lessons').put({
     id: lesson.id, completedAt: old?.completedAt ?? now, plays: (old?.plays ?? 0) + 1, bestAccuracy: Math.max(old?.bestAccuracy ?? 0, best),
   })
-  const xp = xpFor(!old, flawless)
+  const xp = award ? xpFor(!old, flawless) : 0 // a test-out marks lessons done without paying XP for each
   const day = dayKey(now)
-  const act = await tx.objectStore('activity').get(day)
-  await tx.objectStore('activity').put({ date: day, xp: (act?.xp ?? 0) + xp, lessons: (act?.lessons ?? 0) + 1 })
+  if (award) {
+    const act = await tx.objectStore('activity').get(day)
+    await tx.objectStore('activity').put({ date: day, xp: (act?.xp ?? 0) + xp, lessons: (act?.lessons ?? 0) + 1 })
+  }
   await tx.done
   return { xp, first: !old, flawless, graded }
 }
@@ -126,4 +128,12 @@ export function coverage(lessons: readonly Lesson[], items: ReadonlyMap<string, 
     const grammar = lessons.filter((l) => l.id.startsWith(`n${level}-g-`))
     return { level, words: of('word'), kanji: of('kanji'), grammar: [grammar.filter((l) => done.has(l.id)).length, grammar.length] }
   })
+}
+
+/** Passed a test: every lesson in `lessons` not yet done is marked done; items missed in the test start as Again. */
+export async function testOut(db: Db, lessons: readonly Lesson[], items: ReadonlyMap<string, Item>, misses: Record<string, number>, now = new Date()) {
+  const { done } = await getProgress(db, now)
+  const todo = lessons.filter((l) => !done.has(l.id))
+  for (const l of todo) await completeLesson(db, l, items, Object.fromEntries(l.items.filter((id) => misses[id]).map((id) => [id, 2])), 1, now, false)
+  return todo.length
 }
