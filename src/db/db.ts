@@ -78,7 +78,9 @@ export const getCards = (db: Db, deck: string) => (deck === 'all' ? db.getAll('c
 
 /** Cards a study mode can use: typing and quiz skip imported HTML cards; typing also skips whole sentences (typing English sentences exactly is needlessly harsh). */
 export async function studyCards(db: Db, deck: string, mode: string) {
-  const cards = await getCards(db, deck)
+  let cards = await getCards(db, deck)
+  // Mixed review never introduces kana you haven't met: the path teaches them. Picking a kana deck still offers them.
+  if (deck === 'all') cards = cards.filter((c) => !(c.fsrs.state === State.New && (c.deck === 'hira' || c.deck === 'kata')))
   return mode === 'flashcard' ? cards : cards.filter((c) => !c.html && !(mode === 'typing' && c.deck === BUILTIN_DECKS.sentence.id))
 }
 

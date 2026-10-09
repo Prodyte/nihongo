@@ -8,7 +8,7 @@ const KNOWN_DAYS = 21 // a card you'd still recall three weeks out counts as kno
 // Everything you can look up: words and kanji (kana and sentences are taught elsewhere), with search keys precomputed.
 export const ENTRIES = [...ITEMS.values()]
   .filter((i) => i.kind === 'word' || i.kind === 'kanji')
-  .map((it) => ({ it, keys: [written(it), it.jp, it.kanji ?? '', normKana(it.jp), it.romaji.replace(/[ ']/g, ''), ...(it.on ?? []), ...(it.kun ?? []).map((k) => k.replace(/[().-]/g, ''))] }))
+  .map((it) => ({ it, keys: [written(it), it.jp, it.kanji ?? '', normKana(it.jp), it.romaji.replace(/[ ']/g, ''), ...(it.on ?? []), ...(it.kun ?? []).map((k) => k.replace(/[().〜]/g, ''))] }))
 
 export function stateOf(card: Card | undefined): 'new' | 'learning' | 'known' | null {
   if (!card) return null

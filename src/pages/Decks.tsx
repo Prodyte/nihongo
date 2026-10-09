@@ -53,7 +53,7 @@ export function Decks({ db }: { db: Db }) {
 
   return (
     <>
-    <div className="card">
+    <div className="card form">
       <h2>Decks</h2>
       <p>Import an Anki <code>.apkg</code> from AnkiWeb or your own collection. It's read in your browser and never uploaded.</p>
       <label>
@@ -71,7 +71,7 @@ export function Decks({ db }: { db: Db }) {
         ))}
       </ul>
     </div>
-    <div className="card">
+    <div className="card form">
       <h2>Find decks</h2>
       <p>Download a deck's <code>.apkg</code> file, then import it above. These are the authors' own decks (not part of this app), so check each one's terms.</p>
       <ul className="decks links">

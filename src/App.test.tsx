@@ -18,9 +18,11 @@ it('opens on Today; Review studies a flashcard end to end (full-screen), and rev
   expect(current()).toBe('Today')
 
   await user.click(tab('Review'))
-  await waitFor(() => expect(screen.getByText(/20 new/)).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('0 due · 0 new')).toBeTruthy()) // all decks: kana you haven't met aren't offered
   expect(current()).toBe('Review')
   expect((screen.getByRole('combobox', { name: 'Deck' }) as HTMLSelectElement).value).toBe('all') // every deck by default
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Deck' }), 'hira') // choosing the kana deck does offer them
+  await waitFor(() => expect(screen.getByText(/20 new/)).toBeTruthy())
   await user.click(screen.getByRole('button', { name: 'Study' }))
 
   await screen.findByText('20 left') // daily new-card cap
@@ -39,11 +41,8 @@ it('opens on Today; Review studies a flashcard end to end (full-screen), and rev
   await user.click(tab('Today')) // the review counted as activity: 1 XP and a streak
   await screen.findByText('Daily goal: 1 / 20 XP')
   expect(screen.getByText(/1-day streak/)).toBeTruthy()
-  await user.click(screen.getByRole('button', { name: /^Study 19 new/ })) // Today's session: all decks, flashcards...
-  await screen.findByRole('button', { name: /show answer/i })
-  await user.click(screen.getByRole('button', { name: '← Exit' }))
   await user.click(tab('Review'))
-  expect((screen.getByRole('combobox', { name: 'Mode' }) as HTMLSelectElement).value).toBe('quiz') // ...without changing the Review tab
+  expect((screen.getByRole('combobox', { name: 'Mode' }) as HTMLSelectElement).value).toBe('quiz') // the Review tab keeps its choices
 })
 
 it('a lesson started from Today is full-screen, and Exit returns to Today', async () => {

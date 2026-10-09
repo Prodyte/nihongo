@@ -225,7 +225,7 @@ function jlptUnits(): Unit[] {
   const kanji = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
   for (const [char, level, meanings, on, kun, strokes] of jlptKanji as [string, 5 | 4 | 3, string[], string[], string[], number][]) {
     const examples = allWords.filter((w) => (w.written ?? w.kanji ?? '').includes(char)).slice(0, 3).map((w) => w.id)
-    registerItem(ITEMS, { id: `kanji:${char}`, kind: 'kanji', jp: char, gloss: meanings.join(', '), romaji: '', sound: `kanji:${char}`, level, on, kun, strokes, examples })
+    registerItem(ITEMS, { id: `kanji:${char}`, kind: 'kanji', jp: char, gloss: meanings.join(', '), romaji: '', sound: `kanji:${char}`, level, on, kun: kun.map((k) => k.replace(/-/g, '〜')), strokes, examples }) // -び (a suffix form) reads as 〜び
     kanji.get(level)!.push(`kanji:${char}`)
   }
   return LEVELS.flatMap((level) => {

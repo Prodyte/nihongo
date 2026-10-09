@@ -15,13 +15,13 @@ beforeEach(() => localStorage.clear())
 afterEach(cleanup)
 const buttons = () => screen.getAllByRole('button').map((b) => [b.textContent, b.classList.contains('primary')])
 
-it('a new learner: no streak, the first lesson leads, new kana offered for review second', async () => {
+it('a new learner: no streak, just the first lesson (kana come from the path, not as new review cards)', async () => {
   const onLesson = vi.fn()
   const user = userEvent.setup()
   render(<Today db={await freshDb()} onReview={() => {}} onLesson={onLesson} />)
   await screen.findByText('Start a streak today')
   expect(screen.getByText('Daily goal: 0 / 20 XP')).toBeTruthy()
-  expect(buttons()).toEqual([[`Next lesson: ${LESSONS[0].title}`, true], ['Study 20 new cards', false]])
+  expect(buttons()).toEqual([[`Next lesson: ${LESSONS[0].title}`, true]])
   await user.click(screen.getByRole('button', { name: /^Next lesson/ }))
   expect(onLesson).toHaveBeenCalledWith(LESSONS[0].id)
   expect(screen.getByRole('heading', { name: 'N5' })).toBeTruthy() // progress on the level being learned

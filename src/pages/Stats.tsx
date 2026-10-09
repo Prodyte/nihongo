@@ -39,7 +39,6 @@ export function Stats({ db }: { db: Db }) {
         <dl>
           <dt>Reviews today</dt><dd>{s.today}</dd>
           <dt>Accuracy (all time)</dt><dd>{s.total ? `${Math.round((100 * s.correct) / s.total)}%` : '–'}</dd>
-          <dt>New</dt><dd>{s.byState[State.New]}</dd>
           <dt>Learning</dt><dd>{s.byState[State.Learning] + s.byState[State.Relearning] + s.byState[State.Review] - s.known}</dd>
           <dt>Known (remembered for 3+ weeks)</dt><dd>{s.known}</dd>
         </dl>

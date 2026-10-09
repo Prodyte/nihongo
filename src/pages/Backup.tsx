@@ -33,7 +33,7 @@ export function Backup({ db, onRestored }: { db: Db; onRestored: () => void }) {
   }
 
   return (
-    <div className="card">
+    <div className="card form">
       <h2>Backup</h2>
       <p>Your progress lives only in this browser. Clearing site data erases it, so download a backup now and then. Images and audio of imported decks aren't included; re-import the <code>.apkg</code> to restore them.</p>
       <button onClick={() => void download()}>Download backup</button>

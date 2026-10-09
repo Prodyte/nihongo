@@ -30,7 +30,7 @@ export function Home({ db, config, onChange, onStart }: { db: Db; config: Config
     </label>
   )
   return (
-    <div className="card">
+    <div className="card form">
       <h2>Review</h2>
       <p className="counts">{counts ? `${counts.due} due · ${counts.fresh} new` : '…'}</p>
       {pick('deck', 'Deck', [['all', 'All decks'], ['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ...imported.map((d): [string, string] => [d.id, d.name])])}
