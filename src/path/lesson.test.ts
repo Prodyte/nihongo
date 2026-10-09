@@ -182,6 +182,12 @@ describe('buildLesson specifics', () => {
       const banks = [1, 2, 3, 4].map((seed) => buildLesson(l, ITEMS, { canSpeak: false, learned: new Set(), rand: seeded(seed) }).filter((e) => e.type === 'build').map((e) => (e.type === 'build' ? e.bank.join('|') : '')))
       expect(new Set(banks.map((b) => b.join(';'))).size).toBeGreaterThan(1)
     })
+    it('a sentence whose particle has no curated wrong answers fails loudly instead of silently losing its gap question', () => {
+      const items = new Map(ITEMS)
+      items.set('sent:test', { id: 'sent:test', kind: 'sentence', jp: 'ともだちと いきます。', gloss: 'I go with a friend.', romaji: 'tomodachi to ikimasu', sound: 'tomodachitoikimasu', tokens: ['ともだち', 'と', 'いきます'] })
+      const lesson = { id: 'x', title: 'x', items: ['sent:test', ...grammar[0].items.slice(0, 5)], explain: grammar[0].explain }
+      expect(() => buildLesson(lesson, items, { canSpeak: false, learned: new Set(), rand: seeded(1) })).toThrow(/No wrong particles defined for と/)
+    })
     it('bankFor never returns the chunks already in order, even when the first shuffle leaves them so', () => {
       const tokens = ['わたし', 'は', 'がくせい', 'です']
       let calls = 0

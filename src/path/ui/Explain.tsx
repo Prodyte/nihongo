@@ -9,7 +9,7 @@ export function Explain({ ex, onDone }: { ex: Ex; onDone: (missed: string[]) => 
   return (
     <div className="card explain">
       <h2><JaText text={ex.title} /></h2>
-      {ex.body.map((p) => <p key={p}><JaText text={p} /></p>)}
+      {ex.body.map((p, i) => <p key={`${i}:${p}`}><JaText text={p} /></p>)}
       <ul className="examples">
         {ex.examples.map((it) => (
           <li key={it.id}>

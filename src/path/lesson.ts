@@ -84,7 +84,7 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
 /** The word bank: the sentence's chunks plus the wrong ones, shuffled, and never handed over already in the right order. */
 export function bankFor(tokens: string[], extras: string[], rand: () => number): string[] {
   let bank = shuffle([...tokens, ...extras], rand)
-  for (let tries = 0; tries < 5 && bank.join() === tokens.join(); tries++) bank = shuffle(bank, rand)
+  for (let tries = 0; tries < 5 && bank.length === tokens.length && bank.every((t, i) => t === tokens[i]); tries++) bank = shuffle(bank, rand)
   return bank
 }
 
@@ -107,7 +107,9 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
     const at = tokens.findIndex((t) => PARTICLES.has(t))
     if (at < 0) fail(`Sentence ${it.id} has no particle to blank out`)
     const answer = tokens[at]
-    return { type: 'choice', item: it, dir: 'fill', prompt: displayJp(tokens, at), hint: it.gloss, options: shuffle([answer, ...(WRONG_PARTICLES[answer] ?? [])], rand), answer }
+    // a particle without curated wrong answers would give a one-option question that gets silently dropped: say so instead
+    const wrong = WRONG_PARTICLES[answer] ?? fail(`No wrong particles defined for ${answer} (sentence ${it.id}): add them to WRONG_PARTICLES`)
+    return { type: 'choice', item: it, dir: 'fill', prompt: displayJp(tokens, at), hint: it.gloss, options: shuffle([answer, ...wrong], rand), answer }
   }
   const build = (it: Item): Exercise => {
     const tokens = it.tokens ?? fail(`Sentence ${it.id} has no tokens`)

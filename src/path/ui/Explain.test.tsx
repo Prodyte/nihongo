@@ -25,6 +25,12 @@ it('shows the rule, two example sentences with reading and meaning, and Got it c
   await userEvent.setup({ delay: null }).click(screen.getByRole('button', { name: 'Got it' }))
   expect(onDone).toHaveBeenCalledWith([]) // nothing to miss
 })
+it('two identical paragraphs do not collide (no duplicate-key warning)', () => {
+  const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  render(<Explain ex={{ ...ex, body: ['Same.', 'Same.', 'Same.'] }} onDone={() => {}} />)
+  expect(spy).not.toHaveBeenCalled()
+  spy.mockRestore()
+})
 it('Japanese inside the explanation is tagged lang="ja" and a held Enter cannot skip the card', () => {
   render(<Explain ex={ex} onDone={() => {}} />)
   expect([...document.querySelectorAll('.explain p [lang="ja"]')].length).toBeGreaterThan(3)
