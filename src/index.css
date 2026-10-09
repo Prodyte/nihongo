@@ -58,3 +58,4 @@ details.unit p { margin: .25rem 0 .75rem; font-size: .9rem; }
 ul.lessons { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
 ul.lessons button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: .5rem; text-align: left; }
 ul.lessons small { opacity: .85; white-space: nowrap; }
+ul.lessons button.primary small { opacity: 1; } /* dimmed white on the accent fails WCAG contrast */

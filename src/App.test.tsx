@@ -39,3 +39,14 @@ it('opens on the path; Review studies a flashcard end to end, and reviewing earn
   await screen.findByText('Daily goal: 1 / 20 XP')
   expect(screen.getByText('🔥 1-day streak')).toBeTruthy()
 })
+
+it('a lesson is full-screen (no tabs), and Exit brings the tabs back', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  await user.click(await screen.findByRole('button', { name: /^Continue:/ }))
+  await screen.findByRole('button', { name: 'Got it' })
+  expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
+  await user.click(screen.getByRole('button', { name: '← Exit' }))
+  expect(screen.getByRole('navigation', { name: 'Main' })).toBeTruthy()
+  expect(current()).toBe('Path')
+})

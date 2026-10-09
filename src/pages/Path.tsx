@@ -35,7 +35,7 @@ export function Path({ db, onStart }: { db: Db; onStart: (lessonId: string) => v
           <progress max={g.goal} value={Math.min(g.xp, g.goal)} aria-label="Daily goal" />
         </label>
         <label>
-          Daily goal
+          Goal per day
           <select value={goal} onChange={(e) => { const v = Number(e.target.value); setGoal(v); writeInt('nihongo.goal', v) }}>
             {GOALS.map((x) => <option key={x} value={x}>{x} XP a day</option>)}
           </select>

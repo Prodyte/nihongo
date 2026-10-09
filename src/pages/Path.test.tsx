@@ -58,7 +58,7 @@ it('the daily goal can be changed and is remembered; meeting it shows a tick', a
   const user = userEvent.setup()
   render(<Path db={db} onStart={() => {}} />)
   await screen.findByText('Daily goal: 30 / 20 XP ✓')
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Daily goal' }), '50')
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Goal per day' }), '50')
   expect(screen.getByText('Daily goal: 30 / 50 XP')).toBeTruthy()
   expect(localStorage.getItem('nihongo.goal')).toBe('50')
   cleanup()
@@ -70,7 +70,7 @@ it('a stored goal that is not one of the offered values falls back to 20', async
   localStorage.setItem('nihongo.goal', '7')
   render(<Path db={await freshDb()} onStart={() => {}} />)
   await screen.findByText('Daily goal: 0 / 20 XP')
-  expect((screen.getByRole('combobox', { name: 'Daily goal' }) as HTMLSelectElement).value).toBe('20')
+  expect((screen.getByRole('combobox', { name: 'Goal per day' }) as HTMLSelectElement).value).toBe('20')
 })
 
 it('"Let me choose any lesson" unlocks everything and is remembered', async () => {
