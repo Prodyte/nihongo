@@ -90,6 +90,18 @@ describe('completeLesson', () => {
     const grade = async (id: string) => (await db.getAllFromIndex('reviews', 'by-card', id))[0].grade
     expect([await grade(a), await grade(b), await grade(c)]).toEqual([Rating.Good, Rating.Hard, Rating.Again])
   })
+  it('a grammar lesson creates its sentences as cards in the "grammar" deck (not "vocab")', async () => {
+    const db = await fresh()
+    const g = lessonById('grammar-1-1')!
+    const r = await completeLesson(db, g, ITEMS, {}, 1, now)
+    expect(r).toMatchObject({ xp: 15, first: true, graded: 6 })
+    const cards = await db.getAllFromIndex('cards', 'by-deck', 'grammar')
+    expect(cards).toHaveLength(6)
+    expect(await db.count('cards')).toBe(208 + 6)
+    expect(cards.find((c) => c.id === 'sent:watashi-wa-gakusei-desu')).toMatchObject({ front: 'わたしは がくせいです。', back: ['I am a student.'] })
+    expect(await db.get('decks', 'grammar')).toEqual({ id: 'grammar', name: 'Grammar sentences' })
+    expect(await db.get('decks', 'vocab')).toBeUndefined()
+  })
   it('kana lessons grade the seeded cards and do not create a vocab deck', async () => {
     const db = await fresh()
     await completeLesson(db, LESSONS[0], ITEMS, {}, 1, now)

@@ -43,6 +43,9 @@ export function glossAnswers(gloss: string): string[] {
 
 // ---- database --------------------------------------------------------------------------------
 
+/** Built-in decks created when a lesson first teaches words or sentences (kana cards are seeded at startup). */
+const DECKS = { word: { id: 'vocab', name: 'Starter vocabulary' }, sentence: { id: 'grammar', name: 'Grammar sentences' } } as const
+
 const rateByMisses = (misses: number): Grade => (misses === 0 ? Rating.Good : misses === 1 ? Rating.Hard : Rating.Again)
 
 /**
@@ -60,9 +63,10 @@ export async function completeLesson(
   let graded = 0
   for (const item of lessonItems) {
     let card: StoredCard | undefined = await cards.get(item.id)
-    if (!card && item.kind === 'word') {
-      card = { id: item.id, deck: 'vocab', front: item.jp, back: glossAnswers(item.gloss), fsrs: newFsrsCard(now) }
-      await tx.objectStore('decks').put({ id: 'vocab', name: 'Starter vocabulary' })
+    if (!card && item.kind !== 'kana') {
+      const deck = DECKS[item.kind]
+      card = { id: item.id, deck: deck.id, front: item.jp, back: item.kind === 'word' ? glossAnswers(item.gloss) : [item.gloss], fsrs: newFsrsCard(now) }
+      await tx.objectStore('decks').put(deck)
     }
     if (!card) continue // kana cards are seeded at startup; nothing to grade if one is somehow missing
     if (card.fsrs.state === State.New || card.fsrs.due <= now) {

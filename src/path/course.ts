@@ -1,10 +1,12 @@
 import { KANA, toKata } from '../data/kana'
+import { GRAMMAR_LESSONS, GRAMMAR_UNIT } from './grammar'
+import { displayJp, tokensToRomaji } from './romaji'
 import { VOCAB_UNITS } from './vocab'
 
 /** One thing a lesson teaches. For kana, `gloss` is the romaji; for words it is the English meaning. */
 export interface Item {
   id: string // 'hira:あ' | 'kata:ア' (the existing card ids) | 'vocab:<romaji-slug>'
-  kind: 'kana' | 'word'
+  kind: 'kana' | 'word' | 'sentence'
   script?: 'hira' | 'kata'
   jp: string
   gloss: string
@@ -13,8 +15,12 @@ export interface Item {
   kanji?: string
   note?: string // shown on the intro card
   accepts?: string[] // kana: every romaji spelling accepted when typed (shi/si, ji/di...)
+  tokens?: string[] // sentence: the chunks in order
+  bank?: string[] // sentence: extra wrong chunks for the word bank
+  alts?: string[][] // sentence: other correct orders
 }
-export interface Lesson { id: string; title: string; items: string[] }
+export interface Explain { title: string; body: string[]; examples: string[] } // examples: sentence item ids
+export interface Lesson { id: string; title: string; items: string[]; explain?: Explain }
 export interface Unit { id: string; title: string; blurb: string; lessons: Lesson[] }
 
 const HIRA_BASE = ['あいうえお', 'かきくけこ', 'さしすせそ', 'たちつてと', 'なにぬねの', 'はひふへほ', 'まみむめも', 'らりるれろ', 'やゆよわをん']
@@ -57,7 +63,20 @@ function vocabUnits(): Unit[] {
   })
 }
 
-export const UNITS: Unit[] = [...kanaUnits('hira'), ...kanaUnits('kata'), ...vocabUnits()]
+function grammarUnits(): Unit[] {
+  const lessons = GRAMMAR_LESSONS.map((spec, n): Lesson => {
+    const ids = spec.sentences.map((s) => {
+      const romaji = tokensToRomaji(s.tokens)
+      const id = `sent:${romaji.replace(/'/g, '').replace(/ /g, '-')}`
+      ITEMS.set(id, { id, kind: 'sentence', jp: displayJp(s.tokens), gloss: s.en, romaji, sound: romaji.replace(/ /g, ''), tokens: s.tokens, bank: s.bank, alts: s.alts })
+      return id
+    })
+    return { id: `${GRAMMAR_UNIT.id}-${n + 1}`, title: spec.title, items: ids, explain: { ...spec.explain, examples: spec.explain.examples.map((i) => ids[i]) } }
+  })
+  return [{ ...GRAMMAR_UNIT, lessons }]
+}
+
+export const UNITS: Unit[] = [...kanaUnits('hira'), ...kanaUnits('kata'), ...vocabUnits(), ...grammarUnits()]
 /** Every lesson in course order; a lesson unlocks when the one before it is done. */
 export const LESSONS: Lesson[] = UNITS.flatMap((u) => u.lessons)
 export const lessonById = (id: string) => LESSONS.find((l) => l.id === id)

@@ -1,34 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
+import { kanaToRomaji } from './romaji'
 import { ITEMS, LESSONS, UNITS } from './course'
 import { VOCAB_UNITS } from './vocab'
 
-// --- test-only kana -> romaji, built from the existing KANA table, to catch typos in hand-written words
-const MAP = new Map(KANA.map((k) => [k.kana, k.romaji[0]]))
-function toRomaji(input: string): string {
-  const s = input.replace(/(こんにちは|こんばんは)/g, (m) => m.slice(0, -1) + 'わ') // は read as わ
-  let out = ''
-  let gem = false
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i]
-    if (c === 'っ' || c === 'ッ') { gem = true; continue }
-    if (c === 'ー') { out += [...out].reverse().find((x) => 'aeiou'.includes(x)); continue }
-    const two = s.slice(i, i + 2)
-    const syl = /[ゃゅょャュョ]/.test(s[i + 1] ?? '') && MAP.has(two) ? two : c
-    const r = MAP.get(syl)
-    if (!r) throw new Error(`no romaji for ${syl} in ${input}`)
-    if (syl === two) i++
-    out += (gem ? (r.startsWith('ch') ? 't' : r[0]) : '') + r
-    gem = false
-  }
-  return out
-}
-
-describe('test romaji converter (sanity)', () => {
-  it.each([['がっこう', 'gakkou'], ['コーヒー', 'koohii'], ['みっつ', 'mittsu'], ['きょう', 'kyou'], ['こんにちは', 'konnichiwa'], ['ラーメン', 'raamen'], ['しゅうまつ', 'shuumatsu']])('%s -> %s', (kana, romaji) => {
-    expect(toRomaji(kana)).toBe(romaji)
-  })
-})
+// the vocabulary's romaji is checked against the production kana -> romaji converter (こんにちは/こんばんは: は is read "wa")
+const toRomaji = (kana: string) => kanaToRomaji(kana.replace(/(こんにちは|こんばんは)/g, (m) => m.slice(0, -1) + 'わ'))
 
 describe('vocabulary content', () => {
   const words = VOCAB_UNITS.flatMap((u) => u.words)
@@ -37,7 +14,7 @@ describe('vocabulary content', () => {
     for (const u of VOCAB_UNITS) expect(u.words, u.id).toHaveLength(18)
   })
   it('every romaji matches its kana', () => {
-    const bad = words.filter(([jp, romaji]) => toRomaji(jp) !== romaji.replace(/[ ']/g, '')).map(([jp, romaji]) => `${jp}: written ${romaji}, kana says ${toRomaji(jp)}`)
+    const bad = words.filter(([jp, romaji]) => toRomaji(jp) !== romaji.replace(/ /g, '')).map(([jp, romaji]) => `${jp}: written ${romaji}, kana says ${toRomaji(jp)}`)
     expect(bad).toEqual([])
   })
   it('is kana only, with clean romaji, and has no empty fields', () => {
@@ -57,18 +34,20 @@ describe('vocabulary content', () => {
 })
 
 describe('course structure', () => {
-  it('has 14 units: 3 hiragana, 3 katakana, 8 vocabulary; 64 lessons', () => {
-    expect(UNITS).toHaveLength(14)
+  it('has 15 units: 3 hiragana, 3 katakana, 8 vocabulary, 1 grammar; 68 lessons', () => {
+    expect(UNITS).toHaveLength(15)
     expect(UNITS.slice(0, 3).map((u) => u.lessons.length)).toEqual([9, 5, 6])
     expect(UNITS.slice(3, 6).map((u) => u.lessons.length)).toEqual([9, 5, 6])
-    expect(UNITS.slice(6).map((u) => u.lessons.length)).toEqual(Array(8).fill(3))
-    expect(LESSONS).toHaveLength(64)
+    expect(UNITS.slice(6, 14).map((u) => u.lessons.length)).toEqual(Array(8).fill(3))
+    expect(UNITS[14].lessons).toHaveLength(4)
+    expect(LESSONS).toHaveLength(68)
   })
   it('puts hiragana before katakana before vocabulary', () => {
     const firstOf = (p: string) => LESSONS.findIndex((l) => l.items[0].startsWith(p))
     expect(firstOf('hira:')).toBe(0)
     expect(firstOf('kata:')).toBe(20)
     expect(firstOf('vocab:')).toBe(40)
+    expect(firstOf('sent:')).toBe(64) // grammar comes last: its sentences use the vocabulary
   })
   it('every lesson has 1-6 items that all exist, and ids/titles are unique and non-empty', () => {
     for (const l of LESSONS) {
@@ -84,6 +63,7 @@ describe('course structure', () => {
     for (const l of LESSONS) for (const id of l.items) counts.set(id, (counts.get(id) ?? 0) + 1)
     for (const k of KANA) expect(counts.get(k.id), k.id).toBe(1)
     expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('vocab:'))).toHaveLength(144)
+    expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('sent:'))).toHaveLength(24)
     for (const [id, n] of counts) expect(n, id).toBe(1)
   })
   it('items carry the right fields', () => {

@@ -26,8 +26,8 @@ it('a new learner: first lesson open, the rest locked, first unit expanded, no s
   expect((second as HTMLButtonElement).disabled).toBe(true)
   expect(second.textContent).toContain('🔒 Locked')
   const units = [...document.querySelectorAll<HTMLDetailsElement>('details.unit')]
-  expect(units).toHaveLength(14)
-  expect(units.map((u) => u.open)).toEqual([true, ...Array(13).fill(false)])
+  expect(units).toHaveLength(15)
+  expect(units.map((u) => u.open)).toEqual([true, ...Array(14).fill(false)])
 })
 
 it('starting a lesson reports its id, from the Continue button or the list', async () => {

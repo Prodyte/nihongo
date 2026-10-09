@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 import JSZip from 'jszip'
 import initSqlJs from 'sql.js'
 import { Rating, State } from 'ts-fsrs'
+import { newFsrsCard } from '../srs/scheduler'
 import { describe, expect, it } from 'vitest'
 import { deleteDeck, getDeck, gradeCard, openDb, saveImport, studyCards } from '../db/db'
 import { parseApkg } from './apkg'
@@ -73,6 +74,10 @@ describe('saveImport / deleteDeck', () => {
 
     expect(await studyCards(db, 'anki:10', 'flashcard')).toHaveLength(3)
     expect(await studyCards(db, 'anki:10', 'typing')).toHaveLength(0)
+    await db.put('cards', { id: 'sent:x', deck: 'grammar', front: 'わたしは がくせいです。', back: ['I am a student.'], fsrs: newFsrsCard() })
+    expect(await studyCards(db, 'grammar', 'typing')).toHaveLength(0) // whole sentences are not typed in Review
+    expect(await studyCards(db, 'grammar', 'flashcard')).toHaveLength(1)
+    expect(await studyCards(db, 'grammar', 'quiz')).toHaveLength(1)
     expect(await db.get('media', 'anki:10\0dog.png')).toMatchObject({ type: 'image/png' })
     expect(await db.get('media', 'anki:10\0unused.png')).toBeUndefined() // not referenced by any card
     expect(await db.get('media', 'anki:10\0a&b.png')).toBeDefined() // unquoted src + &amp; entity

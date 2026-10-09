@@ -73,10 +73,10 @@ export async function seedKana(db: Db, now = new Date()) {
 export const getDeck = (db: Db, deck: string) => db.getAllFromIndex('cards', 'by-deck', deck)
 export const getCards = (db: Db, deck: string) => (deck === 'all' ? db.getAll('cards') : getDeck(db, deck))
 
-/** Cards a study mode can use: typing and quiz need kana cards, flashcards take anything. */
+/** Cards a study mode can use: typing and quiz skip imported HTML cards; typing also skips whole sentences (typing English sentences exactly is needlessly harsh). */
 export async function studyCards(db: Db, deck: string, mode: string) {
   const cards = await getCards(db, deck)
-  return mode === 'flashcard' ? cards : cards.filter((c) => !c.html)
+  return mode === 'flashcard' ? cards : cards.filter((c) => !c.html && !(mode === 'typing' && c.deck === 'grammar'))
 }
 
 /** Cards first studied since local midnight, to enforce the daily new-card cap. */
