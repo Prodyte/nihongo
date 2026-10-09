@@ -53,7 +53,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
       <button onClick={onExit}>Back to path</button>
     </div>
   )
-  if (!run) return <p>Loading…</p>
+  if (!run) return <><button onClick={onExit}>← Exit</button><p>Loading…</p></> // never a dead end, even if loading hangs
 
   if (summary) {
     const idx = LESSONS.findIndex((l) => l.id === lesson.id)
@@ -68,7 +68,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
       </div>
     )
   }
-  if (run.queue.length === 0) return <p role="status">Saving…</p>
+  if (run.queue.length === 0) return <><button onClick={onExit}>← Exit</button><p role="status">Saving…</p></>
 
   const ex = run.queue[0]
   const done = (missed: string[]) => { setRun((r) => advance(r!, missed)); setStep((s) => s + 1) }

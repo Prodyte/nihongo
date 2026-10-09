@@ -127,6 +127,16 @@ it('a vocabulary lesson creates the words as cards and shows reading and meaning
   expect(await db.get('decks', 'vocab')).toEqual({ id: 'vocab', name: 'Starter vocabulary' })
 })
 
+it('Loading is never a dead end: Exit is there even if the lesson never finishes loading', async () => {
+  const onExit = vi.fn()
+  const db = await freshDb()
+  vi.spyOn(db, 'getAll').mockImplementation((() => new Promise(() => {})) as typeof db.getAll) // the progress read hangs
+  mount(db, lessonById('hira-basic-1')!, { onExit })
+  await screen.findByText('Loading…')
+  await user().click(screen.getByRole('button', { name: '← Exit' }))
+  expect(onExit).toHaveBeenCalled()
+})
+
 it('Next lesson starts the following lesson', async () => {
   const onStart = vi.fn()
   const db = await freshDb()

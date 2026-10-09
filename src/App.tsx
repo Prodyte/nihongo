@@ -32,7 +32,8 @@ export default function App() {
   }, [])
 
   const startLesson = (id: string) => { setLessonId(id); setView('lesson') }
-  const inLesson = view === 'lesson' && !!lessonId && !!lessonById(lessonId) // lessons are full-screen: no tabs to wander off to
+  const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
+  const inLesson = !!lesson // lessons are full-screen: no tabs to wander off to
 
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
   if (!db) return <main><p>Loading…</p></main>
@@ -48,7 +49,7 @@ export default function App() {
         </nav>}
       </header>
       {inLesson ? (
-        <Lesson key={lessonId} db={db} lesson={lessonById(lessonId)!} autoplay={autoplay} onExit={() => setView('path')} onStart={startLesson} />
+        <Lesson key={lesson!.id} db={db} lesson={lesson!} autoplay={autoplay} onExit={() => setView('path')} onStart={startLesson} />
       ) : view === 'study' ? (
         <Study db={db} deck={config.deck} mode={config.mode} autoplay={autoplay} onExit={() => setView('review')} />
       ) : view === 'decks' ? (
