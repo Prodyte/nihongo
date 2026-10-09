@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { warmUpVoices } from './audio'
 import { openDb, seedKana, type Db } from './db/db'
-import { Icon } from './icons'
+import { Icon, Logo } from './icons'
 import { Credits } from './pages/Credits'
 import { Decks } from './pages/Decks'
 import { Drill } from './pages/Drill'
@@ -18,10 +18,11 @@ import { Stats } from './pages/Stats'
 import { MISTAKES, Study } from './pages/Study'
 import { TestOut } from './pages/TestOut'
 import { Today } from './pages/Today'
+import { Welcome, type StartLevel } from './pages/Welcome'
 import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
-import { readBool, readStr, writeBool, writeStr } from './settings'
+import { readBool, readStr, writeBool, writeInt, writeStr } from './settings'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
 type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
@@ -43,6 +44,7 @@ export default function App() {
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [testUnit, setTestUnit] = useState<string | null>(null)
   const [drill, setDrill] = useState<DrillKind>('speak-read')
+  const [welcome, setWelcome] = useState(false)
   const [autoplay, setAutoplay] = useState(() => readBool('nihongo.autoplay', true))
   const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
   const [furigana, setFurigana] = useState<Furigana>(() => readStr('nihongo.furigana', FURIGANA, 'auto'))
@@ -54,6 +56,12 @@ export default function App() {
     openDb()
       .then(async (d) => {
         await seedKana(d)
+        // first run: show the welcome flow, unless this device already has progress (an existing learner)
+        if (!readBool('nihongo.onboarded', false)) {
+          const fresh = (await d.count('lessons')) === 0 && (await d.count('reviews')) === 0
+          if (fresh) setWelcome(true)
+          else writeBool('nihongo.onboarded', true)
+        }
         void navigator.storage?.persist?.()?.catch(() => {}) // best effort: stops the browser evicting progress under storage pressure
         setDb(d)
       })
@@ -72,12 +80,22 @@ export default function App() {
   const focused = !!lesson || !!unit || view === 'study' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
-  if (!db) return <main><p>Loading…</p></main>
+  if (!db) return <main><div className="skeleton" /><div className="skeleton tall" /></main>
+  if (welcome) {
+    const start = (level: StartLevel, goal: number) => {
+      writeInt('nihongo.goal', goal)
+      writeBool('nihongo.onboarded', true)
+      setWelcome(false)
+      // skipping ahead means passing a test over everything up to there: the last kana unit, or the end of the starter section
+      if (level !== 'new') { setTestUnit(level === 'kana' ? 'kata-combos' : UNITS.filter((u) => u.section === 'Starter').at(-1)!.id); setView('test') }
+    }
+    return <main><h1 className="visually-hidden">Nihongo</h1><Welcome onDone={start} /></main>
+  }
   return (
     <FuriganaContext.Provider value={{ mode: furigana, known }}>
       <main className={focused ? 'focused' : ''}>
         {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
-        <header className={focused ? 'visually-hidden' : ''}><h1><span lang="ja">日本語</span> <small>nihongo</small></h1></header>
+        <header className={focused ? 'visually-hidden' : 'brand'}><h1><Logo /> Nihongo <small lang="ja">日本語</small></h1></header>
         {lesson ? (
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
         ) : unit ? (

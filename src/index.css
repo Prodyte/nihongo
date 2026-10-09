@@ -361,3 +361,28 @@ fieldset.question legend { font-weight: 650; margin-bottom: .4rem; }
 button.kana-cell { display: grid; place-items: center; gap: 0; padding: .4rem .2rem; min-height: 3.6rem; }
 button.kana-cell span { font-size: 1.5rem; line-height: 1.1; } button.kana-cell small { color: var(--muted); font-size: .72rem; }
 button.kana-cell.known { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+
+header.brand h1 { display: flex; align-items: center; gap: .5rem; font-size: 1.15rem; font-weight: 750; letter-spacing: -.01em; }
+header.brand h1 small { font-weight: 500; }
+.logo { flex: none; border-radius: 7px; }
+
+/* ============ welcome ============ */
+.welcome { max-width: 28rem; margin: 0 auto; padding-top: 1rem; }
+.welcome .dots { display: flex; justify-content: center; gap: .4rem; margin-bottom: 1.5rem; }
+.welcome .dots span { width: .5rem; height: .5rem; border-radius: 50%; background: var(--line); transition: width .2s; }
+.welcome .dots span.on { width: 1.5rem; border-radius: 999px; background: var(--accent); }
+.welcome-step { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; text-align: center; animation: fade .25s ease-out; }
+.welcome-step h2 { font-size: 1.8rem; line-height: 1.2; }
+.welcome-step .logo { border-radius: 18px; box-shadow: var(--shadow); }
+ul.features { list-style: none; padding: 0; margin: 0; display: grid; gap: .9rem; text-align: left; width: 100%; }
+ul.features li { display: flex; gap: .9rem; align-items: flex-start; }
+ul.features strong { display: block; } ul.features small { color: var(--muted); }
+.welcome-step > button.big { width: 100%; }
+.choices { display: grid; gap: .6rem; width: 100%; }
+button.choice { display: grid; gap: .15rem; text-align: left; padding: 1rem 1.1rem; border-radius: var(--radius); background: var(--card); }
+button.choice small { color: var(--muted); font-weight: 400; }
+button.choice.on { border-color: var(--indigo); background: var(--indigo-soft); box-shadow: 0 2px 0 var(--indigo); }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .welcome-step { animation: none; } }
+
+.big-number.done { color: var(--good); display: grid; place-items: center; }

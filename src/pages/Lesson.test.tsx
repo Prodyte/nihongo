@@ -158,7 +158,7 @@ it('Loading is never a dead end: Exit is there even if the lesson never finishes
   const db = await freshDb()
   vi.spyOn(db, 'getAll').mockImplementation((() => new Promise(() => {})) as typeof db.getAll) // the progress read hangs
   mount(db, lessonById('hira-basic-1')!, { onExit })
-  await screen.findByText('Loading…')
+  await screen.findByRole('status', { name: 'Loading' })
   await user().click(screen.getByRole('button', { name: 'Exit' }))
   expect(onExit).toHaveBeenCalled()
 })

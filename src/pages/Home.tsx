@@ -16,7 +16,9 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
   db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void; onPractice: () => void; onDrill: (k: DrillKind) => void; onRead: () => void; onKana: () => void
 }) {
   const voice = useJaVoice()
-  const [counts, setCounts] = useState<{ due: number; fresh: number } | null>(null)
+  const [loaded, setLoaded] = useState<{ key: string; due: number; fresh: number } | null>(null)
+  const key = `${config.deck}|${config.mode}`
+  const counts = loaded?.key === key ? loaded : null // a different deck: never show the previous deck's numbers while loading
   const [info, setInfo] = useState<{ next: string | null; mistakes: number; words: number; verbs: number }>({ next: null, mistakes: 0, words: 0, verbs: 0 })
   const [imported, setImported] = useState<DeckRecord[]>([])
   useEffect(() => {
@@ -27,11 +29,11 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
   }, [db, config, onChange])
   useEffect(() => {
     let live = true
-    void reviewCounts(db, config.deck, config.mode).then((c) => live && setCounts(c), () => live && setCounts({ due: 0, fresh: 0 }))
+    void reviewCounts(db, config.deck, config.mode).then((c) => live && setLoaded({ key, ...c }), () => live && setLoaded({ key, due: 0, fresh: 0 }))
     return () => {
       live = false
     }
-  }, [db, config.deck, config.mode])
+  }, [db, config.deck, config.mode, key])
   useEffect(() => {
     let live = true
     void Promise.all([db.getAll('cards'), db.getAll('reviews'), learnedForDrills(db)]).then(([cards, reviews, items]) => {
@@ -74,7 +76,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
       </div>
       <section className="card review-hero" aria-label="Spaced repetition">
         <div className="due">
-          <strong className="big-number">{counts ? total : '–'}</strong>
+          {counts && total === 0 ? <span className="big-number done" aria-hidden="true"><Icon name="check" size={44} /></span> : <strong className="big-number">{counts ? total : '–'}</strong>}
           <div>
             <p className="counts">{counts ? `${counts.due} due · ${counts.fresh} new` : '…'}</p>
             <p className="hint left">{total ? 'Cards come back just before you would forget them.' : `All caught up.${info.next ? ` Next review ${info.next}.` : ''}`}</p>

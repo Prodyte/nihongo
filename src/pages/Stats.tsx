@@ -1,3 +1,4 @@
+import { Loading } from '../Loading'
 import { useEffect, useState } from 'react'
 import { Rating } from 'ts-fsrs'
 import type { Db } from '../db/db'
@@ -42,7 +43,7 @@ export function Stats({ db }: { db: Db }) {
       })
     })()
   }, [db, now])
-  if (!s) return <p>Loading…</p>
+  if (!s) return <Loading />
   const peak = Math.max(1, ...s.ahead.map((d) => d.count))
   return (
     <>

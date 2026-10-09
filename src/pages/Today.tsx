@@ -1,3 +1,4 @@
+import { Loading } from '../Loading'
 import { useEffect, useState } from 'react'
 import { reviewCounts, type Db } from '../db/db'
 import { Icon } from '../icons'
@@ -35,7 +36,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
   }, [db])
 
   if (error) return <p role="alert" className="bad">{error}</p>
-  if (!s) return <p>Loading…</p>
+  if (!s) return <Loading />
   const g = dailyGoalProgress(s.xpToday, readGoal())
   const reviews = s.due + s.fresh
   const reviewFirst = s.due > 0 // a new lesson only adds more to remember

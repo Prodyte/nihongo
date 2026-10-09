@@ -6,6 +6,7 @@ Learn Japanese in the browser, from hiragana to JLPT N3: a guided path through k
 
 ## What it does
 
+- **Welcome:** first-time setup: your level (from scratch, or a short test to skip kana or the basics) and a daily goal.
 - **Today:** one screen with the next step: due reviews first, then the next lesson; streak, daily goal, and progress on the level you're learning.
 - **Learning path:** about 750 short lessons in sections: kana (hiragana, katakana), first words and sentences, then **JLPT N5, N4 and N3**. Each level mixes word lessons (6 words, most common first), kanji lessons (5 kanji) and, at N5, grammar lessons, each placed after the words it uses. Lessons practise with multiple choice (both directions), matching, listening (needs a Japanese voice on your device) and typing; wrong answers come back once. XP, a daily streak and a daily goal; lessons unlock in order, or choose any in Settings.
 - **Kanji:** stroke-order animation, meanings, on and kun readings, and course words that use each kanji; questions on meaning and on reading words written with it.
@@ -19,6 +20,8 @@ Learn Japanese in the browser, from hiragana to JLPT N3: a guided path through k
 - **Stats:** JLPT progress per level (words, kanji, grammar); cards by stage (Apprentice, Guru, Master, Burned, from how long you're expected to remember them); a 7-day forecast; an activity heatmap; leeches.
 - **Path and Review work together:** finishing a lesson puts its items into the same spaced-repetition scheduler that Review uses, so what you learn on the path comes back when it is due. Replaying a lesson for practice never inflates the schedule.
 - **Review:** all due cards across decks by default: the path's kana, words, kanji and sentences, and imported decks. Flashcards, type-the-answer (romaji for kana, the meaning for words), and multiple choice; grammar cards are always fill-the-gap sentences. "Practise mistakes" drills this week's misses and leeches without touching their schedule.
+- **Practice hub (Review tab):** speaking drills (read aloud, say it from the English, shadowing), listening (type the word you hear, pick what a sentence means), verb conjugation (ます, ません, ました, て, た, ない), graded reading, and a kana chart. Drills use only what you've learned; each right answer earns 1 XP.
+- **Reading:** short N5 stories with furigana, audio sentence by sentence or all at once, tap any word to look it up, and comprehension questions.
 - **Grammar reference:** every grammar point with its explanation and sentences (More → Grammar).
 - **Sounds:** short right/wrong/complete sounds and a vibration on wrong answers (Settings switch).
 - **Scheduling:** [FSRS](https://github.com/open-spaced-repetition/ts-fsrs), the algorithm modern Anki uses. 20 new cards a day.

@@ -1,3 +1,5 @@
+import logo from './logo-paths.json'
+
 // 24px outline icons, decorative (whatever uses them carries a text label or aria-label).
 const P = {
   today: 'M4 11 12 4l8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z',
@@ -32,4 +34,14 @@ export const Icon = ({ name, size = 24 }: { name: IconName; size?: number }) => 
 /** The ✕ that leaves a lesson, test or review session. */
 export const ExitButton = ({ onClick }: { onClick: () => void }) => (
   <button type="button" className="icon-btn ghost" aria-label="Exit" onClick={onClick}><Icon name="close" size={26} /></button>
+)
+
+/** The app mark: 日 (sun, day; the first character of 日本語) in white on vermilion, drawn from KanjiVG strokes. */
+export const Logo = ({ size = 28 }: { size?: number }) => (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 109 109" className="logo">
+    <rect width="109" height="109" rx="24" fill="var(--accent)" />
+    <g transform="translate(21.8 21.8) scale(.6)" fill="none" stroke="var(--on-accent)" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round">
+      {logo.map((d, i) => <path key={i} d={d} />)}
+    </g>
+  </svg>
 )

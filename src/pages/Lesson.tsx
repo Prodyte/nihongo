@@ -1,3 +1,4 @@
+import { Loading } from '../Loading'
 import { useEffect, useRef, useState } from 'react'
 import { useJaVoice } from '../audio'
 import { canRecognise } from '../speech'
@@ -58,7 +59,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
       <button onClick={onExit}>Back</button>
     </div>
   )
-  if (!run) return <><div className="bar"><ExitButton onClick={onExit} /></div><p>Loading…</p></> // never a dead end, even if loading hangs
+  if (!run) return <><div className="bar"><ExitButton onClick={onExit} /></div><Loading /></> // never a dead end, even if loading hangs
 
   if (summary) {
     const idx = LESSONS.findIndex((l) => l.id === lesson.id)

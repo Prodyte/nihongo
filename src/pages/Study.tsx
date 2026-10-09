@@ -1,3 +1,4 @@
+import { Loading } from '../Loading'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ExitButton } from '../icons'
 import { Rating, type Grade } from 'ts-fsrs'
@@ -69,7 +70,7 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
   )
 
   if (error && !queue) return <p role="alert">{error}</p>
-  if (!queue) return <p>Loading…</p>
+  if (!queue) return <Loading />
   if (!queue.length)
     return (
       <div className="card">

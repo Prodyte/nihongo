@@ -1,3 +1,4 @@
+import { Loading } from '../Loading'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Db } from '../db/db'
 import { lessonKind, LESSONS, SECTIONS, UNITS } from '../path/course'
@@ -36,7 +37,7 @@ export function Path({ db, onStart, onTest }: { db: Db; onStart: (lessonId: stri
   useEffect(() => { hereRef.current?.scrollIntoView?.({ block: 'center' }) }, [done]) // a long path: start where the learner is
 
   if (error) return <p role="alert" className="bad">{error}</p>
-  if (!done) return <p>Loading…</p>
+  if (!done) return <Loading />
   const current = currentLesson(LESSONS, done)
   const total = LESSONS.filter((l) => done.has(l.id)).length
 

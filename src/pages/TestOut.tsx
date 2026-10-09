@@ -1,3 +1,4 @@
+import { Loading } from '../Loading'
 import { useEffect, useState } from 'react'
 import { ExitButton } from '../icons'
 import { ExerciseView } from '../path/ui/ExerciseView'
@@ -41,7 +42,7 @@ export function TestOut({ db, unit, onExit }: { db: Db; unit: Unit; onExit: () =
   }, [db, exs, step, misses, result, unit])
 
   if (error) return <div className="card"><p role="alert" className="bad">{error}</p><button onClick={onExit}>Back</button></div>
-  if (!exs) return <><ExitButton onClick={onExit} /><p>Loading…</p></>
+  if (!exs) return <><ExitButton onClick={onExit} /><Loading /></>
   if (result) return (
     <div className="card">
       <h2>{result.passed ? 'Passed 🎉' : 'Not this time'}</h2>

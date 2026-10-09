@@ -2,11 +2,12 @@
 import 'fake-indexeddb/auto'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it } from 'vitest'
 import App from './App'
 import { KANA } from './data/kana'
 
 afterEach(cleanup)
+beforeEach(() => localStorage.setItem('nihongo.onboarded', '1')) // the welcome flow has its own test
 
 const current = () => screen.getByRole('navigation', { name: 'Main' }).querySelector('[aria-current="page"]')!.textContent
 const tab = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}$`) })
