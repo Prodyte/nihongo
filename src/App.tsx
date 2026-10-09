@@ -30,7 +30,8 @@ export default function App() {
   const [back, setBack] = useState<View>('today') // where a lesson or review session returns to
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [autoplay, setAutoplay] = useState(() => readBool('nihongo.autoplay', true))
-  const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' })
+  const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
+  const [session, setSession] = useState<Config>(config) // what the running review studies (Today's doesn't change the Review tab)
 
   useEffect(() => {
     warmUpVoices()
@@ -45,7 +46,7 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0) }, [view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
 
   const startLesson = (id: string) => { setBack(view); setLessonId(id); setView('lesson') }
-  const study = (from: View, c: Config) => { setConfig(c); setBack(from); setView('study') }
+  const study = (from: View, c: Config) => { setSession(c); setBack(from); setView('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
   const focused = !!lesson || view === 'study' // lessons and reviews are full-screen: no tabs to wander off to
 
@@ -58,7 +59,7 @@ export default function App() {
         {lesson ? (
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
         ) : view === 'study' ? (
-          <Study db={db} deck={config.deck} mode={config.mode} autoplay={autoplay} onExit={() => setView(back)} />
+          <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => setView(back)} />
         ) : view === 'review' ? (
           <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} />
         ) : view === 'path' ? (

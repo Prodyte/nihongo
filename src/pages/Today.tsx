@@ -13,7 +13,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
 
   useEffect(() => {
     let live = true
-    void Promise.all([getProgress(db), reviewCounts(db, 'all', 'flashcard')])
+    void Promise.all([getProgress(db), reviewCounts(db, 'all', 'flashcard').catch(() => ({ due: 0, fresh: 0 }))]) // counts are a hint: never block the home screen
       .then(([p, c]) => live && setS({ streak: p.streak, xpToday: p.xpToday, next: currentLesson(LESSONS, p.done), ...c }))
       .catch((e) => live && setError(`Couldn't load your progress (${e}).`))
     return () => {
