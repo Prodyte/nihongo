@@ -53,6 +53,8 @@ export async function completeLesson(
 ) {
   const lessonItems = lesson.items.map((id) => items.get(id) ?? failWith(`Unknown item ${id} in lesson ${lesson.id}`)) // before any write
   const tx = db.transaction(['cards', 'reviews', 'lessons', 'activity', 'decks'], 'readwrite')
+  tx.done.catch(() => {}) // an abort is reported by the failing await below; don't also raise an unhandled rejection
+  const best = Number.isFinite(accuracy) ? Math.min(1, Math.max(0, accuracy)) : 0
   const cards = tx.objectStore('cards')
   let graded = 0
   for (const item of lessonItems) {
@@ -75,7 +77,7 @@ export async function completeLesson(
   const old = await tx.objectStore('lessons').get(lesson.id)
   const flawless = lessonItems.every((i) => !misses[i.id])
   await tx.objectStore('lessons').put({
-    id: lesson.id, completedAt: old?.completedAt ?? now, plays: (old?.plays ?? 0) + 1, bestAccuracy: Math.max(old?.bestAccuracy ?? 0, accuracy),
+    id: lesson.id, completedAt: old?.completedAt ?? now, plays: (old?.plays ?? 0) + 1, bestAccuracy: Math.max(old?.bestAccuracy ?? 0, best),
   })
   const xp = xpFor(!old, flawless)
   const day = dayKey(now)
@@ -88,6 +90,7 @@ export async function completeLesson(
 /** +1 XP for a card reviewed in Study, so a streak rewards reviewing as well as lessons. */
 export async function addReviewXp(db: Db, now = new Date()) {
   const tx = db.transaction('activity', 'readwrite')
+  tx.done.catch(() => {})
   const day = dayKey(now)
   const act = await tx.store.get(day)
   await tx.store.put({ date: day, xp: (act?.xp ?? 0) + 1, lessons: act?.lessons ?? 0 })

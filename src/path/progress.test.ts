@@ -118,6 +118,13 @@ describe('completeLesson', () => {
     expect(r.graded).toBe(6)
     expect(await db.count('reviews')).toBe(12)
   })
+  it('stores a clamped accuracy, never NaN or out of range', async () => {
+    const db = await fresh()
+    await completeLesson(db, lesson, ITEMS, {}, Number.NaN, now)
+    expect((await db.get('lessons', lesson.id))!.bestAccuracy).toBe(0)
+    await completeLesson(db, lesson, ITEMS, {}, 7, now)
+    expect((await db.get('lessons', lesson.id))!.bestAccuracy).toBe(1)
+  })
   it('an unknown item changes nothing', async () => {
     const db = await fresh()
     await expect(completeLesson(db, { id: 'bad', title: 'bad', items: [lesson.items[0], 'vocab:nope'] }, ITEMS, {}, 1, now)).rejects.toThrow('Unknown item vocab:nope')
@@ -146,6 +153,14 @@ describe('getProgress / addReviewXp', () => {
 })
 
 describe('database upgrade', () => {
+  it('a connection closes itself when another tab upgrades the database, so the upgrade is not blocked', async () => {
+    const name = 'blocking-test'
+    const mine = await openDb(name) // v3, held open like an older tab
+    const newer = await openDB(name, 4) // would hang forever if `mine` did not close
+    expect(newer.version).toBe(4)
+    await expect(mine.count('cards')).rejects.toThrow() // closed
+    newer.close()
+  })
   it('a v2 database (before the path) upgrades to v3 keeping its data', async () => {
     const name = 'upgrade-test'
     const old = await openDB(name, 2, { upgrade(d) {

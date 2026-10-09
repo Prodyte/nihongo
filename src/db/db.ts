@@ -34,8 +34,12 @@ interface Schema extends DBSchema {
 }
 export type Db = IDBPDatabase<Schema>
 
-export const openDb = (name = 'nihongo') =>
-  openDB<Schema>(name, 3, {
+export const openDb = (name = 'nihongo') => {
+  const opening: Promise<Db> = openDB<Schema>(name, 3, {
+    // another tab opened a newer version: close this connection so its upgrade isn't blocked forever
+    blocking() {
+      void opening.then((d) => d.close())
+    },
     upgrade(db, old) {
       if (old < 1) {
         db.createObjectStore('cards', { keyPath: 'id' }).createIndex('by-deck', 'deck')
@@ -51,6 +55,8 @@ export const openDb = (name = 'nihongo') =>
       }
     },
   })
+  return opening
+}
 
 /** Add any kana cards not stored yet; existing cards keep their progress. */
 export async function seedKana(db: Db, now = new Date()) {

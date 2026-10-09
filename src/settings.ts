@@ -17,8 +17,8 @@ export const writeBool = (key: string, value: boolean) => {
 
 export const readInt = (key: string, fallback: number) => {
   try {
-    const n = Number(localStorage.getItem(key))
-    return localStorage.getItem(key) !== null && Number.isInteger(n) ? n : fallback
+    const s = localStorage.getItem(key)
+    return s !== null && /^-?\d+$/.test(s) ? Number(s) : fallback
   } catch {
     return fallback
   }

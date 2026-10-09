@@ -26,6 +26,9 @@ it('ints round-trip, default, and reject non-integers or throwing storage', () =
   expect(readInt('goal', 20)).toBe(20)
   localStorage.setItem('goal', '2.5')
   expect(readInt('goal', 20)).toBe(20)
+  for (const junk of ['', '  ', ' 5', '5 ']) { localStorage.setItem('goal', junk); expect(readInt('goal', 20), JSON.stringify(junk)).toBe(20) }
+  localStorage.setItem('goal', '-3')
+  expect(readInt('goal', 20)).toBe(-3)
   vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked') })
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
   expect(readInt('goal', 20)).toBe(20)

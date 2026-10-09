@@ -80,6 +80,11 @@ describe('backup', () => {
     ['v2 without lessons', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], activity: [] })],
     ['bad lesson record', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], activity: [], lessons: [{ id: 'x', completedAt: '2026-01-01T00:00:00Z', plays: 'many', bestAccuracy: 1 }] })],
     ['bad activity date', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], lessons: [], activity: [{ date: 'yesterday', xp: 5, lessons: 1 }] })],
+    ['fractional plays', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], activity: [], lessons: [{ id: 'x', completedAt: '2026-01-01T00:00:00Z', plays: 1.5, bestAccuracy: 1 }] })],
+    ['accuracy above 1', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], activity: [], lessons: [{ id: 'x', completedAt: '2026-01-01T00:00:00Z', plays: 1, bestAccuracy: 3 }] })],
+    ['negative xp', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], lessons: [], activity: [{ date: '2026-01-01', xp: -5, lessons: 1 }] })],
+    ['duplicate lesson ids', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], activity: [], lessons: [1, 2].map(() => ({ id: 'x', completedAt: '2026-01-01T00:00:00Z', plays: 1, bestAccuracy: 1 })) })],
+    ['duplicate activity dates', JSON.stringify({ app: 'nihongo', version: 2, cards: [], reviews: [], decks: [], lessons: [], activity: [1, 2].map(() => ({ date: '2026-01-01', xp: 5, lessons: 1 })) })],
     ['bad date', JSON.stringify({ app: 'nihongo', version: 1, reviews: [], decks: [], cards: [{ id: 'a', deck: 'd', front: 'f', back: [], fsrs: { ...okFsrs, due: 'tomorrow' } }] })],
   ])('rejects %s without touching existing data', async (_, text) => {
     const db = await populated()

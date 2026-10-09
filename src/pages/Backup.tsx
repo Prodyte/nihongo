@@ -22,7 +22,7 @@ export function Backup({ db, onRestored }: { db: Db; onRestored: () => void }) {
   async function restore(file: File | undefined) {
     if (!file) return
     if (file.size > MAX_BYTES) return setStatus({ text: 'That file is over 100 MB, too large to be a backup.', bad: true })
-    if (!window.confirm('Restoring replaces all current progress with the backup. Continue?')) return
+    if (!window.confirm('Restoring replaces all current progress (cards, lessons, streak) with the backup. Backups made before the learning path have no lesson progress, so restoring one resets it. Continue?')) return
     try {
       const r = await importBackup(db, await file.text())
       setStatus({ text: `Restored ${r.cards} cards and ${r.reviews} reviews.` })

@@ -20,6 +20,7 @@ const date = (v: unknown, what: string, optional = false) => {
 }
 
 const fin = (v: unknown) => typeof v === 'number' && Number.isFinite(v)
+const nat = (v: unknown, min = 0) => typeof v === 'number' && Number.isInteger(v) && v >= min
 const FSRS_NUMS = ['stability', 'difficulty', 'scheduled_days', 'learning_steps', 'reps', 'lapses', 'elapsed_days']
 const LOG_NUMS = ['rating', 'state', 'stability', 'difficulty', 'scheduled_days', 'learning_steps']
 
@@ -33,12 +34,12 @@ function reviveCard(c: unknown): StoredCard {
 }
 
 function reviveLesson(l: unknown): LessonRecord {
-  if (!isObj(l) || typeof l.id !== 'string' || !fin(l.plays) || !fin(l.bestAccuracy)) throw new BackupError('Backup is corrupt: a lesson record is malformed.')
+  if (!isObj(l) || typeof l.id !== 'string' || !nat(l.plays, 1) || !fin(l.bestAccuracy) || (l.bestAccuracy as number) < 0 || (l.bestAccuracy as number) > 1) throw new BackupError('Backup is corrupt: a lesson record is malformed.')
   return { id: l.id, completedAt: date(l.completedAt, 'lesson.completedAt')!, plays: l.plays as number, bestAccuracy: l.bestAccuracy as number }
 }
 
 function reviveActivity(a: unknown): ActivityRecord {
-  if (!isObj(a) || typeof a.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(a.date) || !fin(a.xp) || !fin(a.lessons))
+  if (!isObj(a) || typeof a.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(a.date) || !nat(a.xp) || !nat(a.lessons))
     throw new BackupError('Backup is corrupt: an activity record is malformed.')
   return { date: a.date, xp: a.xp as number, lessons: a.lessons as number }
 }
@@ -68,6 +69,8 @@ export async function importBackup(db: Db, text: string) {
   }
   const lessons = extra('lessons').map(reviveLesson)
   const activity = extra('activity').map(reviveActivity)
+  if (new Set(lessons.map((l) => l.id)).size !== lessons.length) throw new BackupError('Backup is corrupt: duplicate lesson ids.')
+  if (new Set(activity.map((a) => a.date)).size !== activity.length) throw new BackupError('Backup is corrupt: duplicate activity dates.')
   const cards = raw.cards.map(reviveCard)
   if (new Set(cards.map((c) => c.id)).size !== cards.length) throw new BackupError('Backup is corrupt: duplicate card ids.')
   const reviews = raw.reviews.map(reviveReview)
