@@ -3,10 +3,9 @@ import type { Card } from 'ts-fsrs'
 import { toKata } from '../data/kana'
 import type { Db } from '../db/db'
 import { ITEMS, written, type Item } from '../path/course'
-import { ENTRIES, MAX, search, stateOf } from '../path/lookup'
+import { ENTRIES, MAX, search } from '../path/lookup'
+import { stage } from '../srs/stages'
 import { Strokes } from '../path/ui/Strokes'
-
-const LABEL = { new: 'New', learning: 'Learning', known: 'Known' }
 
 export function Lookup({ db }: { db: Db }) {
   const [query, setQuery] = useState('')
@@ -26,7 +25,8 @@ export function Lookup({ db }: { db: Db }) {
       <p role="status" className="hint">{query.trim() ? (results.length ? `${results.length === MAX ? `First ${MAX}` : results.length} result${results.length === 1 ? '' : 's'}` : 'Nothing found in the course.') : `${ENTRIES.length} words and kanji from kana to N3.`}</p>
       <ul className="results">
         {results.map((it) => {
-          const state = stateOf(cards.get(it.id))
+          const card = cards.get(it.id)
+          const st = card && (stage(card) ?? 'New')
           return (
             <li key={it.id}>
               <details>
@@ -37,7 +37,7 @@ export function Lookup({ db }: { db: Db }) {
                   <span className="tags">
                     {it.kind === 'kanji' && <span className="tag">kanji</span>}
                     {it.level && <span className="tag">N{it.level}</span>}
-                    {state && <span className={`tag ${state}`}>{LABEL[state]}</span>}
+                    {st && <span className={`tag ${st.toLowerCase()}`}>{st}</span>}
                   </span>
                 </summary>
                 {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <p className="hint">{it.romaji}</p>}

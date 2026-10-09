@@ -19,7 +19,7 @@ it('typing a search lists matches with level and learning state, and a Jisho lin
   const row = (await screen.findAllByRole('listitem'))[0]
   expect(row.textContent).toMatch(/時間 じかん time/)
   expect(within(row).getByText('N5')).toBeTruthy()
-  expect(await within(row).findByText('Learning')).toBeTruthy()
+  expect(await within(row).findByText('Apprentice')).toBeTruthy()
   expect(within(row).getByRole('link', { name: /Jisho/ }).getAttribute('href')).toBe(`https://jisho.org/search/${encodeURIComponent('時間')}`)
   await user.clear(screen.getByRole('searchbox', { name: /Search/ }))
   await user.type(screen.getByRole('searchbox', { name: /Search/ }), 'zzzzqq')

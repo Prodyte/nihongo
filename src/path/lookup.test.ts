@@ -1,7 +1,6 @@
-import { createEmptyCard, State } from 'ts-fsrs'
 import { describe, expect, it } from 'vitest'
 import { ITEMS, LESSONS } from './course'
-import { search, stateOf } from './lookup'
+import { search } from './lookup'
 import { coverage } from './progress'
 
 const ids = (q: string) => search(q).map((i) => i.id)
@@ -22,17 +21,6 @@ describe('search', () => {
   })
   it('a regex character in the query is searched literally', () => {
     expect(() => search('(e.g')).not.toThrow()
-  })
-})
-
-describe('stateOf', () => {
-  it('new / learning / known (in review with 21+ days stability)', () => {
-    const c = createEmptyCard()
-    expect(stateOf(undefined)).toBeNull()
-    expect(stateOf(c)).toBe('new')
-    expect(stateOf({ ...c, state: State.Review, stability: 5 })).toBe('learning')
-    expect(stateOf({ ...c, state: State.Review, stability: 30 })).toBe('known')
-    expect(stateOf({ ...c, state: State.Relearning, stability: 30 })).toBe('learning')
   })
 })
 

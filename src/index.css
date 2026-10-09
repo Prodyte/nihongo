@@ -138,7 +138,23 @@ ul.results summary .jp { font-size: 1.4rem; }
 ul.results .gloss { flex: 1 1 10rem; }
 ul.results .tags { display: flex; gap: .25rem; }
 .tag { font-size: .75rem; border: 1px solid var(--line); border-radius: 999px; padding: .05rem .5rem; color: var(--muted); white-space: nowrap; }
-.tag.known { color: var(--good); border-color: var(--good); } .tag.learning { color: var(--accent); border-color: var(--accent); }
+.tag.guru, .tag.master, .tag.burned { color: var(--good); border-color: var(--good); } .tag.apprentice { color: var(--accent); border-color: var(--accent); }
 ul.results a { color: var(--accent); font-weight: 600; }
 .detail { display: flex; flex-direction: column; align-items: center; gap: .25rem; margin-top: .5rem; } .detail p { margin: 0; }
 input[type="search"] { text-align: left; }
+ul.stages { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+ul.stages li { display: flex; flex-direction: column; align-items: center; gap: .1rem; padding: .6rem .25rem; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); text-align: center; }
+ul.stages strong { font-size: 1.5rem; } ul.stages small { color: var(--muted); font-size: .7rem; line-height: 1.2; }
+.stage.apprentice strong { color: #c2185b; } .stage.guru strong { color: #7b1fa2; } .stage.master strong { color: #1565c0; } .stage.burned strong { color: var(--fg); }
+:root[data-theme="dark"] .stage.apprentice strong, :root[data-theme="dark"] .stage.guru strong, :root[data-theme="dark"] .stage.master strong { filter: brightness(1.6); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stage strong { filter: brightness(1.6); } }
+@media (max-width: 400px) { ul.stages { grid-template-columns: 1fr 1fr; } }
+ol.forecast { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: .35rem; height: 8rem; align-items: end; }
+ol.forecast li { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: .15rem; }
+ol.forecast .bar { width: 70%; min-height: 2px; background: var(--accent); border-radius: 4px 4px 0 0; }
+ol.forecast small { color: var(--muted); font-size: .75rem; }
+.heatmap { display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 3px; width: 100%; }
+.heatmap span { aspect-ratio: 1; border-radius: 2px; background: var(--line); }
+.heatmap .future { background: none; }
+.heatmap .l1 { background: color-mix(in srgb, var(--accent) 30%, var(--card)); } .heatmap .l2 { background: color-mix(in srgb, var(--accent) 55%, var(--card)); }
+.heatmap .l3 { background: color-mix(in srgb, var(--accent) 80%, var(--card)); } .heatmap .l4 { background: var(--accent); }

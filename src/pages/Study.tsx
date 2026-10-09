@@ -5,12 +5,18 @@ import { Flashcard } from '../modes/Flashcard'
 import { Quiz } from '../modes/Quiz'
 import { Typing } from '../modes/Typing'
 import { addReviewXp } from '../path/progress'
+import { shuffle } from '../modes/choices'
 import { dueCards } from '../srs/scheduler'
+import { mistakes } from '../srs/stages'
 
 export type Mode = 'flashcard' | 'typing' | 'quiz'
 const MODES = { flashcard: Flashcard, typing: Typing, quiz: Quiz }
 
+/** Deck id for "practise mistakes": recent misses and leeches, drilled without changing their schedule. */
+export const MISTAKES = 'mistakes'
+
 export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: string; mode: Mode; autoplay: boolean; onExit: () => void }) {
+  const practice = deck === MISTAKES
   const [pool, setPool] = useState<StoredCard[]>([])
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
   const [reviewed, setReviewed] = useState(0)
@@ -20,7 +26,14 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
   useEffect(() => {
     let live = true
     void (async () => {
-      const cards = await studyCards(db, deck, mode)
+      const cards = await studyCards(db, practice ? 'all' : deck, mode)
+      if (practice) {
+        const missed = mistakes(await db.getAll('reviews'), cards, new Date())
+        if (!live) return
+        setPool(cards)
+        setQueue(shuffle(cards.filter((c) => missed.has(c.id)), Math.random))
+        return
+      }
       const left = Math.max(0, DAILY_NEW - (await newToday(db)))
       if (!live) return
       setPool(cards)
@@ -29,15 +42,16 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
     return () => {
       live = false
     }
-  }, [db, deck, mode])
+  }, [db, deck, mode, practice])
 
   const onGrade = useCallback(
     async (g: Grade) => {
       if (busy.current || !queue) return
       busy.current = true
       try {
-        const updated = await gradeCard(db, queue[0].id, g)
-        void addReviewXp(db).catch(() => {}) // best effort: XP must never block grading
+        // practice drills without touching the schedule (the cards keep their real reviews)
+        const updated = practice ? queue[0] : await gradeCard(db, queue[0].id, g)
+        if (!practice) void addReviewXp(db).catch(() => {}) // best effort: XP must never block grading
         // Again: see it once more this session (FSRS also schedules it for later)
         setQueue((q) => [...q!.slice(1), ...(g === Rating.Again ? [updated] : [])])
         setReviewed((n) => n + 1)
@@ -48,7 +62,7 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
         busy.current = false
       }
     },
-    [db, queue],
+    [db, queue, practice],
   )
 
   if (error && !queue) return <p role="alert">{error}</p>

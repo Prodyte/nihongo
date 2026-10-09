@@ -1,20 +1,12 @@
-import { State, type Card } from 'ts-fsrs'
 import { ITEMS, written, type Item } from './course'
 import { normKana, toKana } from './typing'
 
 export const MAX = 50
-const KNOWN_DAYS = 21 // a card you'd still recall three weeks out counts as known
 
 // Everything you can look up: words and kanji (kana and sentences are taught elsewhere), with search keys precomputed.
 export const ENTRIES = [...ITEMS.values()]
   .filter((i) => i.kind === 'word' || i.kind === 'kanji')
   .map((it) => ({ it, keys: [written(it), it.jp, it.kanji ?? '', normKana(it.jp), it.romaji.replace(/[ ']/g, ''), ...(it.on ?? []), ...(it.kun ?? []).map((k) => k.replace(/[().〜]/g, ''))] }))
-
-export function stateOf(card: Card | undefined): 'new' | 'learning' | 'known' | null {
-  if (!card) return null
-  if (card.state === State.New) return 'new'
-  return card.state === State.Review && card.stability >= KNOWN_DAYS ? 'known' : 'learning'
-}
 
 /** Search the course's words and kanji by kanji, kana, romaji or English. */
 export function search(query: string): Item[] {

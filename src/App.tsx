@@ -10,7 +10,7 @@ import { Lookup } from './pages/Lookup'
 import { Path } from './pages/Path'
 import { Settings } from './pages/Settings'
 import { Stats } from './pages/Stats'
-import { Study } from './pages/Study'
+import { MISTAKES, Study } from './pages/Study'
 import { Today } from './pages/Today'
 import { lessonById, LESSONS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
@@ -73,7 +73,7 @@ export default function App() {
         ) : view === 'study' ? (
           <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => setView(back)} />
         ) : view === 'review' ? (
-          <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} />
+          <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })} />
         ) : view === 'path' ? (
           <Path db={db} onStart={startLesson} />
         ) : view === 'lookup' ? (
