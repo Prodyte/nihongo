@@ -14,6 +14,8 @@ export interface StoredCard {
   html?: boolean // imported Anki card: front/back[0] are HTML, not kana/romaji
 }
 export interface DeckRecord { id: string; name: string }
+/** Built-in decks the path creates when a lesson first teaches words or sentences (kana cards are seeded at startup). */
+export const BUILTIN_DECKS = { word: { id: 'vocab', name: 'Starter vocabulary' }, sentence: { id: 'grammar', name: 'Grammar sentences' } } as const
 export interface MediaRecord { key: string; data: Uint8Array; type: string } // key = `${deck}\0${filename}`
 export interface LessonRecord { id: string; completedAt: Date; plays: number; bestAccuracy: number }
 export interface ActivityRecord { date: string; xp: number; lessons: number } // date = local YYYY-MM-DD
@@ -76,7 +78,7 @@ export const getCards = (db: Db, deck: string) => (deck === 'all' ? db.getAll('c
 /** Cards a study mode can use: typing and quiz skip imported HTML cards; typing also skips whole sentences (typing English sentences exactly is needlessly harsh). */
 export async function studyCards(db: Db, deck: string, mode: string) {
   const cards = await getCards(db, deck)
-  return mode === 'flashcard' ? cards : cards.filter((c) => !c.html && !(mode === 'typing' && c.deck === 'grammar'))
+  return mode === 'flashcard' ? cards : cards.filter((c) => !c.html && !(mode === 'typing' && c.deck === BUILTIN_DECKS.sentence.id))
 }
 
 /** Cards first studied since local midnight, to enforce the daily new-card cap. */

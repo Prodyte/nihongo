@@ -16,6 +16,9 @@ describe('kanaToRomaji', () => {
   })
   it('throws on characters it cannot read, so content errors cannot slip through', () => {
     expect(() => kanaToRomaji('水')).toThrow('No romaji for 水')
+    expect(() => kanaToRomaji('あっ')).toThrow('Dangling っ at the end')
+    expect(() => kanaToRomaji('あっん')).toThrow('Dangling っ before ん')
+    expect(() => kanaToRomaji('あっー')).toThrow('Dangling っ before ー')
   })
 })
 

@@ -30,10 +30,16 @@ const HIRA_COMBO_ROWS = ['きゃきゅきょ', 'しゃしゅしょ', 'ちゃち�
 const chars = (s: string) => s.match(/.[ゃゅょ]?/gu)!
 const chunk = <T,>(a: T[], n: number) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n))
 
+/** Add an item; a second item with the same id would silently replace the first, so fail instead. */
+export function registerItem(items: Map<string, Item>, item: Item) {
+  if (items.has(item.id)) throw new Error(`Duplicate item id ${item.id}`)
+  items.set(item.id, item)
+}
+
 export const ITEMS = new Map<string, Item>()
 const NOTES: Record<string, string> = { 'hira:を': 'Written "wo" but pronounced "o". Mostly used as a grammar particle.', 'kata:ヲ': 'Written "wo" but pronounced "o". Rare in katakana.' }
 for (const k of KANA)
-  ITEMS.set(k.id, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: NOTES[k.id], accepts: k.romaji })
+  registerItem(ITEMS, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: NOTES[k.id], accepts: k.romaji })
 
 function kanaUnits(script: 'hira' | 'kata'): Unit[] {
   const name = script === 'hira' ? 'Hiragana' : 'Katakana'
@@ -56,7 +62,7 @@ function vocabUnits(): Unit[] {
   return VOCAB_UNITS.map((u) => {
     const ids = u.words.map(([jp, romaji, en, kanji]) => {
       const id = `vocab:${romaji.replace(/'/g, '').replace(/ /g, '-')}` // ids ignore the apostrophe so they stay stable
-      ITEMS.set(id, { id, kind: 'word', jp, gloss: en, romaji, sound: romaji.replace(/ /g, ''), kanji })
+      registerItem(ITEMS, { id, kind: 'word', jp, gloss: en, romaji, sound: romaji.replace(/ /g, ''), kanji })
       return id
     })
     return { id: u.id, title: u.title, blurb: u.blurb, lessons: chunk(ids, 6).map((items, i) => ({ id: `${u.id}-${i + 1}`, title: `${u.title} ${i + 1}`, items })) }
@@ -68,7 +74,7 @@ function grammarUnits(): Unit[] {
     const ids = spec.sentences.map((s) => {
       const romaji = tokensToRomaji(s.tokens)
       const id = `sent:${romaji.replace(/'/g, '').replace(/ /g, '-')}`
-      ITEMS.set(id, { id, kind: 'sentence', jp: displayJp(s.tokens), gloss: s.en, romaji, sound: romaji.replace(/ /g, ''), tokens: s.tokens, bank: s.bank, alts: s.alts })
+      registerItem(ITEMS, { id, kind: 'sentence', jp: displayJp(s.tokens), gloss: s.en, romaji, sound: romaji.replace(/ /g, ''), tokens: s.tokens, bank: s.bank, alts: s.alts })
       return id
     })
     return { id: `${GRAMMAR_UNIT.id}-${n + 1}`, title: spec.title, items: ids, explain: { ...spec.explain, examples: spec.explain.examples.map((i) => ids[i]) } }

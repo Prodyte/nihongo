@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
 import { kanaToRomaji } from './romaji'
-import { ITEMS, LESSONS, UNITS } from './course'
+import { ITEMS, LESSONS, registerItem, UNITS } from './course'
 import { VOCAB_UNITS } from './vocab'
 
 // the vocabulary's romaji is checked against the production kana -> romaji converter (こんにちは/こんばんは: は is read "wa")
@@ -72,5 +72,15 @@ describe('course structure', () => {
     expect(ITEMS.get('vocab:mizu')).toMatchObject({ kind: 'word', jp: 'みず', gloss: 'water', kanji: '水' })
     expect(ITEMS.get('vocab:yoroshiku-onegaishimasu')).toBeTruthy()
     expect(ITEMS.get('vocab:kinyoubi')).toMatchObject({ romaji: "kin'youbi", sound: "kin'youbi" }) // the id is stable; the reading keeps the apostrophe
+  })
+})
+
+describe('registerItem', () => {
+  it('refuses a second item with the same id instead of silently replacing the first', () => {
+    const m = new Map()
+    const item = { id: 'vocab:x', kind: 'word' as const, jp: 'あ', gloss: 'a', romaji: 'a', sound: 'a' }
+    registerItem(m, item)
+    expect(() => registerItem(m, { ...item, jp: 'い' })).toThrow('Duplicate item id vocab:x')
+    expect(m.get('vocab:x')!.jp).toBe('あ')
   })
 })

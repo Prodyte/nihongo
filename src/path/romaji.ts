@@ -9,6 +9,7 @@ export function kanaToRomaji(input: string): string {
   for (let i = 0; i < input.length; i++) {
     const c = input[i]
     if (c === 'っ' || c === 'ッ') { doubled = true; continue }
+    if (doubled && (c === 'ん' || c === 'ン' || c === 'ー')) throw new Error(`Dangling っ before ${c} in ${input}`)
     if (c === 'ー') { syl.push([...(syl.at(-1) ?? '')].reverse().find((x) => 'aeiou'.includes(x)) ?? ''); continue }
     const two = input.slice(i, i + 2)
     const kana = /[ゃゅょャュョ]/.test(input[i + 1] ?? '') && MAP.has(two) ? two : c
@@ -18,6 +19,7 @@ export function kanaToRomaji(input: string): string {
     syl.push((doubled ? (r.startsWith('ch') ? 't' : r[0]) : '') + r)
     doubled = false
   }
+  if (doubled) throw new Error(`Dangling っ at the end of ${input}`)
   return syl.map((s, i) => (s === 'n' && /^[aiueoy]/.test(syl[i + 1] ?? '') ? "n'" : s)).join('')
 }
 

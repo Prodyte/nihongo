@@ -1,6 +1,6 @@
 import { Rating, State, type Grade } from 'ts-fsrs'
 import { newFsrsCard, schedule } from '../srs/scheduler'
-import type { Db, StoredCard } from '../db/db'
+import { BUILTIN_DECKS, type Db, type StoredCard } from '../db/db'
 import type { Item, Lesson } from './course'
 
 // ---- pure helpers ----------------------------------------------------------------------------
@@ -43,9 +43,6 @@ export function glossAnswers(gloss: string): string[] {
 
 // ---- database --------------------------------------------------------------------------------
 
-/** Built-in decks created when a lesson first teaches words or sentences (kana cards are seeded at startup). */
-const DECKS = { word: { id: 'vocab', name: 'Starter vocabulary' }, sentence: { id: 'grammar', name: 'Grammar sentences' } } as const
-
 const rateByMisses = (misses: number): Grade => (misses === 0 ? Rating.Good : misses === 1 ? Rating.Hard : Rating.Again)
 
 /**
@@ -64,7 +61,7 @@ export async function completeLesson(
   for (const item of lessonItems) {
     let card: StoredCard | undefined = await cards.get(item.id)
     if (!card && item.kind !== 'kana') {
-      const deck = DECKS[item.kind]
+      const deck = BUILTIN_DECKS[item.kind]
       card = { id: item.id, deck: deck.id, front: item.jp, back: item.kind === 'word' ? glossAnswers(item.gloss) : [item.gloss], fsrs: newFsrsCard(now) }
       await tx.objectStore('decks').put(deck)
     }
