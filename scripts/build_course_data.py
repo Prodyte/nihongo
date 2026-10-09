@@ -25,6 +25,15 @@ OVERRIDES = {
     ('十', '(〜を) とお'): ('十', 'とお', 'ten (things)'),
     ('ごらんになる', ''): ('ご覧になる', 'ごらんになる', 'to see (honorific)'),  # no reading in the source
     ('かまう', ''): ('構う', 'かまう', 'to mind, to care about'),
+    ('金', 'かね'): ('金', 'かね', 'money'),  # 金 is also listed as きん (gold); one written form keeps one reading (see words())
+    ('唯', 'ただ'): None,  # ただ is listed in kana already
+    ('只', 'ただ'): None,
+    ('唯', 'たった'): ('', 'たった', 'only (a mere)'),  # 唯 is not read たった
+    ('偶', 'たま'): None,  # the meaning given is for ぐう (even number)
+    ('可愛そう', 'かわいそう'): ('可哀想', 'かわいそう', 'poor, pitiable'),  # 可愛そう is a misspelling
+    ('支払', 'しはらい'): ('支払い', 'しはらい', 'payment'),  # standard spellings, so frequency ordering finds them
+    ('知合い', 'しりあい'): ('知り合い', 'しりあい', 'acquaintance'),
+    ('清む', 'すむ'): None,  # obscure variant of 澄む
 }
 
 KANA = re.compile(r'^[぀-ヿー]+$')
@@ -40,7 +49,7 @@ def parts(g: str) -> list[str]:
     out, cur, depth = [], '', 0
     for ch in g:
         depth += (ch == '(') - (ch == ')')
-        if ch in ',;' and depth == 0:
+        if ch in ',;、' and depth == 0:
             out.append(cur)
             cur = ''
         else:
@@ -84,7 +93,9 @@ def words():
             if c is None:
                 skipped.append(row['expression'])
                 continue
-            key = c[0] or c[1]  # the written form: 文字 read もじ or もんじ is one word
+            # one entry per written form: 文字 もじ/もんじ is one word, and 上 うえ/かみ/じょう or 金 かね/きん would show the same
+            # prompt with two right answers. The first (easiest level, listed first) reading wins.
+            key = c[0] or c[1]
             if key in seen:
                 continue  # listed twice (two levels or two readings): keep the first
             seen.add(key)

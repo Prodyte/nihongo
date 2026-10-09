@@ -19,7 +19,7 @@ export function Credits() {
           </li>
         ))}
       </ul>
-      <p><small>The JLPT publishes no official vocabulary or kanji lists; these are the widely used community lists. Changes: entries were cleaned and shortened, and words are reordered by frequency.</small></p>
+      <p><small>The generated kanji data is shared under CC BY-SA 4.0 and the word data under CC BY, like their sources. The JLPT publishes no official vocabulary or kanji lists; these are the widely used community lists. Changes: entries were cleaned and shortened, and words are reordered by frequency.</small></p>
     </div>
   )
 }

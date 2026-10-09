@@ -12,3 +12,6 @@ The build script also reads word frequencies from [wordfreq](https://github.com/
 order words. Only the order is used; no wordfreq data is shipped.
 
 The JLPT publishes no official word or kanji lists. These lists are the community standard, not the official exam syllabus.
+
+**Licence of the generated files:** `src/data/jlpt/kanji.json` is derived from KANJIDIC2 and is therefore released under
+CC BY-SA 4.0. `src/data/jlpt/words.json` is derived from Jonathan Waller's lists (CC BY).
