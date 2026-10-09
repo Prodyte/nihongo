@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Db } from '../db/db'
-import { applyTheme, GOALS, readBool, readGoal, readStr, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
+import { applyTheme, GOALS, readBool, readGoal, readSpeed, readStr, SPEEDS, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
 import { FURIGANA, type Furigana } from '../path/ui/furigana'
 import { canRecognise } from '../speech'
 import { Backup } from './Backup'
@@ -9,6 +9,7 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
   const [goal, setGoal] = useState(readGoal)
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
+  const [speed, setSpeed] = useState(readSpeed)
   const [speaking, setSpeaking] = useState(() => readBool('nihongo.speaking', true))
   const [writing, setWriting] = useState(() => readBool('nihongo.writing', true))
   const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
@@ -35,6 +36,12 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
           Furigana (readings over kanji)
           <select value={furigana} onChange={(e) => onFurigana(e.target.value as Furigana)}>
             {FURIGANA.map((f) => <option key={f} value={f}>{{ auto: 'Over kanji I haven’t learned yet', always: 'Always', never: 'Never' }[f]}</option>)}
+          </select>
+        </label>
+        <label>
+          Speech speed
+          <select value={speed} onChange={(e) => { setSpeed(Number(e.target.value)); writeInt('nihongo.rate', Number(e.target.value)) }}>
+            {SPEEDS.map((r) => <option key={r} value={r}>{{ 100: 'Normal', 80: 'A little slower', 60: 'Slow' }[r]}</option>)}
           </select>
         </label>
         <label className="check">

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { readSpeed } from './settings'
 
 const synth = () => (typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null)
 const jaVoice = () => synth()?.getVoices().find((v) => v.lang.toLowerCase().replace('_', '-').startsWith('ja'))
 
-/** Speak Japanese with the device's voice. Returns false when there is none (nothing is played). */
-export function speak(text: string): boolean {
+/** Speak Japanese with the device's voice, at `speed` percent (else the Settings speed). Returns false when there is
+ * no voice (nothing is played). */
+export function speak(text: string, speed = readSpeed()): boolean {
   const s = synth()
   const voice = jaVoice()
   if (!s || !voice) return false
@@ -12,6 +14,7 @@ export function speak(text: string): boolean {
   const u = new SpeechSynthesisUtterance(text)
   u.lang = 'ja-JP'
   u.voice = voice
+  u.rate = speed / 100
   s.speak(u)
   return true
 }
@@ -26,6 +29,7 @@ export function speakAll(texts: string[], onStart: (i: number) => void, onEnd: (
     const u = new SpeechSynthesisUtterance(text)
     u.lang = 'ja-JP'
     u.voice = voice
+    u.rate = readSpeed() / 100
     u.onstart = () => onStart(i)
     if (i === texts.length - 1) u.onend = onEnd
     s.speak(u)

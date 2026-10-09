@@ -55,8 +55,8 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
               </>
             ) : !card.html && <div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>}
             <div className="grades">
-              {GRADES.map(([g, label, cls], i) => (
-                <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small aria-label={`next in ${next[g]}`}>{next[g]}<kbd aria-hidden="true">{i + 1}</kbd></small></button>
+              {GRADES.map(([g, label, cls]) => (
+                <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small aria-label={`next in ${next[g]}`}>{next[g]}</small></button>
               ))}
             </div>
           </>

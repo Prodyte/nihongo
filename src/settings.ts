@@ -47,6 +47,11 @@ export const writeStr = (key: string, value: string) => {
   }
 }
 
+/** Speech speed, in percent of normal: the default for every spoken word (the turtle button always plays at SLOW). */
+export const SPEEDS = [100, 80, 60]
+export const SLOW = 60
+export const readSpeed = () => { const r = readInt('nihongo.rate', 100); return SPEEDS.includes(r) ? r : 100 }
+
 export const GOALS = [10, 20, 50]
 export const readGoal = () => { const g = readInt('nihongo.goal', 20); return GOALS.includes(g) ? g : 20 }
 

@@ -76,6 +76,16 @@ describe('speak', () => {
     expect(speak('あ')).toBe(true)
     expect(s.cancel).toHaveBeenCalledBefore(s.speak)
     const u = s.speak.mock.calls[0][0] as Utterance
-    expect(u).toMatchObject({ text: 'あ', lang: 'ja-JP', voice: ja })
+    expect(u).toMatchObject({ text: 'あ', lang: 'ja-JP', voice: ja, rate: 1 })
+  })
+  it('plays at the Settings speed, or at the speed asked for (the turtle button)', () => {
+    const s = synth([{ lang: 'ja-JP' }])
+    vi.stubGlobal('speechSynthesis', s)
+    vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
+    localStorage.setItem('nihongo.rate', '80')
+    speak('あ')
+    speak('い', 60)
+    localStorage.removeItem('nihongo.rate')
+    expect(s.speak.mock.calls.map((c) => (c[0] as Utterance & { rate: number }).rate)).toEqual([0.8, 0.6])
   })
 })

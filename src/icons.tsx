@@ -21,6 +21,7 @@ const P = {
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
   target: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01',
   cards: 'M7 3h11a2 2 0 0 1 2 2v13M4 7h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z',
+  turtle: 'M2.5 15.5a7.5 7 0 0 1 15 0zM6.5 15.5l2-4h4l2 4M19.5 14.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4M17.5 13.5h.5M5.5 15.5v3M14.5 15.5v3',
   shuffle: 'M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5',
 } as const
 export type IconName = keyof typeof P

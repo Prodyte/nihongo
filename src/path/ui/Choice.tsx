@@ -59,10 +59,10 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
       )}
       {fill && ex.type === 'choice' && <p className="hint">{ex.hint}</p>}
       <div className={wide ? 'grid wide' : 'grid'} role="group" aria-label="Answers">
-        {ex.options.map((o, i) => (
+        {ex.options.map((o) => (
           <button key={o} lang={toGloss ? undefined : 'ja'} disabled={answered} onClick={() => setPicked(o)}
             className={`${toGloss ? '' : 'jp-option'} ${!answered ? '' : o === right ? 'good' : o === picked ? 'bad' : ''}`}>
-            {answered && (o === right ? '✓ ' : o === picked ? '✗ ' : '')}<Ruby text={o} reading={ex.readings?.[o]} /> {!answered && <kbd aria-hidden="true">{i + 1}</kbd>}
+            {answered && (o === right ? '✓ ' : o === picked ? '✗ ' : '')}<Ruby text={o} reading={ex.readings?.[o]} />
           </button>
         ))}
       </div>

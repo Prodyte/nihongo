@@ -66,6 +66,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.primary:hover:not(:disabled) { border-color: var(--accent); filter: brightness(1.04); }
 button.primary:active:not(:disabled) { box-shadow: 0 0 0 var(--accent-press); transform: translateY(3px); }
 button.big { min-height: 3.5rem; font-size: 1.1rem; }
+.speak-btns { display: inline-flex; align-items: center; gap: .35rem; }
+button.icon-btn.slow { min-width: 2.4rem; padding: .4rem; }
 button.icon-btn { padding: .5rem; min-width: 2.75rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; color: var(--indigo); }
 button.ghost { background: none; border-color: transparent; box-shadow: none; color: var(--muted); }
 select, input { padding: .6rem 1rem; border: 1.5px solid var(--line); border-radius: var(--radius-s); background: var(--raised); }
