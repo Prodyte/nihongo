@@ -71,7 +71,6 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         <p className="eyebrow">{summary.first ? 'Lesson complete' : 'Practice complete'}</p>
         <h2>{pct === 100 ? 'Perfect!' : pct >= 80 ? 'Great work!' : 'Nice effort!'}</h2>
         <div className="tiles">
-          <div className="tile xp"><small>XP</small><strong>+{summary.xp}</strong></div>
           <div className="tile acc"><small>Right first time</small><strong>{pct}%</strong></div>
           {summary.streak !== null && <div className="tile streak"><small>Streak</small><strong>{summary.streak} day{summary.streak === 1 ? '' : 's'}</strong></div>}
         </div>

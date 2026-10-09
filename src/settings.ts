@@ -52,8 +52,6 @@ export const SPEEDS = [100, 80, 60]
 export const SLOW = 60
 export const readSpeed = () => { const r = readInt('nihongo.rate', 100); return SPEEDS.includes(r) ? r : 100 }
 
-export const GOALS = [10, 20, 50]
-export const readGoal = () => { const g = readInt('nihongo.goal', 20); return GOALS.includes(g) ? g : 20 }
 
 export const THEMES = ['system', 'light', 'dark'] as const
 export type Theme = (typeof THEMES)[number]

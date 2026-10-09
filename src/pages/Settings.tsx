@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import type { Db } from '../db/db'
-import { applyTheme, GOALS, readBool, readGoal, readSpeed, readStr, SPEEDS, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
+import { applyTheme, readBool, readSpeed, readStr, SPEEDS, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
 import { FURIGANA, type Furigana } from '../path/ui/furigana'
 import { canRecognise } from '../speech'
 import { Backup } from './Backup'
 
 export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { db: Db; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void }) {
-  const [goal, setGoal] = useState(readGoal)
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
   const [speed, setSpeed] = useState(readSpeed)
@@ -18,12 +17,6 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
     <>
       <div className="card form">
         <h2>Settings</h2>
-        <label>
-          Daily goal
-          <select value={goal} onChange={(e) => { const v = Number(e.target.value); setGoal(v); writeInt('nihongo.goal', v) }}>
-            {GOALS.map((x) => <option key={x} value={x}>{x} XP a day</option>)}
-          </select>
-        </label>
         <label>
           Theme
           <select value={theme} onChange={(e) => { const t = e.target.value as Theme; setTheme(t); writeStr('nihongo.theme', t); applyTheme(t) }}>

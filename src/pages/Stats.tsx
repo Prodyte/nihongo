@@ -88,7 +88,7 @@ export function Stats({ db }: { db: Db }) {
   )
 }
 
-/** The last 18 weeks, one square per day, darker for more XP (like a GitHub contribution graph). */
+/** The last 18 weeks, one square per day, darker for more study (like a GitHub contribution graph). */
 function Heatmap({ days, now }: { days: Map<string, number>; now: Date }) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const first = new Date(today)
@@ -99,7 +99,7 @@ function Heatmap({ days, now }: { days: Map<string, number>; now: Date }) {
   const level = (xp: number) => (xp === 0 ? 0 : xp < 10 ? 1 : xp < 20 ? 2 : xp < 50 ? 3 : 4)
   return (
     <div className="heatmap" role="img" aria-label={`Active on ${active} of the last ${WEEKS * 7} days`}>
-      {cells.map((c) => <span key={c.key} className={c.future ? 'future' : `l${level(c.xp)}`} title={`${c.key}: ${c.xp} XP`} />)}
+      {cells.map((c) => <span key={c.key} className={c.future ? 'future' : `l${level(c.xp)}`} title={`${c.key}${c.xp ? ': studied' : ''}`} />)}
     </div>
   )
 }

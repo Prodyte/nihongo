@@ -22,7 +22,7 @@ import { Welcome, type StartLevel } from './pages/Welcome'
 import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
-import { readBool, readStr, writeBool, writeInt, writeStr } from './settings'
+import { readBool, readStr, writeBool, writeStr } from './settings'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
 type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
@@ -32,7 +32,7 @@ const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
   ['stats', 'Stats', 'Your reviews and cards'],
-  ['settings', 'Settings', 'Daily goal, theme, audio, backup'],
+  ['settings', 'Settings', 'Theme, audio, furigana, backup'],
   ['credits', 'Credits', 'Where the course data comes from'],
 ]
 
@@ -82,8 +82,7 @@ export default function App() {
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
   if (!db) return <main><div className="skeleton" /><div className="skeleton tall" /></main>
   if (welcome) {
-    const start = (level: StartLevel, goal: number) => {
-      writeInt('nihongo.goal', goal)
+    const start = (level: StartLevel) => {
       writeBool('nihongo.onboarded', true)
       setWelcome(false)
       // skipping ahead means passing a test over everything up to there: the last kana unit, or the end of the starter section

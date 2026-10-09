@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { openDb, seedKana } from '../db/db'
 import { newFsrsCard } from '../srs/scheduler'
 import { ITEMS, LESSONS, lessonById } from './course'
-import { addReviewXp, completeLesson, currentLesson, dailyGoalProgress, dayKey, getProgress, glossAnswers, isUnlocked, learnedItems, streak, xpFor } from './progress'
+import { addReviewXp, completeLesson, currentLesson, dayKey, getProgress, glossAnswers, isUnlocked, learnedItems, streak, xpFor } from './progress'
 
 let n = 0
 const fresh = async () => { const db = await openDb(`progress-${n++}`); await seedKana(db); return db }
@@ -41,10 +41,6 @@ describe('dayKey / streak', () => {
 describe('xp, goal, unlocking', () => {
   it('xp: 10 first time, +5 flawless, 5 for repeats', () => {
     expect([xpFor(true, false), xpFor(true, true), xpFor(false, true), xpFor(false, false)]).toEqual([10, 15, 5, 5])
-  })
-  it('daily goal progress', () => {
-    expect(dailyGoalProgress(5, 20)).toEqual({ xp: 5, goal: 20, fraction: 0.25, met: false })
-    expect(dailyGoalProgress(45, 20)).toMatchObject({ fraction: 1, met: true })
   })
   it('lessons unlock in order, unless skipping ahead', () => {
     const done = new Set([LESSONS[0].id])

@@ -128,8 +128,9 @@ dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; width: 100
 .chips-row { display: flex; gap: .5rem; flex-wrap: wrap; }
 .chip { display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .7rem; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-weight: 650; font-variant-numeric: tabular-nums; }
 .chip.streak { color: var(--accent); } .chip.streak.off { color: var(--muted); }
-.chip.xp { color: var(--gold); }
 .goal { display: flex; align-items: center; gap: 1rem; width: 100%; }
+.streak-badge { width: 4.5rem; height: 4.5rem; flex: none; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.streak-badge.off { background: var(--line); color: var(--muted); }
 .ring { --p: 0; width: 4.5rem; height: 4.5rem; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-variant-numeric: tabular-nums;
   background: radial-gradient(closest-side, var(--card) 76%, transparent 77% 100%), conic-gradient(var(--accent) calc(var(--p) * 1%), var(--line) 0); }
 .ring.met { background: radial-gradient(closest-side, var(--card) 76%, transparent 77% 100%), conic-gradient(var(--good) 100%, var(--line) 0); color: var(--good); }

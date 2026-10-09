@@ -12,10 +12,10 @@ beforeEach(() => localStorage.setItem('nihongo.onboarded', '1')) // the welcome 
 const current = () => screen.getByRole('navigation', { name: 'Main' }).querySelector('[aria-current="page"]')!.textContent
 const tab = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}$`) })
 
-it('opens on Today; Review studies a flashcard end to end (full-screen), and reviewing earns XP', async () => {
+it('opens on Today; Review studies a flashcard end to end (full-screen), and reviewing starts a streak', async () => {
   const user = userEvent.setup()
   render(<App />)
-  await screen.findByText('Start a streak today')
+  await screen.findByText('No streak yet')
   expect(current()).toBe('Today')
 
   await user.click(tab('Review'))
@@ -40,7 +40,7 @@ it('opens on Today; Review studies a flashcard end to end (full-screen), and rev
 
   await user.selectOptions(screen.getByRole('combobox', { name: 'Mode' }), 'quiz')
   await user.click(tab('Today')) // the review counted as activity: 1 XP and a streak
-  await screen.findByText('Daily goal: 1 / 20 XP')
+  await screen.findByText('1-day streak')
   expect(screen.getByText(/1-day streak/)).toBeTruthy()
   await user.click(tab('Review'))
   expect((screen.getByRole('combobox', { name: 'Mode' }) as HTMLSelectElement).value).toBe('quiz') // the Review tab keeps its choices

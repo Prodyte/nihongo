@@ -8,7 +8,7 @@ import { addReviewXp } from '../path/progress'
 import { ExerciseView } from '../path/ui/ExerciseView'
 import { sfx } from '../sfx'
 
-/** A short practice session (10 questions) on things already learned. Each right answer earns 1 XP; schedules are untouched. */
+/** A short practice session (10 questions) on things already learned. Right answers count toward today's streak; schedules are untouched. */
 export function Drill({ db, kind, onExit }: { db: Db; kind: DrillKind; onExit: () => void }) {
   const voice = useJaVoice()
   const [exs, setExs] = useState<Exercise[] | null>(null)
@@ -40,7 +40,6 @@ export function Drill({ db, kind, onExit }: { db: Db; kind: DrillKind; onExit: (
       <h2>{right === exs.length ? 'Perfect!' : right / exs.length >= 0.7 ? 'Well done!' : 'Keep practising!'}</h2>
       <div className="tiles">
         <div className="tile acc"><small>Right</small><strong>{right}/{exs.length}</strong></div>
-        <div className="tile xp"><small>XP</small><strong>+{right}</strong></div>
       </div>
       <div className="actions">
         <button className="primary big" autoFocus onClick={() => setRound((r) => r + 1)}>Practise again</button>

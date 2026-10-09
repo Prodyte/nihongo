@@ -118,7 +118,7 @@ function StoryView({ db, story, onExit }: { db: Db; story: Story; onExit: () => 
             </div>
           </fieldset>
         ))}
-        <p role="status" className="counts">{done ? `${score} of ${story.questions.length} right · +${score * 2} XP` : ''}</p>
+        <p role="status" className="counts">{done ? `${score} of ${story.questions.length} right` : ''}</p>
         {done && <button className="primary" onClick={onExit}>Back to stories</button>}
       </section>
     </>

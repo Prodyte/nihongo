@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react'
 import { reviewCounts, type Db } from '../db/db'
 import { Icon } from '../icons'
 import { ITEMS, lessonKind, LESSONS, unitOf } from '../path/course'
-import { coverage, currentLesson, dailyGoalProgress, getProgress, type LevelCoverage } from '../path/progress'
-import { readGoal } from '../settings'
+import { coverage, currentLesson, getProgress, type LevelCoverage } from '../path/progress'
 import { nextDue, until } from '../srs/stages'
 import { Levels } from './Levels'
 
@@ -37,7 +36,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
 
   if (error) return <p role="alert" className="bad">{error}</p>
   if (!s) return <Loading />
-  const g = dailyGoalProgress(s.xpToday, readGoal())
+  const today = s.xpToday > 0 // studied today: the streak is safe
   const reviews = s.due + s.fresh
   const reviewFirst = s.due > 0 // a new lesson only adds more to remember
   const [hello, hi] = GREETING(s.hour)
@@ -59,19 +58,15 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
       <div className="greeting">
         <div>
           <h2 lang="ja">{hello}</h2>
-          <p className="sub">{hi}{g.met ? ' · goal met today ✓' : ''}</p>
-        </div>
-        <div className="chips-row">
-          <span className={`chip streak${s.streak ? '' : ' off'}`} title="Daily streak"><Icon name="flame" size={18} /> {s.streak}<span className="visually-hidden">-day streak</span></span>
-          <span className="chip xp" title="XP today"><Icon name="star" size={18} /> {s.xpToday}<span className="visually-hidden"> XP today</span></span>
+          <p className="sub">{hi}</p>
         </div>
       </div>
-      <section className="card" aria-label="Daily goal">
+      <section className="card" aria-label="Streak">
         <div className="goal">
-          <div className={`ring${g.met ? ' met' : ''}`} style={{ '--p': Math.round(g.fraction * 100) } as React.CSSProperties} aria-hidden="true">{g.met ? <Icon name="check" /> : `${Math.round(g.fraction * 100)}%`}</div>
+          <div className={`streak-badge${s.streak ? '' : ' off'}`} aria-hidden="true"><Icon name="flame" size={30} /></div>
           <div>
-            <p><strong>Daily goal: {g.xp} / {g.goal} XP</strong></p>
-            <p className="hint" style={{ textAlign: 'left' }}>{s.streak > 0 ? `${s.streak}-day streak. Keep it going!` : 'Start a streak today'}</p>
+            <p><strong>{s.streak ? `${s.streak}-day streak` : 'No streak yet'}</strong></p>
+            <p className="hint" style={{ textAlign: 'left' }}>{today ? 'Done for today ✓ See you tomorrow.' : s.streak ? 'Do a lesson or a review today to keep it going.' : 'Do a lesson or a review to start one.'}</p>
           </div>
         </div>
       </section>

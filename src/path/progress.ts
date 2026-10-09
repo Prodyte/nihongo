@@ -23,7 +23,6 @@ export function streak(days: ReadonlySet<string>, today: Date): number {
 /** First completion earns 10 XP (+5 for a flawless run); repeating a lesson earns 5. */
 export const xpFor = (first: boolean, flawless: boolean) => (first ? 10 + (flawless ? 5 : 0) : 5)
 
-export const dailyGoalProgress = (xp: number, goal: number) => ({ xp, goal, fraction: Math.min(1, xp / goal), met: xp >= goal })
 
 /** A lesson is open when the previous one is done (or when the learner chose to skip ahead). */
 export const isUnlocked = (lessons: readonly Lesson[], index: number, done: ReadonlySet<string>, skipAhead: boolean) =>

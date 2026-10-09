@@ -10,7 +10,7 @@ import { Reading } from './Reading'
 
 afterEach(cleanup)
 
-it('open a story, tap a word to look it up, reveal a translation, answer the questions for XP', async () => {
+it('open a story, tap a word to look it up, reveal a translation, answer the questions (they count toward the streak)', async () => {
   const db = await openDb('reading-1')
   const user = userEvent.setup()
   render(<Reading db={db} onExit={() => {}} />)
@@ -23,7 +23,7 @@ it('open a story, tap a word to look it up, reveal a translation, answer the que
   const story = STORIES[0]
   const qs = document.querySelectorAll('fieldset.question')
   for (const [i, q] of story.questions.entries()) await user.click(within(qs[i] as HTMLElement).getByRole('button', { name: q.options[q.answer] }))
-  expect(screen.getByText('3 of 3 right · +6 XP')).toBeTruthy()
+  expect(screen.getByText('3 of 3 right')).toBeTruthy()
   await vi.waitFor(async () => expect((await getProgress(db)).xpToday).toBe(6))
   expect(localStorage.getItem('nihongo.read')).toContain('my-day')
 })

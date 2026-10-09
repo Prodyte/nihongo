@@ -19,8 +19,9 @@ it('a new learner: no streak, just the first lesson (kana come from the path, no
   const onLesson = vi.fn()
   const user = userEvent.setup()
   render(<Today db={await freshDb()} onReview={() => {}} onLesson={onLesson} />)
-  await screen.findByText('Start a streak today')
-  expect(screen.getByText('Daily goal: 0 / 20 XP')).toBeTruthy()
+  await screen.findByText('No streak yet')
+  expect(screen.getByText('Do a lesson or a review to start one.')).toBeTruthy()
+  expect(screen.queryByText(/XP/)).toBeNull()
   expect(buttons()).toEqual([[`Next lesson: ${LESSONS[0].title}`, true]])
   await user.click(screen.getByRole('button', { name: /^Next lesson/ }))
   expect(onLesson).toHaveBeenCalledWith(LESSONS[0].id)
@@ -28,7 +29,7 @@ it('a new learner: no streak, just the first lesson (kana come from the path, no
   expect(screen.getByRole('progressbar', { name: 'N5 kanji' })).toBeTruthy()
 })
 
-it('with cards due, reviewing leads; XP, goal and streak show', async () => {
+it('with cards due, reviewing leads; the streak shows, done for today', async () => {
   const db = await freshDb()
   await completeLesson(db, LESSONS[0], ITEMS, {}, 1) // 15 XP today
   await completeLesson(db, LESSONS[1], ITEMS, {}, 1) // 30 XP: goal met
@@ -37,10 +38,9 @@ it('with cards due, reviewing leads; XP, goal and streak show', async () => {
   const onReview = vi.fn()
   const user = userEvent.setup()
   render(<Today db={db} onReview={onReview} onLesson={() => {}} />)
-  await screen.findByText('Daily goal: 30 / 20 XP')
-  expect(screen.getByText(/goal met today ✓/)).toBeTruthy()
-  expect(screen.getByText(/1-day streak/)).toBeTruthy()
-  expect(screen.getByTitle('XP today').textContent).toBe(' 30 XP today')
+  await screen.findByText('1-day streak')
+  expect(screen.getByText(/Done for today ✓/)).toBeTruthy()
+  expect(screen.queryByText(/XP/)).toBeNull()
   const [first, second] = buttons()
   expect(first).toEqual(['Review', true]) // reviews first, as the primary action
   expect(screen.getByText('1 review due')).toBeTruthy()
@@ -49,12 +49,3 @@ it('with cards due, reviewing leads; XP, goal and streak show', async () => {
   expect(onReview).toHaveBeenCalled()
 })
 
-it('uses the goal chosen in Settings, and a bad stored value falls back to 20', async () => {
-  localStorage.setItem('nihongo.goal', '50')
-  render(<Today db={await freshDb()} onReview={() => {}} onLesson={() => {}} />)
-  await screen.findByText('Daily goal: 0 / 50 XP')
-  cleanup()
-  localStorage.setItem('nihongo.goal', '7')
-  render(<Today db={await freshDb()} onReview={() => {}} onLesson={() => {}} />)
-  await screen.findByText('Daily goal: 0 / 20 XP')
-})
