@@ -108,3 +108,31 @@ it('after answering a word, it is spoken when autoplay is on (and not when off, 
   await r.u.type(box(), 'a{Enter}')
   expect(spy).not.toHaveBeenCalled() // the sound would only repeat the answer you just typed
 })
+
+const SENT = 'sent:watashi-wa-gakusei-desu'
+it('sentences: type it with the particle as written (ha), spaces optional; the label says so', async () => {
+  const { onDone, u } = show(ex(SENT, 'toJp'))
+  expect(screen.getByLabelText(/particles as written: は = ha, を = wo/)).toBe(box())
+  expect(screen.getByText('I am a student.')).toBeTruthy()
+  await u.type(box(), 'watashi ha gakusei desu{Enter}')
+  expect(screen.getByText('✓ Correct')).toBeTruthy()
+  await u.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(onDone).toHaveBeenCalledWith([])
+})
+it('sentences: "wa" for the particle is wrong, with the reason; the answer is shown with its reading', async () => {
+  const { onDone, u } = show(ex(SENT, 'toJp'))
+  await u.type(box(), 'watashi wa gakusei desu{Enter}')
+  expect(screen.getByText('The particle は is typed “ha”, even though it sounds like “wa”.')).toBeTruthy()
+  expect(screen.getByText(/✗ Correct answer: わたしは がくせいです。 \(watashi wa gakusei desu\)/)).toBeTruthy()
+  await u.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(onDone).toHaveBeenCalledWith([SENT])
+})
+it('sentences: the live preview shows kana while typing, and the other valid word order is accepted', async () => {
+  let r = show(ex(SENT, 'toJp'))
+  await r.u.type(box(), 'watashiha')
+  expect(document.querySelector('.preview')!.textContent!.trim()).toBe('わたしは')
+  cleanup()
+  r = show(ex('sent:tomodachi-wa-sakana-o-tabemasu', 'toJp'))
+  await r.u.type(box(), 'sakana wo tomodachi ha tabemasu{Enter}')
+  expect(screen.getByText('✓ Correct')).toBeTruthy()
+})

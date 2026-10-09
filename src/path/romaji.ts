@@ -30,5 +30,6 @@ const READ_AS: Record<string, string> = { は: 'wa', を: 'o', へ: 'e' }
 /** How a sentence is pronounced: は is "wa" as a particle, を is "o". */
 export const tokensToRomaji = (tokens: string[]) => tokens.map((t) => READ_AS[t] ?? kanaToRomaji(t)).join(' ')
 
-/** The sentence as written for learners: a space after each particle, then 。 */
-export const displayJp = (tokens: string[]) => tokens.map((t, i) => (PARTICLES.has(t) && i < tokens.length - 1 ? `${t} ` : t)).join('') + '。'
+/** The sentence as written for learners: a space after each particle, then 。 `blank` shows ＿ in place of that chunk. */
+export const displayJp = (tokens: string[], blank?: number) =>
+  tokens.map((t, i) => (i === blank ? '＿' : t)).map((t, i) => (i === blank || PARTICLES.has(t)) && i < tokens.length - 1 ? `${t} ` : t).join('') + '。'

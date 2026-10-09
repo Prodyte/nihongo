@@ -6,6 +6,7 @@ import { Rating, State } from 'ts-fsrs'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { openDb, seedKana, type Db } from '../db/db'
 import { ITEMS, lessonById, type Lesson as LessonT } from '../path/course'
+import { displayJp, kanaToRomaji, PARTICLES } from '../path/romaji'
 import { Match } from '../path/ui/Match'
 import { Lesson } from './Lesson'
 
@@ -20,6 +21,9 @@ const optionText = (b: HTMLElement) => (b.textContent ?? '').replace(/^[✓✗]\
 const mount = (db: Db, lesson: LessonT, extra: Partial<Parameters<typeof Lesson>[0]> = {}) =>
   render(<Lesson db={db} lesson={lesson} autoplay={false} onExit={() => {}} onStart={() => {}} {...extra} />)
 
+const KEYS: Record<string, string> = { は: 'ha', を: 'wo', へ: 'he' }
+const typeable = (it: NonNullable<ReturnType<typeof ITEMS.get>>) => (it.kind === 'sentence' ? it.tokens!.map((t) => KEYS[t] ?? kanaToRomaji(t)).join(' ') : it.romaji)
+
 async function solveMatch(u: UserEvent, items: ReturnType<typeof ITEMS.get>[]) {
   for (const b of [...document.querySelectorAll<HTMLElement>('.match button[lang="ja"]')]) {
     const item = items.find((it) => it!.jp === b.textContent!.replace(/^✓\s*/, '').trim())!
@@ -33,24 +37,35 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
   const items = lesson.items.map((id) => ITEMS.get(id))
   let wrongPending = wrongFirst
   for (let i = 0; i < 150; i++) {
-    await waitFor(() => expect(screen.queryByText('Lesson complete 🎉') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByRole('textbox') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
+    await waitFor(() => expect(screen.queryByText('Lesson complete 🎉') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByText('Build the sentence') ?? screen.queryByRole('textbox') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
     if (screen.queryByText('Lesson complete 🎉')) return
     const got = screen.queryByRole('button', { name: 'Got it' })
     if (got) { await u.click(got); continue }
     if (stopAfterIntros) return
     if (screen.queryByText('Match the pairs')) { await solveMatch(u, items); await u.click(await screen.findByRole('button', { name: 'Continue' })); continue }
+    if (screen.queryByText('Build the sentence')) {
+      const shown = document.querySelector('.prompt.gloss')!.textContent
+      const item = items.find((it) => it!.gloss === shown)!
+      const bank = within(screen.getByRole('group', { name: 'Word bank' }))
+      for (const t of item!.tokens!) await u.click(bank.getAllByRole('button').find((b) => b.textContent === t && !(b as HTMLButtonElement).disabled)!)
+      await u.click(screen.getByRole('button', { name: 'Check' }))
+      await u.click(await screen.findByRole('button', { name: 'Continue' }))
+      continue
+    }
     const box = screen.queryByRole('textbox')
     if (box) { // typing: the label says what to type, the prompt says what it is about
       const ask = document.querySelector('label.q')!.textContent!
       const shown = document.querySelector('.prompt')!.textContent
-      const text = ask.includes('Japanese') ? items.find((it) => it!.gloss === shown)!.romaji : items.find((it) => it!.jp === shown)!.gloss // 'Japanese' first: its hint also says "romaji"
+      const text = ask.includes('Japanese') ? typeable(items.find((it) => it!.gloss === shown)!) : items.find((it) => it!.jp === shown)!.gloss // 'Japanese' first: its hint also says "romaji"
       await u.type(box, `${text}{Enter}`)
       await u.click(await screen.findByRole('button', { name: 'Continue' }))
       continue
     }
     const opts = within(screen.getByRole('group', { name: 'Answers' })).getAllByRole('button')
     const prompt = document.querySelector('.prompt')
+    const gapped = prompt?.textContent?.includes('＿') ? items.find((it) => it!.tokens && displayJp(it!.tokens, it!.tokens.findIndex((t) => PARTICLES.has(t))) === prompt.textContent) : undefined
     const answer = !prompt ? spoken.at(-1)!
+      : gapped ? gapped.tokens!.find((t) => PARTICLES.has(t))!
       : prompt.classList.contains('kana') ? items.find((it) => it!.jp === prompt.textContent)!.gloss
       : items.find((it) => it!.gloss === prompt.textContent)!.jp
     const pick = wrongPending ? opts.find((b) => optionText(b) !== answer)! : opts.find((b) => optionText(b) === answer)!
@@ -249,4 +264,66 @@ it('Match: wrong pairs are flagged and counted for both items, right pairs lock,
   expect(fireEvent.keyDown(screen.getByRole('button', { name: 'Continue' }), { key: 'Enter', repeat: true })).toBe(false) // held key
   await u.click(screen.getByRole('button', { name: 'Continue' }))
   expect(onDone).toHaveBeenCalledWith(['hira:あ', 'hira:い'])
+})
+
+it('a grammar lesson, start to finish: explanation, translate, gap, build, say, type; sentences become cards in the grammar deck', async () => {
+  const db = await freshDb()
+  const lesson = lessonById('grammar-1-1')!
+  const u = user()
+  mount(db, lesson)
+  await screen.findByRole('heading', { name: 'A は B です: “A is B”' }) // the title is split into language-tagged spans
+  expect(screen.getAllByText(/わたしは がくせいです。/).length).toBeGreaterThan(0) // an example sentence on the card
+  await drive(u, lesson)
+  expect(screen.getByText('+15 XP')).toBeTruthy()
+  expect(screen.getByText(/100% right first time/)).toBeTruthy()
+  expect(await db.getAllFromIndex('cards', 'by-deck', 'grammar')).toHaveLength(6)
+  expect(await db.get('decks', 'grammar')).toEqual({ id: 'grammar', name: 'Grammar sentences' })
+  expect(await db.get('lessons', 'grammar-1-1')).toMatchObject({ plays: 1, bestAccuracy: 1 })
+  expect(screen.getByRole('button', { name: /Next lesson: の and も/ })).toBeTruthy()
+})
+
+it('a grammar lesson with a voice adds listening to whole sentences (and speaks them on arrival)', async () => {
+  const spoken: string[] = []
+  vi.stubGlobal('SpeechSynthesisUtterance', class { text: string; lang = ''; voice: unknown = null; constructor(t: string) { this.text = t } })
+  vi.stubGlobal('speechSynthesis', { getVoices: () => [{ lang: 'ja-JP' }], speak: (x: { text: string }) => spoken.push(x.text), cancel: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() })
+  const db = await freshDb()
+  const lesson = lessonById('grammar-1-3')! // みずを のみます ...
+  const u = user()
+  mount(db, lesson)
+  await drive(u, lesson, { spoken })
+  expect(screen.getByText('+15 XP')).toBeTruthy()
+  const sentences = lesson.items.map((id) => ITEMS.get(id)!.jp)
+  expect(spoken.length).toBeGreaterThanOrEqual(2)
+  expect(spoken.slice(0, 2).every((s) => sentences.includes(s))).toBe(true) // whole sentences, as displayed
+})
+
+it('a wrong word-bank answer shows the right sentence, repeats once, and costs accuracy', async () => {
+  const db = await freshDb()
+  const lesson = lessonById('grammar-1-2')!
+  const u = user()
+  mount(db, lesson)
+  await u.click(await screen.findByRole('button', { name: 'Got it' }))
+  // play until the first word-bank exercise, answering everything before it correctly
+  for (let i = 0; i < 40 && !screen.queryByText('Build the sentence'); i++) {
+    const items = lesson.items.map((id) => ITEMS.get(id))
+    await waitFor(() => expect(screen.queryByText('Build the sentence') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
+    if (screen.queryByText('Build the sentence')) break
+    const prompt = document.querySelector('.prompt')!
+    const gapped = prompt.textContent!.includes('＿') ? items.find((it) => displayJp(it!.tokens!, it!.tokens!.findIndex((t) => PARTICLES.has(t))) === prompt.textContent) : undefined
+    const answer = gapped ? gapped.tokens!.find((t) => PARTICLES.has(t))! : prompt.classList.contains('kana') ? items.find((it) => it!.jp === prompt.textContent)!.gloss : items.find((it) => it!.gloss === prompt.textContent)!.jp
+    await u.click(within(screen.getByRole('group', { name: 'Answers' })).getAllByRole('button').find((b) => optionText(b) === answer)!)
+    await u.click(await screen.findByRole('button', { name: 'Continue' }))
+  }
+  await screen.findByText('Build the sentence')
+  const shown = document.querySelector('.prompt.gloss')!.textContent
+  const target = lesson.items.map((id) => ITEMS.get(id)!).find((it) => it.gloss === shown)!
+  const bank = within(screen.getByRole('group', { name: 'Word bank' }))
+  await u.click(bank.getAllByRole('button')[0]) // one arbitrary chunk: certainly not the whole sentence
+  await u.click(screen.getByRole('button', { name: 'Check' }))
+  await screen.findByText(`✗ Correct answer: ${target.jp}`)
+  await u.click(screen.getByRole('button', { name: 'Continue' }))
+  await drive(u, lesson)
+  expect(screen.getByText('+10 XP')).toBeTruthy()
+  expect(screen.queryByText(/100% right first time/)).toBeNull()
+  expect((await db.getAllFromIndex('reviews', 'by-card', target.id))[0].grade).toBe(Rating.Hard)
 })

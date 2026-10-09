@@ -2,6 +2,7 @@ import { useEffect, useId, useState, type FormEvent } from 'react'
 import { speak } from '../../audio'
 import { matches } from '../../data/kana'
 import { glossAnswers } from '../progress'
+import { displayJp } from '../romaji'
 import { checkEnglish, checkJapanese, toKana, type Check } from '../typing'
 import type { Exercise } from '../lesson'
 import { Feedback } from './Feedback'
@@ -9,6 +10,7 @@ import { Feedback } from './Feedback'
 type Ex = Extract<Exercise, { type: 'type' }>
 
 const QUESTION = { toRomaji: 'Type the romaji', toGloss: 'Type the English meaning', toJp: 'Type it in Japanese (use romaji, e.g. mizu)' }
+const SENTENCE_QUESTION = 'Type the sentence in Japanese (use romaji; particles as written: は = ha, を = wo)'
 
 /** Typing: kana -> romaji, word -> English, English -> Japanese with the kana appearing live as you type. */
 export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDone: (missed: string[]) => void }) {
@@ -29,13 +31,14 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
     setResult(
       dir === 'toRomaji' ? { ok: matches(item.accepts ?? [item.romaji], typed) }
       : dir === 'toGloss' ? checkEnglish(typed, glossAnswers(item.gloss))
+      : item.kind === 'sentence' ? checkJapanese(typed, item.jp, { tokens: item.tokens, alts: item.alts?.map((a) => displayJp(a)) })
       : checkJapanese(typed, item.jp, { word: true }),
     )
   }
 
   return (
     <form className="card" onSubmit={check}>
-      <label htmlFor={id} className="q">{QUESTION[dir]}</label>
+      <label htmlFor={id} className="q">{item.kind === 'sentence' ? SENTENCE_QUESTION : QUESTION[dir]}</label>
       {dir === 'toJp' ? <div className="prompt gloss">{ex.prompt}</div> : <div className="prompt kana" lang="ja">{ex.prompt}</div>}
       <input id={id} autoFocus autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} enterKeyHint="done"
         lang={dir === 'toGloss' ? 'en' : undefined} readOnly={result !== null} value={typed} aria-describedby={preview ? `${id}-kana` : undefined}

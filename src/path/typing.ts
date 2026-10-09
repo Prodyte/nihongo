@@ -101,7 +101,7 @@ export function checkJapanese(typed: string, expected: string, o: { alts?: strin
   }
   // positions (in the normalised first form) that really are particles; without tokens, assume any は/を/へ could be
   const at = o.tokens && new Set(o.tokens.flatMap((t, i) => (t in PARTICLES ? [normKana(o.tokens!.slice(0, i).join('')).length] : [])))
-  for (const f of forms)
+  for (const f of at ? forms.slice(0, 1) : forms) // positions are only known for the written order
     for (let i = 0; i < f.length; i++) {
       if (at && !at.has(i)) continue
       const p = PARTICLES[f[i]]

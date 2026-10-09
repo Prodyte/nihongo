@@ -10,7 +10,7 @@ export function Feedback({ result, item, answer, note, onContinue }: { result: b
             <div>{result ? '✓ Correct' : `✗ Correct answer: ${answer}`}</div>
             {note && <div>{note}</div>}
             <small>
-              <span lang="ja">{item.jp}</span> {item.kind === 'word' ? `(${item.romaji}) ` : '= '}
+              <span lang="ja">{item.jp}</span> {item.kind === 'kana' ? '= ' : `(${item.romaji}) `}
               {item.gloss}
               {item.kanji && <> · <span lang="ja">{item.kanji}</span></>}
             </small>

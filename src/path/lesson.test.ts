@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ITEMS, LESSONS, lessonById, type Item } from './course'
-import { accuracy, advance, buildLesson, startRun, type Exercise } from './lesson'
+import { accuracy, advance, bankFor, buildLesson, startRun, type Exercise } from './lesson'
+import { displayJp, PARTICLES } from './romaji'
 
 /** Small deterministic PRNG (mulberry32) so shuffles are reproducible. */
 const seeded = (seed: number) => () => {
@@ -32,7 +33,9 @@ describe('buildLesson invariants, over every lesson', () => {
           const firstNonIntro = exs.findIndex((e) => e.type !== 'intro')
           expect(exs.slice(0, firstNonIntro).every((e) => e.type === 'intro'), where).toBe(true)
           expect(exs.slice(firstNonIntro).some((e) => e.type === 'intro'), where).toBe(false)
-          expect(exs.filter((e) => e.type === 'intro').length, where).toBe(mode === 'repeat' ? 0 : mine.length)
+          // grammar lessons open with one explanation card instead of per-item intros (and skip it when repeating)
+          expect(exs.filter((e) => e.type === 'intro').length, where).toBe(lesson.explain || mode === 'repeat' ? 0 : mine.length)
+          if (lesson.explain) expect(exs.filter((e) => e.type === 'explain').length, where).toBe(mode === 'repeat' ? 0 : 1)
 
           if (!canSpeak) expect(exs.some((e) => e.type === 'listen'), where).toBe(false)
           expect(exs.length, where).toBeLessThanOrEqual(24)
@@ -41,6 +44,14 @@ describe('buildLesson invariants, over every lesson', () => {
           for (const e of exs) {
             if (e.type === 'match') { expect(e.pairs.length, where).toBeGreaterThanOrEqual(2); expect(e.pairs.length).toBeLessThanOrEqual(5); e.pairs.forEach((p) => touched.add(p.id)); continue }
             if (e.type === 'intro') continue
+            if (e.type === 'explain') { expect(e.examples, where).toHaveLength(2); continue }
+            if (e.type === 'build') {
+              touched.add(e.item.id)
+              expect([...e.bank].sort(), where).toEqual([...e.answer, ...(e.item.bank ?? [])].sort()) // exactly the chunks plus the wrong ones
+              expect(e.answer, where).toEqual(e.item.tokens)
+              expect(e.bank.join(), `${where}: bank must not arrive already in order`).not.toBe(e.answer.join())
+              continue
+            }
             if (e.type === 'type') {
               touched.add(e.item.id)
               expect(e.prompt, where).toBe(e.dir === 'toJp' ? e.item.gloss : e.item.jp)
@@ -52,6 +63,14 @@ describe('buildLesson invariants, over every lesson', () => {
             expect(e.options.length, where).toBeLessThanOrEqual(4)
             expect(new Set(e.options).size, where).toBe(e.options.length) // no repeated option
             expect(e.options.filter((o) => o === e.answer), where).toHaveLength(1)
+            if (e.type === 'choice' && e.dir === 'fill') {
+              expect([...e.prompt].filter((c) => c === '＿'), where).toHaveLength(1)
+              expect(PARTICLES.has(e.answer), where).toBe(true)
+              for (const o of e.options) expect(PARTICLES.has(o), `${where}: ${o}`).toBe(true)
+              // a wrong particle must never make another sentence we teach
+              const taught = new Set([...ITEMS.values()].filter((x) => x.kind === 'sentence').map((x) => x.jp))
+              for (const o of e.options.filter((x) => x !== e.answer)) expect(taught.has(e.prompt.replace('＿', o)), `${where}: ${o}`).toBe(false)
+            }
             if (e.type === 'listen') expect(dupSound(e.item), `${where}: ${e.item.jp} sounds like another kana, must not be asked by ear`).toBe(false)
             if (e.type === 'listen' || e.dir === 'toJp') {
               expect(dupGloss(e.item), `${where}: ${e.item.jp} has a twin sound, must not be asked by sound or in reverse`).toBe(false)
@@ -104,6 +123,7 @@ describe('buildLesson specifics', () => {
   })
   it('ends with a typing round: kana type romaji (3); words type English (2) then Japanese (2); all different items', () => {
     for (const [i, lesson] of LESSONS.entries()) {
+      if (lesson.explain) continue // grammar lessons have their own sequence (below)
       const exs = buildLesson(lesson, ITEMS, { canSpeak: true, learned: learnedBefore(i), rand: seeded(i + 9) })
       const typing = exs.filter((e): e is Extract<typeof e, { type: 'type' }> => e.type === 'type')
       const kind = ITEMS.get(lesson.items[0])!.kind
@@ -113,6 +133,70 @@ describe('buildLesson specifics', () => {
       expect(new Set(typing.map((t) => t.item.id)).size, lesson.id).toBe(typing.length)
     }
   })
+  describe('grammar lessons', () => {
+    const grammar = LESSONS.filter((l) => l.explain)
+    const kinds = (exs: Exercise[]) => exs.map((e) => (e.type === 'choice' ? `${e.type}:${e.dir}` : e.type))
+
+    it('explain, translate x3, fill x4, build x4, listen x2, say x2, type x2', () => {
+      for (const l of grammar) {
+        const learned = learnedBefore(LESSONS.indexOf(l))
+        expect(kinds(buildLesson(l, ITEMS, { canSpeak: true, learned, rand: seeded(3) })), l.id).toEqual([
+          'explain', ...Array(3).fill('choice:toGloss'), ...Array(4).fill('choice:fill'), ...Array(4).fill('build'), 'listen', 'listen', 'choice:toJp', 'choice:toJp', 'type', 'type',
+        ])
+        expect(kinds(buildLesson(l, ITEMS, { canSpeak: false, learned, rand: seeded(3) })).includes('listen'), l.id).toBe(false) // no voice, no listening
+      }
+    })
+    it('every sentence is both recognised (translate, gap, listen or say) and produced (built or typed)', () => {
+      for (const l of grammar) for (const seed of [1, 2, 3, 4, 5]) {
+        const exs = buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(seed) })
+        for (const id of l.items) {
+          const mine = exs.filter((e) => 'item' in e && e.item.id === id).map((e) => e.type)
+          expect(mine.some((t) => t === 'choice' || t === 'listen'), `${l.id} ${id} recognised`).toBe(true)
+          expect(mine.some((t) => t === 'build' || t === 'type'), `${l.id} ${id} produced`).toBe(true)
+        }
+      }
+    })
+    it('repeating a learned grammar lesson skips the explanation; the explanation card carries the lesson text and its examples', () => {
+      const l = grammar[0]
+      const first = buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(1) })[0]
+      expect(first).toMatchObject({ type: 'explain', title: l.explain!.title, body: l.explain!.body })
+      expect(first.type === 'explain' && first.examples.map((x) => x.id)).toEqual(l.explain!.examples)
+      expect(buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(l.items), rand: seeded(1) })[0].type).not.toBe('explain')
+    })
+    it('the gap is the first particle; wrong particles never include a valid swap (は never offered も, を never offered は)', () => {
+      const exs = grammar.flatMap((l) => buildLesson(l, ITEMS, { canSpeak: false, learned: new Set(), rand: seeded(11) }))
+      const gaps = exs.filter((e): e is Extract<Exercise, { type: 'choice' }> => e.type === 'choice' && e.dir === 'fill')
+      expect(gaps).toHaveLength(16)
+      for (const g of gaps) {
+        const tokens = g.item.tokens!
+        const at = tokens.findIndex((t) => PARTICLES.has(t))
+        expect(g.answer).toBe(tokens[at])
+        expect(g.prompt).toBe(displayJp(tokens, at))
+        expect(g.hint).toBe(g.item.gloss)
+        if (g.answer === 'は') expect(g.options).not.toContain('も')
+        if (g.answer === 'を') expect(g.options).not.toContain('は')
+      }
+    })
+    it('the word bank is shuffled differently per seed but always holds the same chunks', () => {
+      const l = grammar[2]
+      const banks = [1, 2, 3, 4].map((seed) => buildLesson(l, ITEMS, { canSpeak: false, learned: new Set(), rand: seeded(seed) }).filter((e) => e.type === 'build').map((e) => (e.type === 'build' ? e.bank.join('|') : '')))
+      expect(new Set(banks.map((b) => b.join(';'))).size).toBeGreaterThan(1)
+    })
+    it('bankFor never returns the chunks already in order, even when the first shuffle leaves them so', () => {
+      const tokens = ['わたし', 'は', 'がくせい', 'です']
+      let calls = 0
+      const rand = () => (calls++ < 3 ? 0.9999 : 0) // the first shuffle (3 draws) is the identity; the next one is not
+      const bank = bankFor(tokens, [], rand)
+      expect(bank).not.toEqual(tokens)
+      expect([...bank].sort()).toEqual([...tokens].sort())
+      expect(bankFor(tokens, ['も'], () => 0.9999)).toHaveLength(5) // extras are included
+    })
+    it('sentence questions pick distractors from other sentences, never an equal translation', () => {
+      for (const l of grammar) for (const e of buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(8) }))
+        if (e.type === 'choice' && e.dir === 'toGloss') for (const o of e.options) expect(o === e.answer || [...ITEMS.values()].some((x) => x.kind === 'sentence' && x.gloss === o), l.id).toBe(true)
+    })
+  })
+
   it('is deterministic for a seed and varies across seeds', () => {
     const l = LESSONS[0]
     const a = buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(1) })
@@ -180,6 +264,19 @@ describe('advance (run state)', () => {
     for (const missed of [[a.id], [], []]) { s = advance(s, missed); seen.push(s.initial - s.queue.length) }
     expect(seen).toEqual([0, 0, 1, 2])
     expect(s.queue).toHaveLength(0)
+  })
+  it('an explanation card is read, not graded: it adds no accuracy, no misses, and is not counted', () => {
+    const e: Exercise = { type: 'explain', title: 't', body: ['b'], examples: [] }
+    let s = startRun([e, ch(a)])
+    expect(s.total).toBe(1)
+    s = advance(s)
+    expect(s).toMatchObject({ correct: 0, misses: {}, queue: [ch(a)] })
+  })
+  it('a missed word-bank exercise is requeued once, like any other', () => {
+    const sentence = ITEMS.get('sent:watashi-wa-gakusei-desu')!
+    const b: Exercise = { type: 'build', item: sentence, bank: sentence.tokens!, answer: sentence.tokens!, alts: [] }
+    const s = advance(startRun([b]), [sentence.id])
+    expect(s.queue).toEqual([{ ...b, retry: true }])
   })
   it('accuracy of an empty run is 1', () => {
     expect(accuracy(startRun([]))).toBe(1)

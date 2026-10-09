@@ -14,6 +14,8 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
   const kana = ex.item.kind === 'kana'
   const answered = picked !== null
   const prompt = ex.type === 'choice' ? ex.prompt : ''
+  const fill = ex.type === 'choice' && ex.dir === 'fill'
+  const wide = ex.item.kind === 'sentence' && !fill // whole sentences as options need the full width
 
   useEffect(() => {
     if (listening) speak(ex.item.jp) // say it on arrival; the replay button is on screen
@@ -32,6 +34,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
   }, [answered, ex.options])
 
   const question = listening ? 'Tap what you hear'
+    : fill ? 'Which word completes the sentence?'
     : toGloss ? (kana ? 'What sound is this?' : 'What does this mean?')
     : kana ? `Which one is “${prompt}”?` : `How do you say “${prompt}”?`
   const right = ex.answer
@@ -41,12 +44,13 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
       <p className="q">{question}</p>
       {listening ? (
         <SpeakButton text={ex.item.jp} />
-      ) : toGloss ? (
-        <div className="prompt kana" lang="ja">{prompt}</div>
+      ) : toGloss || fill ? (
+        <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja">{prompt}</div>
       ) : (
         <div className="prompt gloss">{prompt}</div>
       )}
-      <div className="grid" role="group" aria-label="Answers">
+      {fill && ex.type === 'choice' && <p className="hint">{ex.hint}</p>}
+      <div className={wide ? 'grid wide' : 'grid'} role="group" aria-label="Answers">
         {ex.options.map((o, i) => (
           <button key={o} lang={toGloss ? undefined : 'ja'} disabled={answered} onClick={() => setPicked(o)}
             className={`${toGloss ? '' : 'jp-option'} ${!answered ? '' : o === right ? 'good' : o === picked ? 'bad' : ''}`}>

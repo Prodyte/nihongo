@@ -6,6 +6,8 @@ import { accuracy, advance, buildLesson, startRun, type RunState } from '../path
 import { completeLesson, getProgress, learnedItems } from '../path/progress'
 import { Choice } from '../path/ui/Choice'
 import { Intro } from '../path/ui/Intro'
+import { Build } from '../path/ui/Build'
+import { Explain } from '../path/ui/Explain'
 import { Match } from '../path/ui/Match'
 import { Type } from '../path/ui/Type'
 
@@ -80,6 +82,8 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         <progress max={run.initial} value={run.initial - run.queue.length} aria-label="Lesson progress" />
       </div>
       {ex.type === 'intro' ? <Intro key={step} item={ex.item} autoplay={autoplay} onDone={done} />
+        : ex.type === 'explain' ? <Explain key={step} ex={ex} onDone={done} />
+        : ex.type === 'build' ? <Build key={step} ex={ex} onDone={done} />
         : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={done} />
         : ex.type === 'type' ? <Type key={step} ex={ex} autoplay={autoplay} onDone={done} />
         : <Choice key={step} ex={ex} autoplay={autoplay} onDone={done} />}
