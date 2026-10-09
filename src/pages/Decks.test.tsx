@@ -20,3 +20,13 @@ it('lists every deck link, https only, unique, opened safely in a new tab', asyn
     expect(a.textContent).toContain('opens in a new tab')
   }
 })
+
+it("lists imported decks only: the path's built-in vocabulary deck can't be deleted from here", async () => {
+  const db = await openDb('decks-filter-test')
+  await db.put('decks', { id: 'vocab', name: 'Starter vocabulary' })
+  await db.put('decks', { id: 'anki:1', name: 'My Anki deck' })
+  render(<Decks db={db} />)
+  await screen.findByText('My Anki deck')
+  expect(screen.queryByText('Starter vocabulary')).toBeNull()
+  expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(1)
+})

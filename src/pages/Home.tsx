@@ -41,7 +41,7 @@ export function Home({ db, config, autoplay, onChange, onAutoplay, onStart }: { 
   )
   return (
     <div className="card">
-      <h2>Today</h2>
+      <h2>Review today</h2>
       <p className="counts">{counts ? `${counts.due} due · ${counts.fresh} new` : '…'}</p>
       {pick('deck', 'Deck', [['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ['all', 'All decks'], ...imported.map((d): [string, string] => [d.id, d.name])])}
       {pick('mode', 'Mode', [['flashcard', 'Flashcards'], ['typing', 'Type the romaji'], ['quiz', 'Multiple choice']])}

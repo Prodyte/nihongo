@@ -16,7 +16,7 @@ export function Decks({ db }: { db: Db }) {
   useEffect(() => {
     let live = true
     void (async () => {
-      const all = await db.getAll('decks')
+      const all = (await db.getAll('decks')).filter((d) => d.id.startsWith('anki:')) // 'vocab' belongs to the path
       const withCounts = await Promise.all(all.map(async (d) => ({ ...d, count: await db.countFromIndex('cards', 'by-deck', d.id) })))
       if (live) setDecks(withCounts)
     })().catch((e) => live && setStatus({ text: `Couldn't load decks (${e}).`, bad: true }))

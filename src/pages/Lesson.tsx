@@ -1,0 +1,83 @@
+import { useEffect, useRef, useState } from 'react'
+import { useJaVoice } from '../audio'
+import { type Db } from '../db/db'
+import { ITEMS, LESSONS, type Lesson as LessonT } from '../path/course'
+import { accuracy, advance, buildLesson, startRun, type RunState } from '../path/lesson'
+import { completeLesson, getProgress, learnedItems } from '../path/progress'
+import { Choice } from '../path/ui/Choice'
+import { Intro } from '../path/ui/Intro'
+import { Match } from '../path/ui/Match'
+
+interface Summary { xp: number; first: boolean; accuracy: number; streak: number }
+
+export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; lesson: LessonT; autoplay: boolean; onExit: () => void; onStart: (id: string) => void }) {
+  const [canSpeak] = useState(useJaVoice()) // snapshot: a voice appearing later must not reshuffle a lesson in progress
+  const [run, setRun] = useState<RunState | null>(null)
+  const [step, setStep] = useState(0)
+  const [summary, setSummary] = useState<Summary | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0) // bump to retry saving
+  const saving = useRef(false)
+
+  // Build the exercises once, knowing which items earlier lessons already taught.
+  useEffect(() => {
+    let live = true
+    void getProgress(db)
+      .then((p) => live && setRun(startRun(buildLesson(lesson, ITEMS, { canSpeak, learned: learnedItems(LESSONS, p.done) }))))
+      .catch((e) => live && setError(`Couldn't open this lesson (${e}).`))
+    return () => {
+      live = false
+    }
+  }, [db, lesson, canSpeak])
+
+  // Save once the last exercise is done. A failed save keeps the run so nothing is lost; "Try again" retries.
+  useEffect(() => {
+    if (!run || run.queue.length > 0 || summary || saving.current) return
+    saving.current = true
+    void completeLesson(db, lesson, ITEMS, run.misses, accuracy(run))
+      .then(async (r) => {
+        const p = await getProgress(db)
+        setSummary({ xp: r.xp, first: r.first, accuracy: accuracy(run), streak: p.streak })
+      })
+      .catch((e) => setError(`Couldn't save your progress (${e}).`))
+      .finally(() => { saving.current = false })
+  }, [db, lesson, run, summary, attempt])
+
+  if (error) return (
+    <div className="card">
+      <p role="alert" className="bad">{error}</p>
+      {run && run.queue.length === 0 && <button className="primary" onClick={() => { setError(null); setAttempt((a) => a + 1) }}>Try again</button>}
+      <button onClick={onExit}>Back to path</button>
+    </div>
+  )
+  if (!run) return <p>Loading…</p>
+
+  if (summary) {
+    const idx = LESSONS.findIndex((l) => l.id === lesson.id)
+    const next = LESSONS[idx + 1]
+    return (
+      <div className="card">
+        <h2>Lesson complete 🎉</h2>
+        <p className="counts">+{summary.xp} XP{summary.first ? '' : ' (practice)'}</p>
+        <p>{Math.round(summary.accuracy * 100)}% right first time · {summary.streak}-day streak</p>
+        {next && <button className="primary" autoFocus onClick={() => onStart(next.id)}>Next lesson: <span lang="ja">{next.title}</span></button>}
+        <button className={next ? '' : 'primary'} onClick={onExit}>Back to path</button>
+      </div>
+    )
+  }
+  if (run.queue.length === 0) return <p role="status">Saving…</p>
+
+  const ex = run.queue[0]
+  const done = (missed: string[]) => { setRun((r) => advance(r!, missed)); setStep((s) => s + 1) }
+  return (
+    <>
+      <div className="bar">
+        <button onClick={onExit}>← Exit</button>
+        <progress max={run.initial} value={run.initial - run.queue.length} aria-label="Lesson progress" />
+      </div>
+      {ex.type === 'intro' ? <Intro key={step} item={ex.item} autoplay={autoplay} onDone={done} />
+        : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={done} />
+        : <Choice key={step} ex={ex} autoplay={autoplay} onDone={done} />}
+    </>
+  )
+}

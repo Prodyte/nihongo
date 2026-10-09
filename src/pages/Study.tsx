@@ -4,6 +4,7 @@ import { gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db
 import { Flashcard } from '../modes/Flashcard'
 import { Quiz } from '../modes/Quiz'
 import { Typing } from '../modes/Typing'
+import { addReviewXp } from '../path/progress'
 import { dueCards } from '../srs/scheduler'
 
 export const DAILY_NEW = 20
@@ -37,6 +38,7 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
       busy.current = true
       try {
         const updated = await gradeCard(db, queue[0].id, g)
+        void addReviewXp(db).catch(() => {}) // best effort: XP must never block grading
         // Again: see it once more this session (FSRS also schedules it for later)
         setQueue((q) => [...q!.slice(1), ...(g === Rating.Again ? [updated] : [])])
         setReviewed((n) => n + 1)

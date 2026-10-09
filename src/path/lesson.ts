@@ -68,9 +68,10 @@ export interface RunState {
   misses: Record<string, number> // item id -> mistakes (any exercise)
   total: number // graded exercises in the lesson (intros don't count)
   correct: number // graded exercises answered right on the first try
+  initial: number // queue length at the start: the progress bar's denominator (a retry replaces the exercise it repeats)
 }
 
-export const startRun = (queue: Exercise[]): RunState => ({ queue, misses: {}, total: queue.filter((e) => e.type !== 'intro').length, correct: 0 })
+export const startRun = (queue: Exercise[]): RunState => ({ queue, misses: {}, total: queue.filter((e) => e.type !== 'intro').length, correct: 0, initial: queue.length })
 
 /** Resolve the current exercise. `missed` = item ids answered wrongly (empty = right). A wrong exercise comes back once at the end. */
 export function advance(s: RunState, missed: string[] = []): RunState {

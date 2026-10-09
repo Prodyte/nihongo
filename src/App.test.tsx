@@ -8,19 +8,25 @@ import { KANA } from './data/kana'
 
 afterEach(cleanup)
 
-it('studies a hiragana flashcard end to end', async () => {
+const current = () => screen.getByRole('navigation', { name: 'Main' }).querySelector('[aria-current="page"]')!.textContent
+
+it('opens on the path; Review studies a flashcard end to end, and reviewing earns XP', async () => {
   const user = userEvent.setup()
   render(<App />)
-  // nav also has a "Study" button; the home card's is the second one
+  await screen.findByRole('heading', { name: 'Your path' })
+  expect(current()).toBe('Path')
+
+  await user.click(screen.getByRole('button', { name: 'Review' }))
   await waitFor(() => expect(screen.getByText(/20 new/)).toBeTruthy())
+  expect(current()).toBe('Review')
   const autoplay = screen.getByRole('checkbox', { name: /play audio automatically/i }) as HTMLInputElement
   expect(autoplay.checked).toBe(true) // on by default
   await user.click(autoplay)
   expect(localStorage.getItem('nihongo.autoplay')).toBe('0') // and the choice is remembered
-  await user.click(screen.getAllByRole('button', { name: 'Study' })[1])
+  await user.click(screen.getByRole('button', { name: 'Study' }))
 
   await screen.findByText('20 left') // daily new-card cap
-  expect(screen.getByRole('navigation', { name: 'Main' }).querySelector('[aria-current="page"]')!.textContent).toBe('Study')
+  expect(current()).toBe('Review') // still the Review tab while studying
   const front = document.querySelector('.kana')!.textContent!
   await user.click(screen.getByRole('button', { name: /show answer/i }))
   const expected = KANA.find((k) => k.id === `hira:${front}`)!.romaji[0]
@@ -28,4 +34,8 @@ it('studies a hiragana flashcard end to end', async () => {
 
   await user.click(screen.getByRole('button', { name: /^Good/ }))
   await screen.findByText('19 left')
+
+  await user.click(screen.getByRole('button', { name: 'Path' })) // the review counted as activity: 1 XP and a streak
+  await screen.findByText('Daily goal: 1 / 20 XP')
+  expect(screen.getByText('🔥 1-day streak')).toBeTruthy()
 })

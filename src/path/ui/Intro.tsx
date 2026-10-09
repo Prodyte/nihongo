@@ -1,0 +1,20 @@
+import { useEffect } from 'react'
+import { speak } from '../../audio'
+import { SpeakButton } from '../../modes/SpeakButton'
+import type { Item } from '../course'
+
+export function Intro({ item, autoplay, onDone }: { item: Item; autoplay: boolean; onDone: (missed: string[]) => void }) {
+  useEffect(() => {
+    if (autoplay) speak(item.jp)
+  }, [autoplay, item.jp])
+  return (
+    <div className="card">
+      <p className="q">New {item.kind === 'kana' ? 'character' : 'word'}</p>
+      <div className="kana" lang="ja">{item.jp}</div>
+      {item.kind === 'word' && <div className="reading">{item.romaji}{item.kanji && <> · <span lang="ja">{item.kanji}</span></>}</div>}
+      <div className="answer">{item.gloss} <SpeakButton text={item.jp} /></div>
+      {item.note && <p className="note">{item.note}</p>}
+      <button className="primary" autoFocus onKeyDown={(e) => e.repeat && e.preventDefault()} onClick={() => onDone([])}>Got it</button>
+    </div>
+  )
+}

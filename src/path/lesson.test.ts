@@ -146,6 +146,13 @@ describe('advance (run state)', () => {
     expect(s.misses).toEqual({ [a.id]: 2, [b.id]: 1 })
     expect(s.queue).toHaveLength(1)
   })
+  it('progress never goes backwards, even with retries: initial - queue.length only rises', () => {
+    let s = startRun([ch(a), ch(b)])
+    const seen: number[] = [s.initial - s.queue.length]
+    for (const missed of [[a.id], [], []]) { s = advance(s, missed); seen.push(s.initial - s.queue.length) }
+    expect(seen).toEqual([0, 0, 1, 2])
+    expect(s.queue).toHaveLength(0)
+  })
   it('accuracy of an empty run is 1', () => {
     expect(accuracy(startRun([]))).toBe(1)
   })
