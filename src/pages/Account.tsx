@@ -43,6 +43,7 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
   const signOut = act(async () => {
     await (await supabase()).auth.signOut()
     setEmail(null)
+    onSynced() // the header's Sign in button comes back
     setStatus({ text: 'Signed out. Your progress stays on this device.' })
   })
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { warmUpVoices } from './audio'
 import { openDb, seedKana, type Db } from './db/db'
 import { Icon, Logo } from './icons'
+import { Account } from './pages/Account'
 import { Credits } from './pages/Credits'
 import { Decks } from './pages/Decks'
 import { Drill } from './pages/Drill'
@@ -26,9 +27,9 @@ import { readBool, readStr, writeBool, writeStr } from './settings'
 import { maybeSignedIn, sync } from './sync'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
-type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
+type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar' | 'account'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more', account: 'more' }
 const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
@@ -108,7 +109,12 @@ export default function App() {
     <FuriganaContext.Provider value={{ mode: furigana, known }}>
       <main key={gen} className={focused ? 'focused' : ''}>
         {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
-        <header className={focused ? 'visually-hidden' : 'brand'}><h1><Logo /> Nihongo <small lang="ja">日本語</small></h1></header>
+        <header className={focused ? 'visually-hidden' : 'brand'}>
+          <h1><Logo /> Nihongo <small lang="ja">日本語</small></h1>
+          {!focused && view !== 'account' && (maybeSignedIn()
+            ? <button className="icon-btn account-btn" aria-label="Account and sync" onClick={() => setView('account')}><Icon name="user" /></button>
+            : <button className="account-btn" onClick={() => setView('account')}>Sign in</button>)}
+        </header>
         {lesson ? (
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
         ) : unit ? (
@@ -135,6 +141,8 @@ export default function App() {
         ) : view === 'settings' ? (
           <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
             furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} onSynced={() => setGen((g) => g + 1)} />
+        ) : view === 'account' ? (
+          <Account db={db} onSynced={() => setGen((g) => g + 1)} />
         ) : view === 'grammar' ? (
           <Grammar db={db} />
         ) : view === 'credits' ? (

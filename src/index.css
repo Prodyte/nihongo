@@ -369,6 +369,9 @@ button.kana-cell.known { background: var(--good-soft); border-color: color-mix(i
 
 header.brand h1 { display: flex; align-items: center; gap: .5rem; font-size: 1.15rem; font-weight: 750; letter-spacing: -.01em; }
 header.brand h1 small { font-weight: 500; }
+header.brand { align-items: center; }
+.account-btn { margin-left: auto; }
+button.account-btn:not(.icon-btn) { padding: .4rem .9rem; font-size: .9rem; }
 .logo { flex: none; border-radius: 7px; }
 
 /* ============ welcome ============ */
