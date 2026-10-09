@@ -10,7 +10,7 @@ export const DAILY_NEW = 20
 export type Mode = 'flashcard' | 'typing' | 'quiz'
 const MODES = { flashcard: Flashcard, typing: Typing, quiz: Quiz }
 
-export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: Mode; onExit: () => void }) {
+export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: string; mode: Mode; autoplay: boolean; onExit: () => void }) {
   const [pool, setPool] = useState<StoredCard[]>([])
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
   const [reviewed, setReviewed] = useState(0)
@@ -68,7 +68,7 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
         <span>{queue.length} left</span>
       </div>
       {error && <p role="alert" className="bad">{error}</p>}
-      <Current key={`${queue[0].id}:${reviewed}`} db={db} card={queue[0]} pool={pool} onGrade={onGrade} />
+      <Current key={`${queue[0].id}:${reviewed}`} db={db} autoplay={autoplay} card={queue[0]} pool={pool} onGrade={onGrade} />
     </>
   )
 }

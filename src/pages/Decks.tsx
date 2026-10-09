@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ApkgError, parseApkg } from '../anki/apkg'
 import { loadSql } from '../anki/sql'
 import { Backup } from './Backup'
+import { DECK_LINKS } from '../data/deckLinks'
 import { deleteDeck, saveImport, type Db, type DeckRecord } from '../db/db'
 
 const MAX_BYTES = 500 * 1024 * 1024 // ponytail: crude guard against memory exhaustion; stream media if bigger decks matter
@@ -31,13 +31,17 @@ export function Decks({ db }: { db: Db }) {
     setBusy(true)
     setStatus({ text: `Reading ${file.name}…` })
     try {
-      const parsed = await parseApkg(await file.arrayBuffer(), await loadSql())
-      if (!parsed.cards.length) throw new ApkgError('No cards found in that deck.')
+      const { parseApkg } = await import('../anki/apkg') // lazy: jszip + zstd stay out of the main bundle
+      const bytes = await file.arrayBuffer()
+      setStatus({ text: `Unpacking ${file.name} (${Math.round(file.size / 1048576)} MB)…` })
+      const parsed = await parseApkg(bytes, await loadSql())
+      if (!parsed.cards.length) throw new Error('No cards found in that deck.')
+      setStatus({ text: `Saving ${parsed.cards.length} cards and ${parsed.media.size} media files…` })
       const r = await saveImport(db, parsed)
       setStatus({ text: `Imported ${r.added} new, ${r.updated} refreshed${r.skipped ? `, ${r.skipped} blank skipped` : ''}.` })
       reload()
     } catch (e) {
-      setStatus({ text: e instanceof ApkgError ? e.message : `Import failed: ${e}`, bad: true })
+      setStatus({ text: e instanceof Error && (e.name === 'ApkgError' || e.message.startsWith('No cards')) ? e.message : `Import failed: ${e}`, bad: true })
     } finally {
       setBusy(false)
     }
@@ -65,6 +69,18 @@ export function Decks({ db }: { db: Db }) {
           <li key={d.id}>
             <span>{d.name} <small>({d.count} cards)</small></span>
             <button onClick={() => void remove(d)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <div className="card">
+      <h2>Find decks</h2>
+      <p>Download a deck's <code>.apkg</code> file, then import it above. These are the authors' own decks (not part of this app), so check each one's terms.</p>
+      <ul className="decks links">
+        {DECK_LINKS.map((d) => (
+          <li key={d.url}>
+            <a href={d.url} target="_blank" rel="noopener noreferrer">{d.name}<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span></a>
+            <small>{d.blurb}</small>
           </li>
         ))}
       </ul>

@@ -5,7 +5,7 @@ import { DAILY_NEW, type Mode } from './Study'
 
 export interface Config { deck: string; mode: Mode }
 
-export function Home({ db, config, onChange, onStart }: { db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void }) {
+export function Home({ db, config, autoplay, onChange, onAutoplay, onStart }: { db: Db; config: Config; autoplay: boolean; onChange: (c: Config) => void; onAutoplay: (v: boolean) => void; onStart: () => void }) {
   const [counts, setCounts] = useState<{ due: number; fresh: number } | null>(null)
   const [imported, setImported] = useState<DeckRecord[]>([])
   useEffect(() => {
@@ -45,6 +45,10 @@ export function Home({ db, config, onChange, onStart }: { db: Db; config: Config
       <p className="counts">{counts ? `${counts.due} due · ${counts.fresh} new` : '…'}</p>
       {pick('deck', 'Deck', [['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ['all', 'All decks'], ...imported.map((d): [string, string] => [d.id, d.name])])}
       {pick('mode', 'Mode', [['flashcard', 'Flashcards'], ['typing', 'Type the romaji'], ['quiz', 'Multiple choice']])}
+      <label className="check">
+        <input type="checkbox" checked={autoplay} onChange={(e) => onAutoplay(e.target.checked)} />
+        Play audio automatically
+      </label>
       {config.deck.startsWith('anki:') && config.mode !== 'flashcard' && <p>Imported decks work in flashcard mode.</p>}
       <button className="primary" disabled={!counts || counts.due + counts.fresh === 0} onClick={onStart}>Study</button>
     </div>

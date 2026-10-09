@@ -1,32 +1,44 @@
-# React + TypeScript + Vite
+# Nihongo
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Learn Japanese in the browser: hiragana and katakana with spaced-repetition flashcards, typing and quiz modes, and import for Anki decks (with their audio and images). Everything runs on your device. There is no account and no server, and your progress is stored in your browser.
 
-Currently, two official plugins are available:
+**Live:** https://prodyte.github.io/nihongo/ (installable as an app, works offline after the first visit)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+- **Kana:** 104 hiragana and 104 katakana cards (basic, dakuten, combinations). Flashcards, type-the-romaji, and multiple choice.
+- **Scheduling:** [FSRS](https://github.com/open-spaced-repetition/ts-fsrs), the algorithm modern Anki uses. 20 new cards a day.
+- **Sound:** kana are spoken with your device's Japanese voice (if it has one). Imported decks play their own audio automatically, like Anki; a setting turns that off.
+- **Anki import:** `.apkg` files in the latest and the older Anki formats, including cloze cards, furigana, images and audio. Imported decks study as flashcards.
+- **Backup:** download your progress as JSON and restore it later. Imported decks' images and audio aren't in the backup; re-import the `.apkg`.
+- **Accessible:** keyboard shortcuts (space to reveal, 1-4 to grade), screen-reader announcements, light and dark themes, checked with axe.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Importing decks
 
-## Expanding the Oxlint configuration
+Download a deck's `.apkg` and use **Decks → Import deck**. The app links to a few free decks with audio on the Decks page; they are their authors' work and aren't part of this repository, so check each deck's terms.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Imported HTML is untrusted: it is sanitized every time it is shown (scripts, styles, forms, remote images and links are removed). Decks that depend on their own scripts or CSS therefore look plainer than in Anki. Your scheduling history from Anki is not imported; every card starts as new.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Development
+
+```sh
+npm install
+npm run dev      # local dev server
+npm test         # unit and integration tests (vitest)
+npm run lint
+npm run build    # type-check and build to dist/
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+To check the importer against a real deck: `REAL_APKG=/path/to/deck.apkg npm test -- real`.
+
+Pushes to `main` run lint, tests and build, then deploy to GitHub Pages (`.github/workflows/deploy.yml`).
+
+## Layout
+
+| Path | What |
+|---|---|
+| `src/data/kana.ts` | the kana tables (katakana derived from hiragana) |
+| `src/srs/` | scheduler wrapper around ts-fsrs |
+| `src/db/` | IndexedDB layer, backup and restore |
+| `src/anki/` | `.apkg` parsing, template rendering, media and sanitizing |
+| `src/modes/`, `src/pages/` | study modes and screens |

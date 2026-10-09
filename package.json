@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "dompurify": "^3.4.16",
+    "fzstd": "^0.1.1",
     "idb": "^8.0.4",
     "jszip": "^3.10.2",
     "react": "^19.2.8",

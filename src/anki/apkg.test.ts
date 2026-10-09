@@ -5,7 +5,7 @@ import initSqlJs from 'sql.js'
 import { Rating, State } from 'ts-fsrs'
 import { describe, expect, it } from 'vitest'
 import { deleteDeck, getDeck, gradeCard, openDb, saveImport, studyCards } from '../db/db'
-import { ApkgError, parseApkg } from './apkg'
+import { parseApkg } from './apkg'
 
 const SQL = await initSqlJs()
 
@@ -53,11 +53,6 @@ describe('parseApkg', () => {
     expect(rev.back).toContain('<ruby>犬<rt>いぬ</rt></ruby>') // reverse card answer uses furigana filter
     expect(cloze.front).toBe('<span class="cloze">[...]</span> is the capital')
     expect(p.media.get('dog.png')).toEqual(new Uint8Array([137, 80, 78, 71]))
-  })
-  it('explains the newest format instead of importing the stub', async () => {
-    const err = await parseApkg(await makeApkg({ 'collection.anki21b': 'x' }), SQL).catch((e) => e)
-    expect(err).toBeInstanceOf(ApkgError)
-    expect(err.message).toMatch(/Support older Anki versions/)
   })
   it('rejects non-zip and empty zips', async () => {
     await expect(parseApkg(new Uint8Array([1, 2, 3]), SQL)).rejects.toThrow(/not a zip/)

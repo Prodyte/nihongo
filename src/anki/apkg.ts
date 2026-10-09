@@ -1,20 +1,74 @@
+import { decompress } from 'fzstd'
 import JSZip from 'jszip'
-import type { SqlJsStatic } from 'sql.js'
+import type { Database, SqlJsStatic } from 'sql.js'
+import { parsePb, pbNum, pbText } from './proto'
+import { mediaRefs } from './refs'
 import { renderTemplate } from './render'
 
-export class ApkgError extends Error {}
+export class ApkgError extends Error {
+  name = 'ApkgError'
+}
 
 export interface ParsedCard { id: string; deckId: string; front: string; back: string }
 export interface Parsed {
   decks: { id: string; name: string }[]
   cards: ParsedCard[]
-  media: Map<string, Uint8Array>
+  media: Map<string, Uint8Array> // only files some card references, keyed by NFC name
   skipped: number
 }
 
 interface Model { type: number; flds: { name: string }[]; tmpls: { ord: number; qfmt: string; afmt: string }[] }
+interface Collection { models: Record<string, Model>; deckNames: Record<string, string>; rows: unknown[][] }
 
-/** Read a legacy-format .apkg (collection.anki2 / anki21). ponytail: loads all media into memory. */
+const CARDS_SQL = 'select c.id, case when c.odid then c.odid else c.did end, c.ord, n.mid, n.flds from cards c join notes n on n.id = c.nid'
+
+function readLegacy(db: Database): Collection {
+  const [col] = db.exec('select models, decks from col')
+  const decks: Record<string, { name: string }> = JSON.parse(String(col.values[0][1]))
+  return {
+    models: JSON.parse(String(col.values[0][0])),
+    deckNames: Object.fromEntries(Object.entries(decks).map(([id, d]) => [id, d.name])),
+    rows: db.exec(CARDS_SQL)[0]?.values ?? [],
+  }
+}
+
+/** Latest format (schema 18): notetypes/fields/templates/decks tables with protobuf blobs. */
+function readLatest(db: Database): Collection {
+  // `not indexed`: those tables' name indexes use Anki's custom `unicase` collation, which sql.js lacks.
+  const q = (sql: string) => db.exec(sql)[0]?.values ?? []
+  const models: Record<string, Model> = {}
+  for (const [id, cfg] of q('select id, config from notetypes not indexed'))
+    models[String(id)] = { type: pbNum(parsePb(cfg as Uint8Array), 1), flds: [], tmpls: [] } // config.kind: 0 normal, 1 cloze
+  for (const [ntid, , name] of q('select ntid, ord, name from fields not indexed order by ntid, ord')) models[String(ntid)]?.flds.push({ name: String(name) })
+  for (const [ntid, ord, cfg] of q('select ntid, ord, config from templates not indexed order by ntid, ord')) {
+    const f = parsePb(cfg as Uint8Array)
+    models[String(ntid)]?.tmpls.push({ ord: Number(ord), qfmt: pbText(f, 1), afmt: pbText(f, 2) })
+  }
+  return {
+    models,
+    deckNames: Object.fromEntries(q('select id, name from decks not indexed').map(([id, name]) => [String(id), String(name).replaceAll('\x1f', '::')])),
+    rows: q(CARDS_SQL),
+  }
+}
+
+/** Media file name -> name inside the zip. Legacy: JSON map. Latest: zstd protobuf list (zip name = index unless given). */
+async function mediaManifest(zip: JSZip, latest: boolean): Promise<[zipName: string, name: string][]> {
+  const f = zip.file('media')
+  if (!f) return []
+  if (!latest) return Object.entries(JSON.parse(await f.async('string')) as Record<string, string>)
+  return parsePb(decompress(await f.async('uint8array')))
+    .filter((e) => e.no === 1 && e.bytes)
+    .map((e, i) => {
+      const inner = parsePb(e.bytes!)
+      const legacyName = inner.find((x) => x.no === 255)?.num // optional explicit zip file name
+      return [String(legacyName ?? i), pbText(inner, 1)]
+    })
+}
+
+/**
+ * Read an .apkg of any format: latest (.anki21b, zstd), or legacy (.anki21 / .anki2).
+ * ponytail: decompression is unbounded (a zip bomb can exhaust memory); the 500 MB upload cap is the only guard.
+ */
 export async function parseApkg(bytes: ArrayBuffer | Uint8Array, SQL: SqlJsStatic): Promise<Parsed> {
   let zip: JSZip
   try {
@@ -22,18 +76,25 @@ export async function parseApkg(bytes: ArrayBuffer | Uint8Array, SQL: SqlJsStati
   } catch {
     throw new ApkgError('That file is not a valid .apkg (not a zip archive).')
   }
-  // Newest exports hold the real collection in a zstd-compressed .anki21b and a stub .anki2.
-  if (!zip.file('collection.anki21') && zip.file('collection.anki21b'))
-    throw new ApkgError('This deck uses the newest Anki format. In Anki, export it again with "Support older Anki versions" ticked.')
-  const file = zip.file('collection.anki21') ?? zip.file('collection.anki2')
+  const latest = zip.file('collection.anki21b') // newest exports; collection.anki2 is then just a stub
+  const file = latest ?? zip.file('collection.anki21') ?? zip.file('collection.anki2')
   if (!file) throw new ApkgError('Not an Anki deck: no collection found inside.')
 
-  const db = new SQL.Database(await file.async('uint8array'))
+  let db: Database
   try {
-    const [col] = db.exec('select models, decks from col')
-    const models: Record<string, Model> = JSON.parse(String(col.values[0][0]))
-    const deckNames: Record<string, { name: string }> = JSON.parse(String(col.values[0][1]))
-    const rows = db.exec('select c.id, case when c.odid then c.odid else c.did end, c.ord, n.mid, n.flds from cards c join notes n on n.id = c.nid')[0]?.values ?? []
+    const raw = await file.async('uint8array')
+    db = new SQL.Database(latest ? decompress(raw) : raw)
+  } catch {
+    throw new ApkgError('Could not read the deck database. The file may be damaged.')
+  }
+  try {
+    let col: Collection
+    try {
+      col = latest ? readLatest(db) : readLegacy(db)
+    } catch (e) {
+      throw new ApkgError(`Unrecognised deck format (${e instanceof Error ? e.message : e}).`)
+    }
+    const { models, deckNames, rows } = col
 
     const cards: ParsedCard[] = []
     const used = new Set<string>()
@@ -52,16 +113,20 @@ export async function parseApkg(bytes: ArrayBuffer | Uint8Array, SQL: SqlJsStati
       cards.push({ id: String(cid), deckId: String(did), front, back })
     }
 
+    // Only read (and decompress) media that some card actually refers to.
+    const wanted = new Set(cards.flatMap((c) => mediaRefs(c.front + c.back)))
     const media = new Map<string, Uint8Array>()
-    const mediaFile = zip.file('media')
-    const map: Record<string, string> = mediaFile ? JSON.parse(await mediaFile.async('string')) : {}
     await Promise.all(
-      Object.entries(map).map(async ([num, name]) => {
-        const f = zip.file(num)
-        if (f) media.set(name.normalize('NFC'), await f.async('uint8array'))
+      (await mediaManifest(zip, !!latest)).map(async ([zipName, name]) => {
+        const nfc = name.normalize('NFC')
+        const f = wanted.has(nfc) ? zip.file(zipName) : null
+        if (f) {
+          const data = await f.async('uint8array')
+          media.set(nfc, latest ? decompress(data) : data)
+        }
       }),
     )
-    return { decks: [...used].map((id) => ({ id, name: deckNames[id]?.name ?? `Deck ${id}` })), cards, media, skipped }
+    return { decks: [...used].map((id) => ({ id, name: deckNames[id] ?? `Deck ${id}` })), cards, media, skipped }
   } finally {
     db.close()
   }

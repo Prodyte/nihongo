@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { openDb, seedKana, type Db } from './db/db'
 import { Home, type Config } from './pages/Home'
+import { readBool, writeBool } from './settings'
 import { Decks } from './pages/Decks'
 import { Stats } from './pages/Stats'
 import { Study } from './pages/Study'
@@ -11,6 +12,7 @@ export default function App() {
   const [db, setDb] = useState<Db | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<View>('home')
+  const [autoplay, setAutoplay] = useState(() => readBool('nihongo.autoplay', true))
   const [config, setConfig] = useState<Config>({ deck: 'hira', mode: 'flashcard' })
 
   useEffect(() => {
@@ -36,13 +38,13 @@ export default function App() {
         </nav>
       </header>
       {view === 'study' ? (
-        <Study db={db} deck={config.deck} mode={config.mode} onExit={() => setView('home')} />
+        <Study db={db} deck={config.deck} mode={config.mode} autoplay={autoplay} onExit={() => setView('home')} />
       ) : view === 'decks' ? (
         <Decks db={db} />
       ) : view === 'stats' ? (
         <Stats db={db} />
       ) : (
-        <Home db={db} config={config} onChange={setConfig} onStart={() => setView('study')} />
+        <Home db={db} config={config} autoplay={autoplay} onChange={setConfig} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }} onStart={() => setView('study')} />
       )}
     </main>
   )

@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { State, type Card, type Grade, type ReviewLog } from 'ts-fsrs'
+import { mediaRefs } from '../anki/refs'
 import type { Parsed } from '../anki/apkg'
 import { KANA } from '../data/kana'
 import { newFsrsCard, schedule } from '../srs/scheduler'
@@ -109,15 +110,11 @@ export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs
   // Each deck gets only the files its cards reference (subdecks share a package, not necessarily media).
   // ponytail: re-import never removes cards/media dropped upstream; a card moved between decks restarts.
   const refs = new Map<string, Set<string>>()
-  const unescape = (s: string) => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
-  for (const c of p.cards)
-    for (const m of (c.front + c.back).matchAll(/src=(?:"([^"]*)"|'([^']*)'|([^\s>]+))|\[sound:([^\]]+)\]/g)) {
-      const raw = unescape(m[1] ?? m[2] ?? m[3] ?? m[4]).normalize('NFC')
-      const names = refs.get(c.deckId) ?? new Set<string>()
-      names.add(raw)
-      try { names.add(decodeURIComponent(raw)) } catch { /* keep raw */ }
-      refs.set(c.deckId, names)
-    }
+  for (const c of p.cards) {
+    const names = refs.get(c.deckId) ?? new Set<string>()
+    mediaRefs(c.front + c.back).forEach((n) => names.add(n))
+    refs.set(c.deckId, names)
+  }
   for (const [deckId, names] of refs)
     for (const name of names) {
       const data = p.media.get(name) // parseApkg keys media by NFC name
