@@ -15,11 +15,10 @@ afterEach(cleanup)
 
 const lessonButton = (title: string) => screen.getAllByRole('button').find((b) => b.textContent!.startsWith(title) && b.closest('ul.lessons'))!
 
-it('a new learner: first lesson open, the rest locked, first unit expanded, no streak yet', async () => {
+it('a new learner: first lesson open, the rest locked, first unit expanded', async () => {
   render(<Path db={await freshDb()} onStart={() => {}} />)
   await screen.findByRole('heading', { name: 'Your path' })
-  expect(screen.getByText('Start a streak today')).toBeTruthy()
-  expect(screen.getByText('Daily goal: 0 / 20 XP')).toBeTruthy()
+  expect(screen.getByText(`0 of ${LESSONS.length} lessons done`)).toBeTruthy()
   const first = lessonButton(LESSONS[0].title)
   const second = lessonButton(LESSONS[1].title)
   expect((first as HTMLButtonElement).disabled).toBe(false)
@@ -39,50 +38,22 @@ it('starting a lesson reports its id, from the Continue button or the list', asy
   expect(onStart.mock.calls).toEqual([[LESSONS[0].id], [LESSONS[0].id]])
 })
 
-it('after a lesson: it shows as done, the next unlocks, XP and streak appear', async () => {
+it('after a lesson: it shows as done and the next unlocks', async () => {
   const db = await freshDb()
-  await completeLesson(db, LESSONS[0], ITEMS, {}, 1) // today, flawless: 15 XP
+  await completeLesson(db, LESSONS[0], ITEMS, {}, 1)
   render(<Path db={db} onStart={() => {}} />)
-  await screen.findByText('Daily goal: 15 / 20 XP')
-  expect(screen.getByText('🔥 1-day streak')).toBeTruthy()
+  await screen.findByText(`1 of ${LESSONS.length} lessons done`)
   expect(lessonButton(LESSONS[0].title).textContent).toContain('✓ Done')
   expect((lessonButton(LESSONS[1].title) as HTMLButtonElement).disabled).toBe(false)
   expect((lessonButton(LESSONS[2].title) as HTMLButtonElement).disabled).toBe(true)
   expect(screen.getByRole('button', { name: new RegExp(`^Continue: ${LESSONS[1].title}`) })).toBeTruthy()
 })
 
-it('the daily goal can be changed and is remembered; meeting it shows a tick', async () => {
-  const db = await freshDb()
-  await completeLesson(db, LESSONS[0], ITEMS, {}, 1)
-  await completeLesson(db, LESSONS[1], ITEMS, {}, 1) // 30 XP
-  const user = userEvent.setup()
-  render(<Path db={db} onStart={() => {}} />)
-  await screen.findByText('Daily goal: 30 / 20 XP ✓')
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Goal per day' }), '50')
-  expect(screen.getByText('Daily goal: 30 / 50 XP')).toBeTruthy()
-  expect(localStorage.getItem('nihongo.goal')).toBe('50')
-  cleanup()
-  render(<Path db={db} onStart={() => {}} />)
-  await screen.findByText('Daily goal: 30 / 50 XP') // remembered across a reload
-})
-
-it('a stored goal that is not one of the offered values falls back to 20', async () => {
-  localStorage.setItem('nihongo.goal', '7')
+it('"Let me choose any lesson" (set in Settings) unlocks everything', async () => {
+  localStorage.setItem('nihongo.skipAhead', '1')
   render(<Path db={await freshDb()} onStart={() => {}} />)
-  await screen.findByText('Daily goal: 0 / 20 XP')
-  expect((screen.getByRole('combobox', { name: 'Goal per day' }) as HTMLSelectElement).value).toBe('20')
-})
-
-it('"Let me choose any lesson" unlocks everything and is remembered', async () => {
-  const user = userEvent.setup()
-  const db = await freshDb()
-  render(<Path db={db} onStart={() => {}} />)
-  await user.click(await screen.findByRole('checkbox', { name: 'Let me choose any lesson' }))
-  expect(localStorage.getItem('nihongo.skipAhead')).toBe('1')
+  await screen.findByRole('heading', { name: 'Your path' })
   expect([...document.querySelectorAll<HTMLButtonElement>('ul.lessons button')].every((b) => !b.disabled)).toBe(true)
-  cleanup()
-  render(<Path db={db} onStart={() => {}} />)
-  expect(((await screen.findByRole('checkbox', { name: 'Let me choose any lesson' })) as HTMLInputElement).checked).toBe(true)
 })
 
 it('when every lesson is done there is a finish message and no Continue button', async () => {

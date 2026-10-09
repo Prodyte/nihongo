@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
-import { gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db/db'
+import { DAILY_NEW, gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db/db'
 import { Flashcard } from '../modes/Flashcard'
 import { Quiz } from '../modes/Quiz'
 import { Typing } from '../modes/Typing'
 import { addReviewXp } from '../path/progress'
 import { dueCards } from '../srs/scheduler'
 
-export const DAILY_NEW = 20
 export type Mode = 'flashcard' | 'typing' | 'quiz'
 const MODES = { flashcard: Flashcard, typing: Typing, quiz: Quiz }
 

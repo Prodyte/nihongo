@@ -9,24 +9,22 @@ import { KANA } from './data/kana'
 afterEach(cleanup)
 
 const current = () => screen.getByRole('navigation', { name: 'Main' }).querySelector('[aria-current="page"]')!.textContent
+const tab = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}$`) })
 
-it('opens on the path; Review studies a flashcard end to end, and reviewing earns XP', async () => {
+it('opens on Today; Review studies a flashcard end to end (full-screen), and reviewing earns XP', async () => {
   const user = userEvent.setup()
   render(<App />)
-  await screen.findByRole('heading', { name: 'Your path' })
-  expect(current()).toBe('Path')
+  await screen.findByText('Start a streak today')
+  expect(current()).toBe('Today')
 
-  await user.click(screen.getByRole('button', { name: 'Review' }))
+  await user.click(tab('Review'))
   await waitFor(() => expect(screen.getByText(/20 new/)).toBeTruthy())
   expect(current()).toBe('Review')
-  const autoplay = screen.getByRole('checkbox', { name: /play audio automatically/i }) as HTMLInputElement
-  expect(autoplay.checked).toBe(true) // on by default
-  await user.click(autoplay)
-  expect(localStorage.getItem('nihongo.autoplay')).toBe('0') // and the choice is remembered
+  expect((screen.getByRole('combobox', { name: 'Deck' }) as HTMLSelectElement).value).toBe('all') // every deck by default
   await user.click(screen.getByRole('button', { name: 'Study' }))
 
   await screen.findByText('20 left') // daily new-card cap
-  expect(current()).toBe('Review') // still the Review tab while studying
+  expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull() // focused: no tabs
   const front = document.querySelector('.kana')!.textContent!
   await user.click(screen.getByRole('button', { name: /show answer/i }))
   const expected = KANA.find((k) => k.id === `hira:${front}`)!.romaji[0]
@@ -34,19 +32,35 @@ it('opens on the path; Review studies a flashcard end to end, and reviewing earn
 
   await user.click(screen.getByRole('button', { name: /^Good/ }))
   await screen.findByText('19 left')
+  await user.click(screen.getByRole('button', { name: '← Exit' }))
+  expect(current()).toBe('Review') // back where the session started
 
-  await user.click(screen.getByRole('button', { name: 'Path' })) // the review counted as activity: 1 XP and a streak
+  await user.click(tab('Today')) // the review counted as activity: 1 XP and a streak
   await screen.findByText('Daily goal: 1 / 20 XP')
-  expect(screen.getByText('🔥 1-day streak')).toBeTruthy()
+  expect(screen.getByText(/1-day streak/)).toBeTruthy()
 })
 
-it('a lesson is full-screen (no tabs), and Exit brings the tabs back', async () => {
+it('a lesson started from Today is full-screen, and Exit returns to Today', async () => {
   const user = userEvent.setup()
   render(<App />)
-  await user.click(await screen.findByRole('button', { name: /^Continue:/ }))
+  await user.click(await screen.findByRole('button', { name: /^Next lesson:/ }))
   await screen.findByRole('button', { name: 'Got it' })
   expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
   await user.click(screen.getByRole('button', { name: '← Exit' }))
-  expect(screen.getByRole('navigation', { name: 'Main' })).toBeTruthy()
+  expect(current()).toBe('Today')
+})
+
+it('a lesson started from Path returns to Path; More leads to Decks, Stats and Settings', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  await user.click(await screen.findByRole('button', { name: /^Path$/ }))
+  await user.click(await screen.findByRole('button', { name: /^Continue:/ }))
+  await user.click(await screen.findByRole('button', { name: '← Exit' }))
   expect(current()).toBe('Path')
+  for (const [item, heading] of [['Decks', 'Decks'], ['Stats', 'Stats'], ['Settings', 'Settings']]) {
+    await user.click(tab('More'))
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${item}`) }))
+    await screen.findByRole('heading', { name: heading })
+    expect(current()).toBe('More')
+  }
 })

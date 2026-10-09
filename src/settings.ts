@@ -30,3 +30,30 @@ export const writeInt = (key: string, value: number) => {
     /* the setting just won't persist */
   }
 }
+
+export const readStr = <T extends string>(key: string, allowed: readonly T[], fallback: T): T => {
+  try {
+    const s = localStorage.getItem(key)
+    return allowed.includes(s as T) ? (s as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+export const writeStr = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    /* the setting just won't persist */
+  }
+}
+
+export const GOALS = [10, 20, 50]
+export const readGoal = () => { const g = readInt('nihongo.goal', 20); return GOALS.includes(g) ? g : 20 }
+
+export const THEMES = ['system', 'light', 'dark'] as const
+export type Theme = (typeof THEMES)[number]
+/** 'system' follows the OS; light/dark pin the colours via data-theme on <html> (see index.css). */
+export const applyTheme = (t: Theme) => {
+  if (t === 'system') document.documentElement.removeAttribute('data-theme')
+  else document.documentElement.dataset.theme = t
+}

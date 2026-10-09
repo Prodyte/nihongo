@@ -81,6 +81,18 @@ export async function studyCards(db: Db, deck: string, mode: string) {
   return mode === 'flashcard' ? cards : cards.filter((c) => !c.html && !(mode === 'typing' && c.deck === BUILTIN_DECKS.sentence.id))
 }
 
+export const DAILY_NEW = 20
+
+/** What a session would hold right now: cards due, and new cards still allowed today. */
+export async function reviewCounts(db: Db, deck: string, mode: string, now = new Date()) {
+  const cards = await studyCards(db, deck, mode)
+  const left = Math.max(0, DAILY_NEW - (await newToday(db, now)))
+  return {
+    due: cards.filter((c) => c.fsrs.state !== State.New && c.fsrs.due <= now).length,
+    fresh: Math.min(left, cards.filter((c) => c.fsrs.state === State.New).length),
+  }
+}
+
 /** Cards first studied since local midnight, to enforce the daily new-card cap. */
 export async function newToday(db: Db, now = new Date()) {
   const start = new Date(now)

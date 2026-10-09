@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { loadSql } from '../anki/sql'
-import { Backup } from './Backup'
 import { DECK_LINKS } from '../data/deckLinks'
 import { deleteDeck, saveImport, type Db, type DeckRecord } from '../db/db'
 
@@ -84,7 +83,6 @@ export function Decks({ db }: { db: Db }) {
         ))}
       </ul>
     </div>
-    <Backup db={db} onRestored={reload} />
     </>
   )
 }
