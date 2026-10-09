@@ -62,7 +62,7 @@ export async function completeLesson(
     let card: StoredCard | undefined = await cards.get(item.id)
     if (!card && item.kind !== 'kana') {
       const deck = BUILTIN_DECKS[item.kind]
-      card = { id: item.id, deck: deck.id, front: written(item), back: item.kind === 'word' ? glossAnswers(item.gloss) : [item.gloss], fsrs: newFsrsCard(now), ...(item.written && { reading: item.jp }) }
+      card = { id: item.id, deck: deck.id, front: written(item), back: item.kind === 'sentence' ? [item.gloss] : glossAnswers(item.gloss), fsrs: newFsrsCard(now), ...(item.written && { reading: item.jp }) }
       await tx.objectStore('decks').put(deck)
     }
     if (!card) continue // kana cards are seeded at startup; nothing to grade if one is somehow missing

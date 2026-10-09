@@ -1,4 +1,5 @@
 import { KANA, toKata } from '../data/kana'
+import jlptKanji from '../data/jlpt/kanji.json'
 import jlptWords from '../data/jlpt/words.json'
 import { GRAMMAR_LESSONS, GRAMMAR_UNIT } from './grammar'
 import { displayJp, kanaToRomaji, tokensToRomaji } from './romaji'
@@ -7,7 +8,7 @@ import { VOCAB_UNITS } from './vocab'
 /** One thing a lesson teaches. For kana, `gloss` is the romaji; for words it is the English meaning. */
 export interface Item {
   id: string // 'hira:あ' | 'kata:ア' (the existing card ids) | 'vocab:<romaji-slug>' (starter words) | 'w:<written form>' (JLPT words)
-  kind: 'kana' | 'word' | 'sentence'
+  kind: 'kana' | 'word' | 'sentence' | 'kanji'
   script?: 'hira' | 'kata'
   jp: string
   gloss: string
@@ -16,6 +17,10 @@ export interface Item {
   kanji?: string // starter words: the kanji, shown as a small extra
   written?: string // JLPT words written with kanji: shown instead of jp, with jp (the reading) as furigana
   level?: 5 | 4 | 3 // JLPT level
+  on?: string[] // kanji: on'yomi (Chinese-derived readings), in hiragana
+  kun?: string[] // kanji: kun'yomi (native readings); okurigana in brackets: ひと(つ)
+  strokes?: number // kanji
+  examples?: string[] // kanji: ids of course words written with it, most common first
   note?: string // shown on the intro card
   accepts?: string[] // kana: every romaji spelling accepted when typed (shi/si, ji/di...)
   tokens?: string[] // sentence: the chunks in order
@@ -32,6 +37,11 @@ const HIRA_COMBO_ROWS = ['きゃきゅきょ', 'しゃしゅしょ', 'ちゃち�
 
 const chars = (s: string) => s.match(/.[ゃゅょ]?/gu)!
 const chunk = <T,>(a: T[], n: number) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n))
+/** Like chunk, but sizes differ by at most one (166 kanji in 5s: 34 lessons of 4-5, not 33 of 5 and a lone kanji). */
+const even = <T,>(a: T[], n: number) => { const k = Math.ceil(a.length / n); return Array.from({ length: k }, (_, i) => a.slice(Math.round((i * a.length) / k), Math.round(((i + 1) * a.length) / k))) }
+
+/** How an item is written for the learner: kanji where the word has them, else kana. */
+export const written = (it: Item) => it.written ?? it.jp
 
 /** Add an item; a second item with the same id would silently replace the first, so fail instead. */
 export function registerItem(items: Map<string, Item>, item: Item) {
@@ -105,37 +115,58 @@ export function starterTwin(written: string, reading: string, gloss: string, sta
   return starter.find((s) => s.jp === reading && ((s.kanji && s.kanji === written) || ((!s.kanji || written === reading) && [...contentWords(s.gloss)].some((w) => mine.has(w)))))
 }
 
+const KANJI_PER_LESSON = 5
+
+/** Spread `b` evenly through `a`, each b-entry before the a-entry at its share of the way: [a1 b1 a2 a3 b2 a4 ...]. */
+export function interleave<T>(a: T[], b: T[]): T[] {
+  const out: T[] = []
+  let j = 0
+  a.forEach((x, i) => {
+    while (j < b.length && j * a.length <= i * b.length) out.push(b[j++])
+    out.push(x)
+  })
+  return [...out, ...b.slice(j)]
+}
+
 function jlptUnits(): Unit[] {
   const starter = [...ITEMS.values()].filter((i) => i.kind === 'word')
-  const byLevel = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
+  const words = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
   for (const [level, written, reading, gloss] of jlptWords as [5 | 4 | 3, string, string, string][]) {
     if (starterTwin(written || reading, reading, gloss, starter)) continue // already taught (and carded) by the starter units
     const romaji = kanaToRomaji(reading)
     const id = `w:${written || reading}`
     registerItem(ITEMS, { id, kind: 'word', jp: reading, written: written || undefined, gloss, romaji, sound: romaji, level })
-    byLevel.get(level)!.push(id)
+    words.get(level)!.push(id)
   }
-  return LEVELS.flatMap((level) =>
-    chunk(chunk(byLevel.get(level)!, WORDS_PER_LESSON), LESSONS_PER_UNIT).map((lessons, u): Unit => {
-      const first = u * LESSONS_PER_UNIT * WORDS_PER_LESSON + 1
-      const last = first + lessons.flat().length - 1
+  const allWords = [...ITEMS.values()].filter((i) => i.kind === 'word') // starter first, then N5 -> N3, most common first
+  const kanji = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
+  for (const [char, level, meanings, on, kun, strokes] of jlptKanji as [string, 5 | 4 | 3, string[], string[], string[], number][]) {
+    const examples = allWords.filter((w) => (w.written ?? w.kanji ?? '').includes(char)).slice(0, 3).map((w) => w.id)
+    registerItem(ITEMS, { id: `kanji:${char}`, kind: 'kanji', jp: char, gloss: meanings.join(', '), romaji: '', sound: `kanji:${char}`, level, on, kun, strokes, examples })
+    kanji.get(level)!.push(`kanji:${char}`)
+  }
+  return LEVELS.flatMap((level) => {
+    const vocab = even(words.get(level)!, WORDS_PER_LESSON).map((items, i): Lesson => ({
+      id: `n${level}-v-${i + 1}`, title: items.slice(0, 3).map((id) => written(ITEMS.get(id)!)).join('・'), items,
+    }))
+    const kanjiLessons = even(kanji.get(level)!, KANJI_PER_LESSON).map((items, i): Lesson => ({
+      id: `n${level}-k-${i + 1}`, title: `Kanji ${items.map((id) => id.slice(6)).join(' ')}`, items,
+    }))
+    return chunk(interleave(vocab, kanjiLessons), LESSONS_PER_UNIT).map((lessons, u): Unit => {
+      const chars = lessons.filter((l) => l.id.includes('-k-')).flatMap((l) => l.items.map((id) => id.slice(6)))
+      const nWords = lessons.filter((l) => l.id.includes('-v-')).flatMap((l) => l.items).length
       return {
-        id: `n${level}-u${u + 1}`, section: `N${level}`, title: `N${level} words ${first}–${last}`,
-        blurb: u === 0 ? `The N${level} word list, most common words first.` : `Words ${first}–${last} of N${level}.`,
-        lessons: lessons.map((items, i) => {
-          const n = u * LESSONS_PER_UNIT + i + 1
-          return { id: `n${level}-v-${n}`, title: items.slice(0, 3).map((id) => { const it = ITEMS.get(id)!; return it.written ?? it.jp }).join('・'), items }
-        }),
+        id: `n${level}-u${u + 1}`, section: `N${level}`, title: `N${level} · Unit ${u + 1}`,
+        blurb: [nWords && `${nWords} words`, chars.length && `kanji ${chars.join(' ')}`].filter(Boolean).join(' · '),
+        lessons,
       }
-    }),
-  )
+    })
+  })
 }
 
 export const UNITS: Unit[] = [...kanaUnits('hira'), ...kanaUnits('kata'), ...vocabUnits(), ...grammarUnits(), ...jlptUnits()]
 /** Path sections in order (each unit belongs to one). */
 export const SECTIONS = [...new Set(UNITS.map((u) => u.section))]
-/** How an item is written for the learner: kanji where the word has them, else kana. */
-export const written = (it: Item) => it.written ?? it.jp
 
 /** Every lesson in course order; a lesson unlocks when the one before it is done. */
 export const LESSONS: Lesson[] = UNITS.flatMap((u) => u.lessons)

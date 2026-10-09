@@ -10,13 +10,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,wasm,svg,png,webmanifest}'], // wasm: deck import must work offline
+        globPatterns: ['**/*.{js,css,html,wasm,svg,png,webmanifest,json}'], // wasm: deck import must work offline; json: kanji stroke order
         navigateFallback: '/nihongo/index.html',
       },
       manifest: {
         name: 'Nihongo: learn Japanese',
         short_name: 'Nihongo',
-        description: 'Learn hiragana and katakana with spaced-repetition flashcards. Imports Anki decks.',
+        description: 'Learn Japanese from kana to JLPT N3: words, kanji and grammar with spaced repetition. Imports Anki decks.',
         lang: 'en',
         start_url: '/nihongo/',
         scope: '/nihongo/',

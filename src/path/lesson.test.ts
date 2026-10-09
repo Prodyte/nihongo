@@ -93,6 +93,35 @@ describe('buildLesson invariants, over every lesson', () => {
       })
 })
 
+describe('kanji lessons', () => {
+  const kanjiLessons = LESSONS.filter((l) => ITEMS.get(l.items[0])!.kind === 'kanji')
+  it('every kanji lesson asks each kanji\'s meaning, and reads example words when the kanji has one', () => {
+    for (const [n, l] of kanjiLessons.entries()) {
+      const exs = buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(n + 3) })
+      expect(exs.filter((e) => e.type === 'intro')).toHaveLength(l.items.length)
+      for (const id of l.items) expect(exs.some((e) => e.type === 'choice' && e.dir === 'toGloss' && e.item.id === id), `${l.id} ${id}`).toBe(true)
+      expect(exs.some((e) => e.type === 'listen'), l.id).toBe(false) // a lone kanji has no single sound
+      const reads = exs.filter((e): e is Extract<Exercise, { type: 'choice' }> => e.type === 'choice' && e.dir === 'toReading')
+      const withWords = l.items.filter((id) => (ITEMS.get(id)!.examples ?? []).some((w) => ITEMS.get(w)!.written)).length
+      expect(reads.length, l.id).toBe(Math.min(3, withWords))
+      for (const r of reads) {
+        expect(r.answer).toBe(r.item.jp)
+        expect(r.prompt).toBe(r.item.written)
+        expect(r.options.filter((o) => o === r.answer), l.id).toHaveLength(1)
+        expect(new Set(r.options).size, l.id).toBe(r.options.length)
+        expect([...r.prompt].some((c) => l.items.includes(`kanji:${c}`)), `${l.id}: ${r.prompt} uses a kanji of the lesson`).toBe(true)
+      }
+    }
+  })
+  it('most kanji have example words; examples are course words written with that kanji', () => {
+    const kanji = [...ITEMS.values()].filter((i) => i.kind === 'kanji')
+    expect(kanji).toHaveLength(612)
+    expect(kanji.filter((k) => k.examples!.length > 0).length).toBeGreaterThan(560)
+    for (const k of kanji) for (const id of k.examples!) expect((ITEMS.get(id)!.written ?? ITEMS.get(id)!.kanji)!, k.jp).toContain(k.jp)
+    expect(ITEMS.get('kanji:日')).toMatchObject({ gloss: 'day, sun, japan', on: ['にち', 'じつ'], strokes: 4, level: 5 })
+  })
+})
+
 describe('buildLesson specifics', () => {
   it('never offers を as an answer to hearing お (both sound "o"), nor asks を by ear', () => {
     const o = lessonById('hira-basic-1')!
@@ -136,6 +165,7 @@ describe('buildLesson specifics', () => {
       const kind = ITEMS.get(lesson.items[0])!.kind
       expect(exs.slice(-typing.length).every((e) => e.type === 'type'), lesson.id).toBe(true) // last, the hardest
       if (kind === 'kana') expect(typing.map((t) => t.dir), lesson.id).toEqual(Array(Math.min(3, lesson.items.length)).fill('toRomaji'))
+      else if (kind === 'kanji') expect(typing.map((t) => t.dir).join(), lesson.id).toMatch(/^toGloss,toGloss(,toReading){0,2}$/)
       else {
         const toJp = Math.min(2, lesson.items.filter((id) => !dupGloss(ITEMS.get(id)!)).length)
         expect(typing.map((t) => t.dir), lesson.id).toEqual([...Array(Math.min(2, lesson.items.length - toJp)).fill('toGloss'), ...Array(toJp).fill('toJp')])

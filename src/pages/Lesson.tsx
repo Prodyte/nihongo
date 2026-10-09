@@ -6,6 +6,7 @@ import { accuracy, advance, buildLesson, startRun, type RunState } from '../path
 import { completeLesson, getProgress, learnedItems } from '../path/progress'
 import { Choice } from '../path/ui/Choice'
 import { Intro } from '../path/ui/Intro'
+import { KanjiIntro } from '../path/ui/KanjiIntro'
 import { Build } from '../path/ui/Build'
 import { Explain } from '../path/ui/Explain'
 import { Match } from '../path/ui/Match'
@@ -81,7 +82,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         <button onClick={onExit}>← Exit</button>
         <progress max={run.initial} value={run.initial - run.queue.length} aria-label="Lesson progress" />
       </div>
-      {ex.type === 'intro' ? <Intro key={step} item={ex.item} autoplay={autoplay} onDone={done} />
+      {ex.type === 'intro' ? (ex.item.kind === 'kanji' ? <KanjiIntro key={step} item={ex.item} onDone={done} /> : <Intro key={step} item={ex.item} autoplay={autoplay} onDone={done} />)
         : ex.type === 'explain' ? <Explain key={step} ex={ex} onDone={done} />
         : ex.type === 'build' ? <Build key={step} ex={ex} onDone={done} />
         : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={done} />

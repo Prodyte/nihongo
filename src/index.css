@@ -108,3 +108,12 @@ details.section[open] > summary h2::before { content: '▾ ' / ''; }
 details.section > summary small { color: var(--muted); }
 details.section > .card + .card { margin-top: .75rem; }
 ruby rt { font-size: .45em; color: var(--muted); }
+.strokes { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+.strokes svg { width: 9rem; height: 9rem; fill: none; stroke-linecap: round; stroke-linejoin: round; border: 1px dashed var(--line); border-radius: 8px; }
+.strokes .guide { stroke: var(--line); stroke-width: 3.5; }
+.strokes .stroke { stroke: var(--fg); stroke-width: 3.5; stroke-dasharray: 1; animation: draw .5s ease-in both; }
+/* hidden until its turn: an undrawn stroke would otherwise show its round cap as a dot */
+@keyframes draw { 0% { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .strokes .stroke { animation: none; stroke-dashoffset: 0; } }
+.kanji-readings { display: grid; grid-template-columns: auto 1fr; gap: .25rem .75rem; margin: 0; width: 100%; }
+.kanji-readings dt { color: var(--muted); } .kanji-readings dd { margin: 0; text-align: left; font-size: 1.15rem; }

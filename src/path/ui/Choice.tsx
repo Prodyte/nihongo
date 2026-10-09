@@ -12,6 +12,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
   const [picked, setPicked] = useState<string | null>(null)
   const listening = ex.type === 'listen'
   const toGloss = ex.type === 'choice' && ex.dir === 'toGloss'
+  const toReading = ex.type === 'choice' && ex.dir === 'toReading'
   const kana = ex.item.kind === 'kana'
   const answered = picked !== null
   const prompt = ex.type === 'choice' ? ex.prompt : ''
@@ -22,8 +23,8 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
     if (listening) speak(ex.item.jp) // say it on arrival; the replay button is on screen
   }, [listening, ex.item.jp])
   useEffect(() => {
-    if (answered && autoplay && !listening) speak(ex.item.jp) // after answering, hear the word (listening already played it)
-  }, [answered, autoplay, listening, ex.item.jp])
+    if (answered && autoplay && !listening && ex.item.kind !== 'kanji') speak(ex.item.jp) // after answering, hear the word (listening already played it; a lone kanji has several readings)
+  }, [answered, autoplay, listening, ex.item.jp, ex.item.kind])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (answered || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || !'1234'.includes(e.key)) return
@@ -36,8 +37,10 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
 
   const question = listening ? 'Tap what you hear'
     : fill ? 'Which word completes the sentence?'
+    : toReading ? 'How is this read?'
+    : ex.item.kind === 'kanji' && toGloss ? 'What does this kanji mean?'
     : toGloss ? (kana ? 'What sound is this?' : 'What does this mean?')
-    : kana ? `Which one is “${prompt}”?` : `How do you say “${prompt}”?`
+    : kana ? `Which one is “${prompt}”?` : ex.item.kind === 'kanji' ? `Which kanji means “${prompt}”?` : `How do you say “${prompt}”?`
   const right = ex.answer
 
   return (
@@ -45,6 +48,8 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
       <p className="q">{question}</p>
       {listening ? (
         <SpeakButton text={ex.item.jp} />
+      ) : toReading ? (
+        <div className="prompt kana" lang="ja">{prompt}</div>
       ) : toGloss || fill ? (
         <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja">{toGloss ? <Ruby text={prompt} reading={ex.item.written && ex.item.jp} /> : prompt}</div>
       ) : (

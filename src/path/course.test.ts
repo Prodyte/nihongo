@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
 import { kanaToRomaji } from './romaji'
 import jlptWords from '../data/jlpt/words.json'
-import { ITEMS, LESSONS, registerItem, SECTIONS, starterTwin, UNITS } from './course'
+import { interleave, ITEMS, LESSONS, registerItem, SECTIONS, starterTwin, UNITS } from './course'
 import { VOCAB_UNITS } from './vocab'
 
 // the vocabulary's romaji is checked against the production kana -> romaji converter (こんにちは/こんばんは: は is read "wa")
@@ -45,13 +45,23 @@ describe('course structure', () => {
     expect(UNITS.slice(6, 14).map((u) => u.lessons.length)).toEqual(Array(8).fill(3))
     expect(UNITS[14].lessons).toHaveLength(4)
     const firstOf = (p: string) => LESSONS.findIndex((l) => l.items[0].startsWith(p))
-    expect([firstOf('hira:'), firstOf('kata:'), firstOf('vocab:'), firstOf('sent:'), firstOf('w:')]).toEqual([0, 20, 40, 64, 68])
+    expect([firstOf('hira:'), firstOf('kata:'), firstOf('vocab:'), firstOf('sent:'), firstOf('kanji:'), firstOf('w:')]).toEqual([0, 20, 40, 64, 68, 69])
   })
-  it('JLPT units hold up to 10 lessons of up to 6 words, at one level each, ids n<level>-v-<n> counting from 1', () => {
+  it('JLPT units hold up to 10 lessons at one level: words (6 a lesson) and kanji (5) spread through, ids counting from 1', () => {
     for (const level of [5, 4, 3]) {
       const lessons = UNITS.filter((u) => u.section === `N${level}`).flatMap((u) => u.lessons)
-      expect(lessons.map((l) => l.id)).toEqual(lessons.map((_, i) => `n${level}-v-${i + 1}`))
-      for (const l of lessons) for (const id of l.items) expect(ITEMS.get(id)!.level, id).toBe(level)
+      for (const [kind, prefix, size] of [['word', 'v', 6], ['kanji', 'k', 5]] as const) {
+        const mine = lessons.filter((l) => l.id.startsWith(`n${level}-${prefix}-`))
+        expect(mine.map((l) => l.id)).toEqual(mine.map((_, i) => `n${level}-${prefix}-${i + 1}`))
+        for (const l of mine) {
+          expect(l.items.length, l.id).toBeLessThanOrEqual(size)
+          expect(l.items.length, l.id).toBeGreaterThanOrEqual(size - 1) // no stragglers
+          for (const id of l.items) expect(ITEMS.get(id), id).toMatchObject({ kind, level })
+        }
+      }
+      // spread out: never more than 2 kanji lessons in a row, nor a long run of word lessons without one
+      const kinds = lessons.map((l) => (l.id.includes('-k-') ? 'k' : 'v')).join('')
+      expect(kinds, `N${level}`).not.toMatch(/kkk|v{12}/)
     }
     for (const u of UNITS.filter((x) => x.id.startsWith('n'))) expect(u.lessons.length, u.id).toBeLessThanOrEqual(10)
   })
@@ -117,6 +127,15 @@ describe('JLPT words', () => {
     expect(ITEMS.get('w:ない')).toMatchObject({ jp: 'ない', romaji: 'nai' })
     expect(ITEMS.get('w:ない')!.written).toBeUndefined()
     expect(ITEMS.get('w:時間')).toMatchObject({ jp: 'じかん', written: '時間', romaji: 'jikan', sound: 'jikan', level: 5 })
+  })
+})
+
+describe('interleave', () => {
+  it('spreads the second list evenly through the first, keeping both orders and every entry', () => {
+    expect(interleave([1, 2, 3, 4], ['a', 'b'])).toEqual(['a', 1, 2, 'b', 3, 4])
+    expect(interleave([1, 2], [])).toEqual([1, 2])
+    expect(interleave([], ['a'])).toEqual(['a'])
+    expect(interleave([1], ['a', 'b', 'c'])).toEqual(['a', 1, 'b', 'c'])
   })
 })
 

@@ -10,7 +10,7 @@ import { Ruby } from './Ruby'
 
 type Ex = Extract<Exercise, { type: 'type' }>
 
-const QUESTION = { toRomaji: 'Type the romaji', toGloss: 'Type the English meaning', toJp: 'Type it in Japanese (use romaji, e.g. mizu)' }
+const QUESTION = { toRomaji: 'Type the romaji', toGloss: 'Type the English meaning', toJp: 'Type it in Japanese (use romaji, e.g. mizu)', toReading: 'How is it read? Type it in romaji' }
 const SENTENCE_QUESTION = 'Type the sentence in Japanese (use romaji; particles as written: は = ha, を = wo)'
 
 /** Typing: kana -> romaji, word -> English, English -> Japanese with the kana appearing live as you type. */
@@ -19,8 +19,9 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
   const [result, setResult] = useState<Check | null>(null)
   const id = useId()
   const { item, dir } = ex
-  const preview = dir === 'toJp' ? toKana(typed, false) : null
-  const answer = dir === 'toJp' ? item.jp : item.gloss // the detail line under it adds the reading and the meaning
+  const japanese = dir === 'toJp' || dir === 'toReading'
+  const preview = japanese ? toKana(typed, false) : null
+  const answer = japanese ? item.jp : item.gloss // the detail line under it adds the reading and the meaning
 
   useEffect(() => {
     if (result && autoplay && item.kind === 'word') speak(item.jp) // after answering, hear the word
@@ -32,7 +33,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
     setResult(
       dir === 'toRomaji' ? { ok: matches(item.accepts ?? [item.romaji], typed) }
       : dir === 'toGloss' ? checkEnglish(typed, glossAnswers(item.gloss))
-      : item.kind === 'sentence' ? checkJapanese(typed, item.jp, { tokens: item.tokens, alts: item.alts?.map((a) => displayJp(a)) })
+      : item.kind === 'sentence' && dir === 'toJp' ? checkJapanese(typed, item.jp, { tokens: item.tokens, alts: item.alts?.map((a) => displayJp(a)) })
       : checkJapanese(typed, item.jp, { word: true }),
     )
   }
@@ -40,7 +41,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
   return (
     <form className="card" onSubmit={check}>
       <label htmlFor={id} className="q">{item.kind === 'sentence' ? SENTENCE_QUESTION : QUESTION[dir]}</label>
-      {dir === 'toJp' ? <div className="prompt gloss">{ex.prompt}</div> : <div className="prompt kana" lang="ja"><Ruby text={ex.prompt} reading={item.written && item.jp} /></div>}
+      {dir === 'toJp' ? <div className="prompt gloss">{ex.prompt}</div> : <div className="prompt kana" lang="ja">{dir === 'toReading' ? ex.prompt /* no furigana: the reading is the question */ : <Ruby text={ex.prompt} reading={item.written && item.jp} />}</div>}
       <input id={id} autoFocus autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} enterKeyHint="done"
         lang={dir === 'toGloss' ? 'en' : undefined} readOnly={result !== null} value={typed} aria-describedby={preview ? `${id}-kana` : undefined}
         onKeyDown={(e) => e.key === 'Enter' && e.repeat && e.preventDefault()} onChange={(e) => setTyped(e.target.value)} />

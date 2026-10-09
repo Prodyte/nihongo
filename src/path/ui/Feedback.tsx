@@ -1,3 +1,4 @@
+import { toKata } from '../../data/kana'
 import { written, type Item } from '../course'
 
 /** Result line (always mounted so screen readers announce changes) plus a Continue button once answered. */
@@ -10,7 +11,8 @@ export function Feedback({ result, item, answer, note, onContinue }: { result: b
             <div>{result ? '✓ Correct' : `✗ Correct answer: ${answer}`}</div>
             {note && <div>{note}</div>}
             <small>
-              <span lang="ja">{written(item)}{item.written && ` ${item.jp}`}</span> {item.kind === 'kana' ? '= ' : `(${item.romaji}) `}
+              <span lang="ja">{written(item)}{item.written && ` ${item.jp}`}</span>{' '}
+              {item.kind === 'kana' ? '= ' : item.kind === 'kanji' ? <span lang="ja">({[...(item.on ?? []).map(toKata), ...(item.kun ?? [])].join('、')}) </span> : `(${item.romaji}) `}
               {item.gloss}
               {item.kanji && <> · <span lang="ja">{item.kanji}</span></>}
             </small>

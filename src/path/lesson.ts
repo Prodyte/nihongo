@@ -5,11 +5,11 @@ import { displayJp, PARTICLES } from './romaji'
 export type Exercise = (
   | { type: 'intro'; item: Item }
   | { type: 'explain'; title: string; body: string[]; examples: Item[] } // a grammar lesson's opening card
-  | { type: 'choice'; item: Item; dir: 'toGloss' | 'toJp' | 'fill'; prompt: string; options: string[]; answer: string; hint?: string; readings?: Readings } // fill: pick the particle that completes the sentence
+  | { type: 'choice'; item: Item; dir: 'toGloss' | 'toJp' | 'fill' | 'toReading'; prompt: string; options: string[]; answer: string; hint?: string; readings?: Readings } // fill: pick the particle that completes the sentence
   | { type: 'listen'; item: Item; options: string[]; answer: string; readings?: Readings } // hear item.jp, pick it
   | { type: 'match'; pairs: { id: string; jp: string; reading?: string; gloss: string }[] }
   | { type: 'build'; item: Item; bank: string[]; answer: string[]; alts: string[][] } // put the chunks of a sentence in order
-  | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp'; prompt: string } // kana: type the romaji; words: type the English, or the Japanese via romaji
+  | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp' | 'toReading'; prompt: string } // kana: type the romaji; words: type the English, or the Japanese via romaji; toReading: a kanji word's reading
 ) & { retry?: boolean }
 
 /** Furigana for options written with kanji: written form -> reading. */
@@ -45,6 +45,20 @@ function options(answer: Item, field: 'jp' | 'gloss', pool: Item[], same: 'gloss
  * offered も (わたしも is fine, "too"), and a blank を is never offered は (みずは のみます is fine, "as for water"). */
 const WRONG_PARTICLES: Record<string, string[]> = { は: ['の', 'を', 'か'], も: ['の', 'を', 'か'], の: ['を', 'か'], を: ['の', 'か'], か: ['は', 'の', 'を'] }
 
+const counted = new WeakMap<ReadonlyMap<string, Item>, Record<string, Map<string, number>>>()
+/** Is `it` the only item of its kind with this gloss (or sound)? Counted once per item set: the course has thousands. */
+function uniqueBy(items: ReadonlyMap<string, Item>, by: 'gloss' | 'sound') {
+  const cache = counted.get(items) ?? {}
+  counted.set(items, cache)
+  if (!cache[by]) {
+    const m = new Map<string, number>()
+    for (const it of items.values()) m.set(key(it, by), (m.get(key(it, by)) ?? 0) + 1)
+    cache[by] = m
+  }
+  const m = cache[by]
+  return (it: Item) => m.get(key(it, by)) === 1
+}
+
 const fail = (msg: string): never => {
   throw new Error(msg)
 }
@@ -53,17 +67,13 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   const { canSpeak, learned, rand = Math.random } = opts
   const mine = lesson.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${lesson.id}`))
   if (lesson.explain) return buildGrammar(lesson, lesson.explain, mine, items, opts)
+  if (mine[0]?.kind === 'kanji') return buildKanji(lesson, mine, items, opts)
   const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? [])
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)] // lesson items make the likeliest distractors
 
   // Items sharing a gloss with another item of their kind can't be asked in reverse or matched (two right answers);
   // items sharing a sound can't be asked by ear either.
-  const count = (by: 'gloss' | 'sound') => {
-    const m = new Map<string, number>()
-    for (const it of items.values()) m.set(key(it, by), (m.get(key(it, by)) ?? 0) + 1)
-    return (it: Item) => m.get(key(it, by)) === 1
-  }
-  const [uniqueGloss, uniqueSound] = [count('gloss'), count('sound')]
+  const [uniqueGloss, uniqueSound] = [uniqueBy(items, 'gloss'), uniqueBy(items, 'sound')]
   const askable = shuffle(mine.filter(uniqueGloss), rand)
   const audible = shuffle(askable.filter(uniqueSound), rand)
 
@@ -131,6 +141,38 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
   out.push(...pick(0, 1, 2).map(translate), ...pick(3, 4, 5, 0).map(gap), ...pick(1, 2, 3, 4).map(build))
   if (canSpeak) out.push(...pick(2, 4).map(listen))
   out.push(...pick(1, 3).map(say), ...pick(5, 0).map(typed))
+  return out.filter((e) => !('options' in e) || e.options.length >= 2)
+}
+
+/**
+ * A kanji lesson: meet each kanji (stroke order, meanings, readings, example words), pick its meaning, match, pick the
+ * kanji for a meaning, then read a word written with it: pick its reading, and type meanings and readings.
+ */
+function buildKanji(lesson: Lesson, mine: Item[], items: ReadonlyMap<string, Item>, { learned, rand = Math.random }: BuildOpts): Exercise[] {
+  const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? [])
+  const pool = [...shuffle(mine, rand), ...shuffle(far, rand)]
+  const unique = uniqueBy(items, 'gloss')
+  const askable = shuffle(mine.filter(unique), rand)
+  const opts = (it: Item, field: 'jp' | 'gloss') => { const o = options(it, field, pool, 'gloss'); return { ...o, options: shuffle(o.options, rand) } }
+
+  // a word to read for each kanji: its most common example; distractors are readings of other words around it
+  const example = (k: Item) => (k.examples ?? []).map((id) => items.get(id)).find((w): w is Item => !!w && !!w.written)
+  const words = mine.flatMap((k) => example(k) ?? [])
+  const readingPool = [...words, ...mine.flatMap((k) => (k.examples ?? []).flatMap((id) => items.get(id) ?? [])), ...far.filter((x) => x.kind === 'word')]
+  const toReading = (w: Item): Exercise => {
+    const readings = [w.jp]
+    for (const x of readingPool) if (readings.length < 4 && x.jp !== w.jp && !readings.includes(x.jp) && written(x) !== written(w)) readings.push(x.jp)
+    return { type: 'choice', item: w, dir: 'toReading', prompt: written(w), options: shuffle(readings, rand), answer: w.jp }
+  }
+
+  const out: Exercise[] = mine.filter((it) => !learned.has(it.id)).map((item) => ({ type: 'intro', item }))
+  out.push(...shuffle(mine, rand).map((it): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, ...opts(it, 'gloss'), answer: it.gloss })))
+  if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss })) })
+  out.push(...askable.slice(0, 3).map((it): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...opts(it, 'jp'), answer: it.jp })))
+  const readWords = shuffle(words, rand)
+  out.push(...readWords.slice(0, 3).map(toReading))
+  out.push(...shuffle(mine, rand).slice(0, 2).map((item): Exercise => ({ type: 'type', item, dir: 'toGloss', prompt: item.jp })))
+  out.push(...readWords.slice(-2).map((item): Exercise => ({ type: 'type', item, dir: 'toReading', prompt: written(item) }))) // the last two: fresh ones when there are 5
   return out.filter((e) => !('options' in e) || e.options.length >= 2)
 }
 
