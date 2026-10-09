@@ -38,6 +38,14 @@ describe('playInOrder', () => {
     await Promise.resolve(); await Promise.resolve()
     expect(b.play).toHaveBeenCalledOnce()
   })
+  it('a clip that raises error AND rejects play() advances only once', async () => {
+    const [a, b, c] = [fakeAudio({ fail: true }), fakeAudio(), fakeAudio()]
+    playInOrder([a, b, c] as unknown as HTMLAudioElement[])
+    a.onerror!() // the error event fires first...
+    await Promise.resolve(); await Promise.resolve() // ...then the play() rejection lands
+    expect(b.play).toHaveBeenCalledOnce()
+    expect(c.play).not.toHaveBeenCalled() // would have been skipped to by the double advance
+  })
   it('stop() pauses everything and prevents the next clip starting', () => {
     const [a, b] = [fakeAudio(), fakeAudio()]
     const stop = playInOrder([a, b] as unknown as HTMLAudioElement[])

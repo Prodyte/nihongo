@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { warmUpVoices } from './audio'
 import { openDb, seedKana, type Db } from './db/db'
 import { Home, type Config } from './pages/Home'
 import { readBool, writeBool } from './settings'
@@ -16,6 +17,7 @@ export default function App() {
   const [config, setConfig] = useState<Config>({ deck: 'hira', mode: 'flashcard' })
 
   useEffect(() => {
+    warmUpVoices()
     openDb()
       .then(async (d) => {
         await seedKana(d)

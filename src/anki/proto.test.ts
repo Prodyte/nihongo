@@ -24,6 +24,8 @@ describe('parsePb', () => {
     ['truncated length-delimited field', bytes(0x0a, 5, 0x61)],
     ['truncated varint', bytes(0x10, 0x80)],
     ['over-long varint', bytes(0x10, ...Array(11).fill(0xff), 0x01)],
+    ['truncated fixed32', bytes(0x0d, 1, 2)],
+    ['truncated fixed64', bytes(0x09, 1, 2, 3)],
     ['deprecated group wire type', bytes(0x0b)],
   ])('rejects %s', (_, buf) => {
     expect(() => parsePb(buf)).toThrow('Malformed protobuf')

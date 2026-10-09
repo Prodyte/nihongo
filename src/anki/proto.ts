@@ -27,8 +27,8 @@ export function parsePb(buf: Uint8Array): PbField[] {
         i += len
         break
       }
-      case 1: i += 8; break
-      case 5: i += 4; break
+      case 1: i += 8; if (i > buf.length) throw bad(); break
+      case 5: i += 4; if (i > buf.length) throw bad(); break
       default: throw bad()
     }
   }

@@ -67,6 +67,13 @@ describe('parseApkg: latest (.anki21b) format', () => {
     expect(p.media.get('pic.png')).toEqual(bin([137, 80, 78, 71]))
     expect(p.media.get('beep.mp3')).toEqual(bin([1, 2, 3])) // via explicit zip file name 7
   })
+  it('rejects a package with no usable cards', async () => {
+    const db = new SQL.Database()
+    for (const t of ['notes (id,guid,mid,mod,usn,tags,flds,sfld,csum,flags,data)', 'cards (id,nid,did,ord,mod,usn,type,queue,due,ivl,factor,reps,lapses,left,odue,odid,flags,data)', 'notetypes (id,name,mtime_secs,usn,config)', 'fields (ntid,ord,name,config)', 'templates (ntid,ord,name,mtime_secs,usn,config)', 'decks (id,name,mtime_secs,usn,common,kind)']) db.run(`create table ${t}`)
+    const zip = new JSZip()
+    zip.file('collection.anki21b', zstd(db.export()))
+    await expect(parseApkg(await zip.generateAsync({ type: 'uint8array' }), SQL)).rejects.toThrow(/No cards found/)
+  })
   it('reports unreadable and unrecognised collections as ApkgError', async () => {
     await expect(parseApkg(await makeLatest({ badCollection: true }), SQL)).rejects.toThrow(/Could not read the deck database/)
     const err = await parseApkg(await makeLatest({ legacyDbInSlot: true }), SQL).catch((e) => e)

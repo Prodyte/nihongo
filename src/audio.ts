@@ -16,6 +16,9 @@ export function speak(text: string): boolean {
   return true
 }
 
+/** Browsers load the voice list lazily on first use; ask early so the first spoken card isn't silent. */
+export const warmUpVoices = () => void synth()?.getVoices()
+
 /** Whether a Japanese voice exists. Voices load asynchronously in most browsers. */
 export function useJaVoice(): boolean {
   const [has, setHas] = useState(() => !!jaVoice())
@@ -43,10 +46,16 @@ export function playInOrder(audios: HTMLAudioElement[]): () => void {
   const next = () => {
     const a = audios[i++]
     if (!a || stopped) return
-    a.onended = next
-    a.onerror = next
+    let done = false
+    const advance = () => { // a failing clip can raise both `error` and a play() rejection: advance once
+      if (done) return
+      done = true
+      next()
+    }
+    a.onended = advance
+    a.onerror = advance
     a.currentTime = 0
-    a.play().catch(next) // autoplay can be blocked by the browser; then each clip is skipped quietly
+    a.play().catch(advance) // autoplay can be blocked by the browser; then each clip is skipped quietly
   }
   next()
   return () => {

@@ -35,13 +35,12 @@ export function Decks({ db }: { db: Db }) {
       const bytes = await file.arrayBuffer()
       setStatus({ text: `Unpacking ${file.name} (${Math.round(file.size / 1048576)} MB)…` })
       const parsed = await parseApkg(bytes, await loadSql())
-      if (!parsed.cards.length) throw new Error('No cards found in that deck.')
       setStatus({ text: `Saving ${parsed.cards.length} cards and ${parsed.media.size} media files…` })
       const r = await saveImport(db, parsed)
       setStatus({ text: `Imported ${r.added} new, ${r.updated} refreshed${r.skipped ? `, ${r.skipped} blank skipped` : ''}.` })
       reload()
     } catch (e) {
-      setStatus({ text: e instanceof Error && (e.name === 'ApkgError' || e.message.startsWith('No cards')) ? e.message : `Import failed: ${e}`, bad: true })
+      setStatus({ text: e instanceof Error && e.name === 'ApkgError' ? e.message : `Import failed: ${e}`, bad: true })
     } finally {
       setBusy(false)
     }

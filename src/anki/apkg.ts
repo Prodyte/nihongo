@@ -126,6 +126,7 @@ export async function parseApkg(bytes: ArrayBuffer | Uint8Array, SQL: SqlJsStati
         }
       }),
     )
+    if (!cards.length) throw new ApkgError('No cards found in that deck.')
     return { decks: [...used].map((id) => ({ id, name: deckNames[id] ?? `Deck ${id}` })), cards, media, skipped }
   } finally {
     db.close()
