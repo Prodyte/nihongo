@@ -1,12 +1,5 @@
 import { useEffect, useState } from 'react'
-
-let strokes: Promise<Record<string, string[]>> | null = null
-/** Stroke paths for the course's kanji (KanjiVG, CC BY-SA 3.0), fetched once on first use and cached offline by the PWA. */
-const load = () => {
-  strokes ??= fetch(`${import.meta.env.BASE_URL}strokes.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-  strokes.catch(() => { strokes = null }) // let a later card try again (e.g. back online)
-  return strokes
-}
+import { loadStrokes } from '../strokes'
 
 const STEP = 0.6 // seconds per stroke
 
@@ -16,7 +9,7 @@ export function Strokes({ char }: { char: string }) {
   const [run, setRun] = useState(0) // bump to replay
   useEffect(() => {
     let live = true
-    load().then((all) => live && setPaths(all[char] ?? null), () => {})
+    loadStrokes().then((all) => live && setPaths(all[char] ?? null), () => {})
     return () => {
       live = false
     }

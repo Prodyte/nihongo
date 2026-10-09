@@ -10,6 +10,7 @@ export type Exercise = (
   | { type: 'match'; pairs: { id: string; jp: string; reading?: string; gloss: string }[] }
   | { type: 'build'; item: Item; bank: string[]; answer: string[]; alts: string[][] } // put the chunks of a sentence in order
   | { type: 'speak'; item: Item } // say it aloud; the browser's speech recognition checks it
+  | { type: 'write'; item: Item; guide: boolean } // write a kanji stroke by stroke: traced over a guide, or from memory
   | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp' | 'toReading'; prompt: string } // kana: type the romaji; words: type the English, or the Japanese via romaji; toReading: a kanji word's reading
 ) & { retry?: boolean }
 
@@ -19,6 +20,7 @@ export type Readings = Record<string, string>
 export interface BuildOpts {
   canSpeak: boolean // a Japanese voice exists; otherwise there are no listening exercises
   canListen?: boolean // speech recognition is available and switched on: add speaking exercises
+  canWrite?: boolean // writing exercises are switched on: kanji lessons add tracing and writing
   learned: ReadonlySet<string> // item ids from lessons already completed (no intro; used as distractors)
   rand?: () => number
 }
@@ -144,7 +146,7 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
  * A kanji lesson: meet each kanji (stroke order, meanings, readings, example words), pick its meaning, match, pick the
  * kanji for a meaning, then read a word written with it: pick its reading, and type meanings and readings.
  */
-function buildKanji(lesson: Lesson, mine: Item[], items: ReadonlyMap<string, Item>, { learned, rand = Math.random }: BuildOpts): Exercise[] {
+function buildKanji(lesson: Lesson, mine: Item[], items: ReadonlyMap<string, Item>, { learned, canWrite, rand = Math.random }: BuildOpts): Exercise[] {
   const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? [])
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)]
   const unique = uniqueBy(items, 'gloss')
@@ -167,6 +169,10 @@ function buildKanji(lesson: Lesson, mine: Item[], items: ReadonlyMap<string, Ite
   out.push(...askable.slice(0, 3).map((it): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...opts(it, 'jp'), answer: it.jp })))
   const readWords = shuffle(words, rand)
   out.push(...readWords.slice(0, 3).map(toReading))
+  if (canWrite) {
+    const order = shuffle(mine, rand) // trace two, then write a third from its meaning
+    out.push(...order.slice(0, 2).map((item): Exercise => ({ type: 'write', item, guide: true })), ...order.slice(2, 3).filter(unique).map((item): Exercise => ({ type: 'write', item, guide: false })))
+  }
   out.push(...shuffle(mine, rand).slice(0, 2).map((item): Exercise => ({ type: 'type', item, dir: 'toGloss', prompt: item.jp })))
   out.push(...readWords.slice(-2).map((item): Exercise => ({ type: 'type', item, dir: 'toReading', prompt: written(item) }))) // the last two: fresh ones when there are 5
   return out.filter((e) => !('options' in e) || e.options.length >= 2)

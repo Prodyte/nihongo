@@ -5,7 +5,9 @@ import type { Db } from '../db/db'
 import { ITEMS, written, type Item } from '../path/course'
 import { ENTRIES, MAX, search } from '../path/lookup'
 import { stage } from '../srs/stages'
+import { loadStrokes } from '../path/strokes'
 import { Strokes } from '../path/ui/Strokes'
+import { WriteBoard } from '../path/ui/WriteBoard'
 
 export function Lookup({ db }: { db: Db }) {
   const [query, setQuery] = useState('')
@@ -55,9 +57,29 @@ export function Lookup({ db }: { db: Db }) {
 
 function KanjiDetail({ it }: { it: Item }) {
   const examples = (it.examples ?? []).flatMap((id) => ITEMS.get(id) ?? [])
+  const [practice, setPractice] = useState<{ paths: string[]; guide: boolean; round: number } | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+  const start = (guide: boolean) => {
+    setDone(null)
+    void loadStrokes().then((all) => all[it.jp] && setPractice((p) => ({ paths: all[it.jp], guide, round: (p?.round ?? 0) + 1 })), () => {})
+  }
   return (
     <div className="detail">
-      <Strokes char={it.jp} />
+      {practice ? (
+        <>
+          <WriteBoard key={practice.round} paths={practice.paths} guide={practice.guide} onDone={(m) => setDone(m ? `Done, with ${m} miss${m === 1 ? '' : 'es'}.` : 'Perfect!')} />
+          {done && <p role="status">{done}</p>}
+          <div className="row2">
+            <button onClick={() => start(true)}>Trace again</button>
+            <button onClick={() => start(false)}>From memory</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Strokes char={it.jp} />
+          <button onClick={() => start(true)}>Practise writing</button>
+        </>
+      )}
       <p lang="ja">{[...(it.on ?? []).map(toKata), ...(it.kun ?? [])].join('、')}</p>
       {examples.map((w) => <p key={w.id}><span lang="ja">{w.written ?? w.kanji ?? w.jp} {w.jp}</span> {w.gloss}</p>)}
       <p className="hint">{it.strokes} strokes</p>

@@ -10,6 +10,7 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
   const [speaking, setSpeaking] = useState(() => readBool('nihongo.speaking', true))
+  const [writing, setWriting] = useState(() => readBool('nihongo.writing', true))
   const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
 
   return (
@@ -43,6 +44,10 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { d
         <label className="check">
           <input type="checkbox" checked={sounds} onChange={(e) => { setSounds(e.target.checked); writeBool('nihongo.sfx', e.target.checked) }} />
           Sound effects and vibration
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={writing} onChange={(e) => { setWriting(e.target.checked); writeBool('nihongo.writing', e.target.checked) }} />
+          Kanji writing exercises (finger, pencil or mouse)
         </label>
         {canRecognise() && (
           <label className="check">

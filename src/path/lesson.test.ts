@@ -66,7 +66,7 @@ describe('buildLesson invariants, over every lesson', () => {
               continue
             }
             touched.add(e.item.id)
-            if (e.type === 'speak') continue
+            if (e.type === 'speak' || e.type === 'write') continue
             expect(e.options.length, where).toBeGreaterThanOrEqual(2)
             expect(e.options.length, where).toBeLessThanOrEqual(4)
             expect(new Set(e.options).size, where).toBe(e.options.length) // no repeated option
@@ -104,6 +104,20 @@ describe('speaking', () => {
       expect(kinds(true), id).toBe(/^(hira|n5-k)/.test(id) ? 0 : 2)
       expect(kinds(false), id).toBe(0)
     }
+  })
+})
+
+describe('writing', () => {
+  it('with writing on, kanji lessons trace two kanji then write one from its meaning; other lessons never write', () => {
+    for (const id of ['n5-k-1', 'n4-k-5', 'n3-k-40']) {
+      const exs = buildLesson(lessonById(id)!, ITEMS, { canSpeak: true, canWrite: true, learned: new Set(), rand: seeded(2) })
+      const w = exs.filter((e): e is Extract<Exercise, { type: 'write' }> => e.type === 'write')
+      expect(w.filter((e) => e.guide), id).toHaveLength(2)
+      expect(w.filter((e) => !e.guide).length, id).toBeLessThanOrEqual(1)
+      expect(new Set(w.map((e) => e.item.id)).size, id).toBe(w.length)
+      expect(buildLesson(lessonById(id)!, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(2) }).some((e) => e.type === 'write'), id).toBe(false)
+    }
+    expect(buildLesson(lessonById('n5-v-1')!, ITEMS, { canSpeak: true, canWrite: true, learned: new Set() }).some((e) => e.type === 'write')).toBe(false)
   })
 })
 

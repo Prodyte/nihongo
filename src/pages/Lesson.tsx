@@ -3,6 +3,7 @@ import { useJaVoice } from '../audio'
 import { canRecognise } from '../speech'
 import { readBool } from '../settings'
 import { Speak } from '../path/ui/Speak'
+import { Write } from '../path/ui/Write'
 import { sfx } from '../sfx'
 import { type Db } from '../db/db'
 import { ITEMS, LESSONS, type Lesson as LessonT } from '../path/course'
@@ -21,6 +22,7 @@ interface Summary { xp: number; first: boolean; accuracy: number; streak: number
 export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; lesson: LessonT; autoplay: boolean; onExit: () => void; onStart: (id: string) => void }) {
   const [canSpeak] = useState(useJaVoice()) // snapshot: a voice appearing later must not reshuffle a lesson in progress
   const [canListen] = useState(() => canRecognise() && readBool('nihongo.speaking', true))
+  const [canWrite] = useState(() => readBool('nihongo.writing', true))
   const [run, setRun] = useState<RunState | null>(null)
   const [step, setStep] = useState(0)
   const [summary, setSummary] = useState<Summary | null>(null)
@@ -32,12 +34,12 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
   useEffect(() => {
     let live = true
     void getProgress(db)
-      .then((p) => live && setRun(startRun(buildLesson(lesson, ITEMS, { canSpeak, canListen, learned: learnedItems(LESSONS, p.done) }))))
+      .then((p) => live && setRun(startRun(buildLesson(lesson, ITEMS, { canSpeak, canListen, canWrite, learned: learnedItems(LESSONS, p.done) }))))
       .catch((e) => live && setError(`Couldn't open this lesson (${e}).`))
     return () => {
       live = false
     }
-  }, [db, lesson, canSpeak, canListen])
+  }, [db, lesson, canSpeak, canListen, canWrite])
 
   // Save once the last exercise is done. A failed save keeps the run so nothing is lost; "Try again" retries.
   useEffect(() => {
@@ -98,6 +100,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         : ex.type === 'build' ? <Build key={step} ex={ex} onDone={done} />
         : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={done} />
         : ex.type === 'type' ? <Type key={step} ex={ex} autoplay={autoplay} onDone={done} />
+        : ex.type === 'write' ? <Write key={step} ex={ex} onDone={done} />
         : ex.type === 'speak' ? <Speak key={step} ex={ex} onDone={done} onSkip={skipSpeaking} />
         : <Choice key={step} ex={ex} autoplay={autoplay} onDone={done} />}
     </>
