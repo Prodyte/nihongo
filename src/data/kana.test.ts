@@ -18,7 +18,7 @@ describe('kana table', () => {
     expect(by('hira:ふ').romaji[0]).toBe('fu')
     expect(by('hira:しゃ').romaji).toEqual(['sha', 'sya'])
     expect(by('hira:じゅ').romaji).toContain('ju')
-    expect(by('hira:ちょ').romaji[0]).toBe('cho')
+    expect(by('hira:ちょ').romaji).toEqual(['cho', 'tyo', 'cyo'])
     expect(by('hira:ぢ').romaji).toContain('di')
   })
   it('matches typed answers case-insensitively with alternates', () => {

@@ -19,6 +19,7 @@ const COMBO_ROWS: [string, string][] = [
   ['き', 'ky'], ['し', 'sh'], ['ち', 'ch'], ['に', 'ny'], ['ひ', 'hy'], ['み', 'my'],
   ['り', 'ry'], ['ぎ', 'gy'], ['じ', 'j'], ['び', 'by'], ['ぴ', 'py'],
 ]
+const ALT: Record<string, string[]> = { sh: ['sy'], ch: ['ty', 'cy'], j: ['jy', 'zy'] }
 const COMBO_SMALL: [string, string][] = [['ゃ', 'a'], ['ゅ', 'u'], ['ょ', 'o']]
 
 const pairs = (s: string) => {
@@ -33,8 +34,8 @@ const hira: Omit<Kana, 'id' | 'script'>[] = [
   ...COMBO_ROWS.flatMap(([k, r]) =>
     COMBO_SMALL.map(([small, v]) => ({
       kana: k + small,
-      // しゃ=sha (alt sya), じゃ=ja (alts jya, zya)
-      romaji: [r + v, ...(r === 'sh' || r === 'ch' ? [r[0] + 'y' + v] : r === 'j' ? ['jy' + v, 'zy' + v] : [])],
+      // しゃ=sha (alt sya), ちゃ=cha (alt tya), じゃ=ja (alts jya, zya)
+      romaji: [r + v, ...(ALT[r] ?? []).map((a) => a + v)],
       group: 'combo' as const,
     })),
   ),
