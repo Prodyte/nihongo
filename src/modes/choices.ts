@@ -1,6 +1,6 @@
 import type { StoredCard } from '../db/db'
 
-const shuffle = <T,>(a: T[], rand: () => number) => {
+export const shuffle = <T,>(a: T[], rand: () => number) => {
   const out = [...a]
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1))
