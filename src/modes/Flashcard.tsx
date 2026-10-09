@@ -19,7 +19,7 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
   }, [shown, autoplay, card.html, card.front])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat) return
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return // leave browser shortcuts (Cmd+1 switches tabs) alone
       if (!shown && (e.key === ' ' || e.key === 'Enter')) {
         if (!(e.target instanceof HTMLButtonElement)) setShown(true) // a focused button handles its own click
       }

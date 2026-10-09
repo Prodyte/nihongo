@@ -8,7 +8,7 @@ const GOALS = [10, 20, 50]
 
 export function Path({ db, onStart }: { db: Db; onStart: (lessonId: string) => void }) {
   const [p, setP] = useState<{ done: ReadonlySet<string>; streak: number; xpToday: number } | null>(null)
-  const [goal, setGoal] = useState(() => readInt('nihongo.goal', 20))
+  const [goal, setGoal] = useState(() => { const g = readInt('nihongo.goal', 20); return GOALS.includes(g) ? g : 20 })
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [error, setError] = useState<string | null>(null)
 

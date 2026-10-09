@@ -179,6 +179,36 @@ it('a failed save keeps the finished lesson, explains, and "Try again" saves it'
   expect(await db.count('lessons')).toBe(1)
 })
 
+it('if only the streak read fails after a successful save, the summary still shows and nothing is awarded twice', async () => {
+  const db = await freshDb()
+  const lesson = lessonById('hira-basic-1')!
+  const u = user()
+  mount(db, lesson)
+  await screen.findByRole('button', { name: 'Got it' }) // the lesson built (its progress read happened)
+  const real = db.getAll.bind(db)
+  vi.spyOn(db, 'getAll').mockImplementation(((store: string) => (store === 'activity' ? Promise.reject(new Error('read failed')) : real(store as 'cards'))) as typeof db.getAll)
+  await drive(u, lesson)
+  expect(screen.getByText('+15 XP')).toBeTruthy()
+  expect(screen.getByText(/100% right first time$/)).toBeTruthy() // no streak text, no error
+  expect(screen.queryByRole('alert')).toBeNull()
+  vi.restoreAllMocks() // the injected failure must not hit our own assertions below
+  expect(await db.get('lessons', lesson.id)).toMatchObject({ plays: 1 })
+  expect((await db.getAll('activity')).map((a) => a.xp)).toEqual([15])
+})
+
+it('digit shortcuts pick an answer, but not with Cmd/Ctrl/Alt held (those are browser shortcuts)', async () => {
+  const db = await freshDb()
+  const lesson = lessonById('hira-basic-1')!
+  mount(db, lesson)
+  await drive(user(), lesson, { stopAfterIntros: true })
+  const group = await screen.findByRole('group', { name: 'Answers' })
+  for (const mod of [{ metaKey: true }, { ctrlKey: true }, { altKey: true }]) fireEvent.keyDown(window, { key: '1', ...mod })
+  expect(within(group).getAllByRole('button').every((b) => !(b as HTMLButtonElement).disabled)).toBe(true)
+  fireEvent.keyDown(window, { key: '1' })
+  await screen.findByRole('button', { name: 'Continue' })
+  expect(within(group).getAllByRole('button').every((b) => (b as HTMLButtonElement).disabled)).toBe(true)
+})
+
 it('Match: wrong pairs are flagged and counted for both items, right pairs lock, finishing reports the misses', async () => {
   const [a, b] = ['hira:あ', 'hira:い'].map((id) => ITEMS.get(id)!)
   const onDone = vi.fn()

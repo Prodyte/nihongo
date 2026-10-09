@@ -8,7 +8,7 @@ import { Choice } from '../path/ui/Choice'
 import { Intro } from '../path/ui/Intro'
 import { Match } from '../path/ui/Match'
 
-interface Summary { xp: number; first: boolean; accuracy: number; streak: number }
+interface Summary { xp: number; first: boolean; accuracy: number; streak: number | null } // streak null: the lesson saved but the streak could not be read
 
 export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; lesson: LessonT; autoplay: boolean; onExit: () => void; onStart: (id: string) => void }) {
   const [canSpeak] = useState(useJaVoice()) // snapshot: a voice appearing later must not reshuffle a lesson in progress
@@ -35,11 +35,14 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
     if (!run || run.queue.length > 0 || summary || saving.current) return
     saving.current = true
     void completeLesson(db, lesson, ITEMS, run.misses, accuracy(run))
-      .then(async (r) => {
-        const p = await getProgress(db)
-        setSummary({ xp: r.xp, first: r.first, accuracy: accuracy(run), streak: p.streak })
-      })
-      .catch((e) => setError(`Couldn't save your progress (${e}).`))
+      .then(
+        async (r) => {
+          // Saved. Reading the streak is cosmetic and must never reach the retry path below (it would award XP twice).
+          const streak = await getProgress(db).then((p) => p.streak, () => null)
+          setSummary({ xp: r.xp, first: r.first, accuracy: accuracy(run), streak })
+        },
+        (e) => setError(`Couldn't save your progress (${e}).`),
+      )
       .finally(() => { saving.current = false })
   }, [db, lesson, run, summary, attempt])
 
@@ -59,7 +62,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
       <div className="card">
         <h2>Lesson complete 🎉</h2>
         <p className="counts">+{summary.xp} XP{summary.first ? '' : ' (practice)'}</p>
-        <p>{Math.round(summary.accuracy * 100)}% right first time · {summary.streak}-day streak</p>
+        <p>{Math.round(summary.accuracy * 100)}% right first time{summary.streak !== null && ` · ${summary.streak}-day streak`}</p>
         {next && <button className="primary" autoFocus onClick={() => onStart(next.id)}>Next lesson: <span lang="ja">{next.title}</span></button>}
         <button className={next ? '' : 'primary'} onClick={onExit}>Back to path</button>
       </div>

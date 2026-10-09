@@ -23,7 +23,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
   }, [answered, autoplay, listening, ex.item.jp])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (answered || e.repeat || e.key.length !== 1 || !'1234'.includes(e.key)) return
+      if (answered || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || !'1234'.includes(e.key)) return
       const o = ex.options[Number(e.key) - 1]
       if (o !== undefined) setPicked(o)
     }
