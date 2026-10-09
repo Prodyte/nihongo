@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react'
 import type { Db } from '../db/db'
 import { lastSync, session, supabase, sync } from '../sync'
 
-/** Sign in with an emailed code (works inside an installed app, unlike a link) and keep progress in sync across devices. */
+/** Sign in and keep progress in sync across devices. */
 export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
   const [email, setEmail] = useState<string | null | undefined>(undefined) // undefined: checking; null: signed out
   const [typed, setTyped] = useState('')
-  const [code, setCode] = useState('')
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<{ text: string; bad?: boolean } | null>(null)
 
@@ -30,17 +29,15 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
     if (await sync(db)) onSynced()
     setStatus({ text: 'Synced.' })
   }
-  const send = act(async () => {
-    const { error } = await (await supabase()).auth.signInWithOtp({ email: typed.trim(), options: { emailRedirectTo: location.origin + location.pathname } })
+  // email + password: works inside an installed app too (sign-in links open the browser, whose storage an iPhone app doesn't share)
+  const signIn = (create: boolean) => act(async () => {
+    const auth = (await supabase()).auth
+    const creds = { email: typed.trim(), password }
+    const { data, error } = create ? await auth.signUp(creds) : await auth.signInWithPassword(creds)
     if (error) throw error
-    setSent(true)
-  })
-  const verify = act(async () => {
-    const { data, error } = await (await supabase()).auth.verifyOtp({ email: typed.trim(), token: code.trim(), type: 'email' })
-    if (error) throw error
-    setEmail(data.user?.email ?? typed.trim())
-    setSent(false)
-    setCode('')
+    if (!data.session) throw new Error('Account created: confirm it from the email Supabase sent, then sign in.')
+    setEmail(data.user?.email ?? creds.email)
+    setPassword('')
     await syncNow()
   })
   const signOut = act(async () => {
@@ -64,20 +61,18 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
       ) : (
         <>
           <p>Sign in to keep your cards, lessons and streak on all your devices. Optional: everything works without it.</p>
-          <form onSubmit={(e) => { e.preventDefault(); void (sent ? verify() : send()) }}>
+          <form onSubmit={(e) => { e.preventDefault(); void signIn(false)() }}>
             <label>
               Email
-              <input type="email" required autoComplete="email" value={typed} disabled={sent} onChange={(e) => setTyped(e.target.value)} />
+              <input type="email" required autoComplete="email" value={typed} onChange={(e) => setTyped(e.target.value)} />
             </label>
-            {sent && (
-              <label>
-                Code from the email
-                <input inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(e) => setCode(e.target.value)} />
-              </label>
-            )}
+            <label>
+              Password
+              <input type="password" required minLength={6} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </label>
             <div className="row2 left">
-              <button className="primary" disabled={busy}>{sent ? 'Sign in' : 'Email me a code'}</button>
-              {sent && <button type="button" disabled={busy} onClick={() => { setSent(false); setCode('') }}>Use another email</button>}
+              <button className="primary" disabled={busy}>Sign in</button>
+              <button type="button" disabled={busy} onClick={(e) => { if (e.currentTarget.form?.reportValidity()) void signIn(true)() }}>Create account</button>
             </div>
           </form>
         </>
