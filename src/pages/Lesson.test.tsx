@@ -33,12 +33,21 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
   const items = lesson.items.map((id) => ITEMS.get(id))
   let wrongPending = wrongFirst
   for (let i = 0; i < 150; i++) {
-    await waitFor(() => expect(screen.queryByText('Lesson complete 🎉') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
+    await waitFor(() => expect(screen.queryByText('Lesson complete 🎉') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByRole('textbox') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
     if (screen.queryByText('Lesson complete 🎉')) return
     const got = screen.queryByRole('button', { name: 'Got it' })
     if (got) { await u.click(got); continue }
     if (stopAfterIntros) return
     if (screen.queryByText('Match the pairs')) { await solveMatch(u, items); await u.click(await screen.findByRole('button', { name: 'Continue' })); continue }
+    const box = screen.queryByRole('textbox')
+    if (box) { // typing: the label says what to type, the prompt says what it is about
+      const ask = document.querySelector('label.q')!.textContent!
+      const shown = document.querySelector('.prompt')!.textContent
+      const text = ask.includes('Japanese') ? items.find((it) => it!.gloss === shown)!.romaji : items.find((it) => it!.jp === shown)!.gloss // 'Japanese' first: its hint also says "romaji"
+      await u.type(box, `${text}{Enter}`)
+      await u.click(await screen.findByRole('button', { name: 'Continue' }))
+      continue
+    }
     const opts = within(screen.getByRole('group', { name: 'Answers' })).getAllByRole('button')
     const prompt = document.querySelector('.prompt')
     const answer = !prompt ? spoken.at(-1)!

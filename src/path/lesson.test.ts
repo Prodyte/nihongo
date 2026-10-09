@@ -41,6 +41,12 @@ describe('buildLesson invariants, over every lesson', () => {
           for (const e of exs) {
             if (e.type === 'match') { expect(e.pairs.length, where).toBeGreaterThanOrEqual(2); expect(e.pairs.length).toBeLessThanOrEqual(5); e.pairs.forEach((p) => touched.add(p.id)); continue }
             if (e.type === 'intro') continue
+            if (e.type === 'type') {
+              touched.add(e.item.id)
+              expect(e.prompt, where).toBe(e.dir === 'toJp' ? e.item.gloss : e.item.jp)
+              expect(e.item.kind === 'kana' ? e.dir === 'toRomaji' : e.dir !== 'toRomaji', `${where}: ${e.dir} for a ${e.item.kind}`).toBe(true)
+              continue
+            }
             touched.add(e.item.id)
             expect(e.options.length, where).toBeGreaterThanOrEqual(2)
             expect(e.options.length, where).toBeLessThanOrEqual(4)
@@ -78,7 +84,7 @@ describe('buildLesson specifics', () => {
   it('never emits a question with fewer than two options (tiny pool)', () => {
     const one = new Map([['w:a', { id: 'w:a', kind: 'word' as const, jp: 'あ', gloss: 'a', romaji: 'a', sound: 'a' }]])
     const exs = buildLesson({ id: 'tiny', title: 'tiny', items: ['w:a'] }, one, { canSpeak: true, learned: new Set() })
-    expect(exs.map((e) => e.type)).toEqual(['intro'])
+    expect(exs.map((e) => e.type)).toEqual(['intro', 'type']) // choices need 2+ options; typing does not
   })
   const lesson = lessonById('hira-voiced-3')! // だ ぢ づ で ど: ぢ and づ sound like じ and ず
   const exs = buildLesson(lesson, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(7) })
@@ -95,6 +101,17 @@ describe('buildLesson specifics', () => {
     const learned = learnedBefore(LESSONS.indexOf(l))
     const e = buildLesson(l, ITEMS, { canSpeak: false, learned, rand: seeded(3) }).find((x) => x.type === 'choice')!
     expect(e.type === 'choice' && e.options).toHaveLength(4)
+  })
+  it('ends with a typing round: kana type romaji (3); words type English (2) then Japanese (2); all different items', () => {
+    for (const [i, lesson] of LESSONS.entries()) {
+      const exs = buildLesson(lesson, ITEMS, { canSpeak: true, learned: learnedBefore(i), rand: seeded(i + 9) })
+      const typing = exs.filter((e): e is Extract<typeof e, { type: 'type' }> => e.type === 'type')
+      const kind = ITEMS.get(lesson.items[0])!.kind
+      expect(exs.slice(-typing.length).every((e) => e.type === 'type'), lesson.id).toBe(true) // last, the hardest
+      if (kind === 'kana') expect(typing.map((t) => t.dir), lesson.id).toEqual(Array(Math.min(3, lesson.items.length)).fill('toRomaji'))
+      else expect(typing.map((t) => t.dir), lesson.id).toEqual(['toGloss', 'toGloss', 'toJp', 'toJp'])
+      expect(new Set(typing.map((t) => t.item.id)).size, lesson.id).toBe(typing.length)
+    }
   })
   it('is deterministic for a seed and varies across seeds', () => {
     const l = LESSONS[0]

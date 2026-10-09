@@ -7,6 +7,7 @@ import { completeLesson, getProgress, learnedItems } from '../path/progress'
 import { Choice } from '../path/ui/Choice'
 import { Intro } from '../path/ui/Intro'
 import { Match } from '../path/ui/Match'
+import { Type } from '../path/ui/Type'
 
 interface Summary { xp: number; first: boolean; accuracy: number; streak: number | null } // streak null: the lesson saved but the streak could not be read
 
@@ -80,6 +81,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
       </div>
       {ex.type === 'intro' ? <Intro key={step} item={ex.item} autoplay={autoplay} onDone={done} />
         : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={done} />
+        : ex.type === 'type' ? <Type key={step} ex={ex} autoplay={autoplay} onDone={done} />
         : <Choice key={step} ex={ex} autoplay={autoplay} onDone={done} />}
     </>
   )

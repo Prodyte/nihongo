@@ -6,6 +6,7 @@ export type Exercise = (
   | { type: 'choice'; item: Item; dir: 'toGloss' | 'toJp'; prompt: string; options: string[]; answer: string }
   | { type: 'listen'; item: Item; options: string[]; answer: string } // hear item.jp, pick it
   | { type: 'match'; pairs: { id: string; jp: string; gloss: string }[] }
+  | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp'; prompt: string } // kana: type the romaji; words: type the English, or the Japanese via romaji
 ) & { retry?: boolean }
 
 export interface BuildOpts {
@@ -58,9 +59,16 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, { 
   out.push(...shuffle(mine, rand).map(toGloss))
   if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss })) })
   if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, options: shuffled(item, 'jp', 'sound'), answer: item.jp })))
-  out.push(...shuffle(askable, rand).slice(0, canSpeak ? 4 : 5).map(toJp))
+  out.push(...shuffle(askable, rand).slice(0, canSpeak ? 3 : 4).map(toJp))
+  // typing comes last: it is the hardest. Kana: type the romaji. Words: type the English, and type the Japanese from the English.
+  const typed = (item: Item, dir: 'toRomaji' | 'toGloss' | 'toJp'): Exercise => ({ type: 'type', item, dir, prompt: dir === 'toJp' ? item.gloss : item.jp })
+  if (mine[0].kind === 'kana') out.push(...shuffle(mine, rand).slice(0, 3).map((it) => typed(it, 'toRomaji')))
+  else {
+    const order = shuffle(mine, rand)
+    out.push(...order.slice(0, 2).map((it) => typed(it, 'toGloss')), ...order.slice(2, 4).map((it) => typed(it, 'toJp')))
+  }
   // a question needs at least two options (a course edit could leave a tiny pool)
-  return out.filter((e) => e.type === 'intro' || e.type === 'match' || e.options.length >= 2)
+  return out.filter((e) => !('options' in e) || e.options.length >= 2)
 }
 
 export interface RunState {

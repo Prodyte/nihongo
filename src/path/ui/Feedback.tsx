@@ -1,13 +1,14 @@
 import type { Item } from '../course'
 
 /** Result line (always mounted so screen readers announce changes) plus a Continue button once answered. */
-export function Feedback({ result, item, answer, onContinue }: { result: boolean | null; item: Item; answer: string; onContinue: () => void }) {
+export function Feedback({ result, item, answer, note, onContinue }: { result: boolean | null; item: Item; answer: string; note?: string; onContinue: () => void }) {
   return (
     <>
       <div role="status" className={result === null ? '' : result ? 'feedback good' : 'feedback bad'}>
         {result === null ? '' : (
           <>
             <div>{result ? '✓ Correct' : `✗ Correct answer: ${answer}`}</div>
+            {note && <div>{note}</div>}
             <small>
               <span lang="ja">{item.jp}</span> {item.kind === 'word' ? `(${item.romaji}) ` : '= '}
               {item.gloss}
