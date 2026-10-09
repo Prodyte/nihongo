@@ -41,7 +41,7 @@ const HIRA_COMBO_ROWS = ['きゃきゅきょ', 'しゃしゅしょ', 'ちゃち�
 
 const chars = (s: string) => s.match(/.[ゃゅょ]?/gu)!
 const chunk = <T,>(a: T[], n: number) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n))
-/** Like chunk, but sizes differ by at most one (166 kanji in 5s: 34 lessons of 4-5, not 33 of 5 and a lone kanji). */
+/** Like chunk, but sizes differ by at most one (166 kanji in 5s: 34 lessons of 4-5, not 33 of 5 and a lone kanji; units of 9-10 lessons, never a lone one). */
 const even = <T,>(a: T[], n: number) => { const k = Math.ceil(a.length / n); return Array.from({ length: k }, (_, i) => a.slice(Math.round((i * a.length) / k), Math.round(((i + 1) * a.length) / k))) }
 
 /** How an item is written for the learner: kanji where the word has them, else kana. */
@@ -265,7 +265,7 @@ function jlptUnits(): Unit[] {
     // N4 words keep their frequency order (pulling them forward like N5's would move words between saved lessons)
     const grammar = level === 5 ? N5_GRAMMAR : level === 4 ? N4_GRAMMAR : []
     if (grammar.length) path = placeGrammar(path, grammar.map((spec, i) => grammarLesson(spec, `n${level}-g-${i + 1}`, level as 5 | 4)), grammarWords(level))
-    return chunk(path, LESSONS_PER_UNIT).map((lessons, u): Unit => {
+    return even(path, LESSONS_PER_UNIT).map((lessons, u): Unit => {
       const chars = lessons.filter((l) => l.id.includes('-k-')).flatMap((l) => l.items.map((id) => id.slice(6)))
       const nWords = lessons.filter((l) => l.id.includes('-v-')).flatMap((l) => l.items).length
       const grammar = lessons.filter((l) => l.explain).map((l) => l.title)

@@ -63,7 +63,7 @@ describe('course structure', () => {
       const kinds = lessons.map((l) => (l.id.includes('-k-') ? 'k' : l.id.includes('-g-') ? 'g' : 'v')).join('')
       expect(kinds, `N${level}`).not.toMatch(/kkk|v{12}/)
     }
-    for (const u of UNITS.filter((x) => x.id.startsWith('n'))) expect(u.lessons.length, u.id).toBeLessThanOrEqual(10)
+    for (const u of UNITS.filter((x) => /^n\d-u/.test(x.id))) { expect(u.lessons.length, u.id).toBeLessThanOrEqual(10); expect(u.lessons.length, u.id).toBeGreaterThanOrEqual(8) } // no near-empty last unit
   })
   it('lesson ids map to the same words as when progress was first saved (a data edit must not shift them)', () => {
     const sample = Object.fromEntries(['n5-v-1', 'n5-v-50', 'n4-v-1', 'n4-v-100', 'n3-v-1', 'n3-v-300'].map((id) => [id, LESSONS.find((l) => l.id === id)?.items]))

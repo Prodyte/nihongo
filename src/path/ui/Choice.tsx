@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { speak } from '../../audio'
 import { SpeakButton } from '../../modes/SpeakButton'
 import type { Exercise } from '../lesson'
+import { surfaceOf } from '../romaji'
 import { Feedback } from './Feedback'
 import { Ruby } from './Ruby'
 
@@ -17,7 +18,8 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
   const answered = picked !== null
   const prompt = ex.type === 'choice' ? ex.prompt : ''
   const fill = ex.type === 'choice' && ex.dir === 'fill'
-  const wide = ex.item.kind === 'sentence' && !fill // whole sentences as options need the full width
+  // whole sentences, and verb forms longer than a phone's half width (起きられません), need the full width
+  const wide = ex.item.kind === 'sentence' && (!fill || ex.options.some((o) => surfaceOf(o).length > 4))
 
   useEffect(() => {
     if (listening) speak(ex.item.jp) // say it on arrival; the replay button is on screen

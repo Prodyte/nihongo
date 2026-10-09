@@ -39,3 +39,11 @@ it('after learning verbs, conjugation opens', async () => {
   await user.click(tile('Verb conjugation'))
   expect(onDrill).toHaveBeenCalledWith('conjugate')
 })
+
+it('the path kanji deck is listed before any kanji is learned, and says how cards arrive', async () => {
+  const db = await fresh()
+  render(<Home db={db} config={{ deck: 'kanji', mode: 'flashcard' }} onChange={() => {}} onStart={() => {}} onPractice={() => {}} onDrill={() => {}} onRead={() => {}} onKana={() => {}} />)
+  expect(screen.getByRole('option', { name: 'Path kanji' })).toBeTruthy()
+  expect(screen.getAllByRole('option', { name: 'Path words' })).toHaveLength(1)
+  await screen.findByText(/No cards here yet/)
+})

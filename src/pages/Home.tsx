@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useJaVoice } from '../audio'
-import { reviewCounts, type Db, type DeckRecord } from '../db/db'
+import { BUILTIN_DECKS, reviewCounts, type Db, type DeckRecord } from '../db/db'
 import { Icon, type IconName } from '../icons'
 import { DRILL_TITLE, learnedForDrills, verbsIn, type DrillKind } from '../path/drills'
 import { canRecognise } from '../speech'
@@ -9,6 +9,9 @@ import type { Mode } from './Study'
 
 export interface Config { deck: string; mode: Mode }
 
+/** The path's decks, listed before their first card exists (the kanji deck starts with the first kanji lesson). */
+const BUILT_IN = [BUILTIN_DECKS.word, BUILTIN_DECKS.kanji, BUILTIN_DECKS.sentence].map((d): [string, string] => [d.id, d.name])
+
 interface Tile { key: string; icon: IconName; title: string; blurb: string; go: () => void; off?: string; count?: string }
 
 /** Review: the spaced-repetition queue first, then practice modes for what you've learned. */
@@ -16,7 +19,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
   db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void; onPractice: () => void; onDrill: (k: DrillKind) => void; onRead: () => void; onKana: () => void
 }) {
   const voice = useJaVoice()
-  const [loaded, setLoaded] = useState<{ key: string; due: number; fresh: number } | null>(null)
+  const [loaded, setLoaded] = useState<{ key: string; due: number; fresh: number; empty?: boolean } | null>(null)
   const key = `${config.deck}|${config.mode}`
   const counts = loaded?.key === key ? loaded : null // a different deck: never show the previous deck's numbers while loading
   const [info, setInfo] = useState<{ next: string | null; mistakes: number; words: number; verbs: number }>({ next: null, mistakes: 0, words: 0, verbs: 0 })
@@ -29,7 +32,8 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
   }, [db, config, onChange])
   useEffect(() => {
     let live = true
-    void reviewCounts(db, config.deck, config.mode).then((c) => live && setLoaded({ key, ...c }), () => live && setLoaded({ key, due: 0, fresh: 0 }))
+    const empty = BUILT_IN.some(([id]) => id === config.deck) ? db.countFromIndex('cards', 'by-deck', config.deck).then((n) => n === 0) : Promise.resolve(false)
+    void Promise.all([reviewCounts(db, config.deck, config.mode), empty]).then(([c, e]) => live && setLoaded({ key, ...c, empty: e }), () => live && setLoaded({ key, due: 0, fresh: 0 }))
     return () => {
       live = false
     }
@@ -79,7 +83,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
           {counts && total === 0 ? <span className="big-number done" aria-hidden="true"><Icon name="check" size={44} /></span> : <strong className="big-number">{counts ? total : '–'}</strong>}
           <div>
             <p className="counts">{counts ? `${counts.due} due · ${counts.fresh} new` : '…'}</p>
-            <p className="hint left">{total ? 'Cards come back just before you would forget them.' : `All caught up.${info.next ? ` Next review ${info.next}.` : ''}`}</p>
+            <p className="hint left">{total ? 'Cards come back just before you would forget them.' : counts?.empty ? 'No cards here yet: they arrive as you finish lessons on the path.' : `All caught up.${info.next ? ` Next review ${info.next}.` : ''}`}</p>
           </div>
         </div>
         <div className="row2 left">
@@ -88,7 +92,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
         </div>
         <details className="options">
           <summary>Deck and mode</summary>
-          {pick('deck', 'Deck', [['all', 'All decks'], ['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ...imported.map((d): [string, string] => [d.id, d.name])])}
+          {pick('deck', 'Deck', [['all', 'All decks'], ['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ...BUILT_IN, ...imported.filter((d) => !BUILT_IN.some(([id]) => id === d.id)).map((d): [string, string] => [d.id, d.name])])}
           {pick('mode', 'Mode', [['flashcard', 'Flashcards'], ['typing', 'Type the answer'], ['quiz', 'Multiple choice']])}
           {config.deck.startsWith('anki:') && config.mode !== 'flashcard' && <p className="hint left">Imported decks work in flashcard mode.</p>}
         </details>
