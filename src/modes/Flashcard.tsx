@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
 import { Html } from '../anki/media'
 import type { ModeProps } from './types'
@@ -7,6 +7,11 @@ const GRADES: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'
 
 export function Flashcard({ db, card, onGrade }: ModeProps) {
   const [shown, setShown] = useState(false)
+  const slot = useRef<HTMLDivElement>(null)
+  // Move focus to the revealed answer, not a grade button: a held Enter would auto-repeat onto it and grade by accident.
+  useEffect(() => {
+    if (shown) slot.current?.focus()
+  }, [shown])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return
@@ -26,13 +31,13 @@ export function Flashcard({ db, card, onGrade }: ModeProps) {
       ) : (
         <div className="kana" lang="ja">{card.front}</div>
       )}
-      <div className="answer-slot" aria-live="polite">
+      <div className="answer-slot" aria-live="polite" tabIndex={-1} ref={slot}>
         {shown && (
           <>
             {!card.html && <div className="answer">{card.back[0]}</div>}
             <div className="row">
               {GRADES.map(([g, label], i) => (
-                <button key={label} autoFocus={g === Rating.Good} onClick={() => onGrade(g)}>{label} <kbd aria-hidden="true">{i + 1}</kbd></button>
+                <button key={label} onClick={() => onGrade(g)}>{label} <kbd aria-hidden="true">{i + 1}</kbd></button>
               ))}
             </div>
           </>

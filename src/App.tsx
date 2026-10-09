@@ -17,7 +17,7 @@ export default function App() {
     openDb()
       .then(async (d) => {
         await seedKana(d)
-        void navigator.storage?.persist?.() // best effort: stops the browser evicting progress under storage pressure
+        void navigator.storage?.persist?.()?.catch(() => {}) // best effort: stops the browser evicting progress under storage pressure
         setDb(d)
       })
       .catch((e) => setError(String(e)))

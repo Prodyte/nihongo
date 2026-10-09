@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { BackupError, exportBackup, importBackup } from '../db/backup'
 import type { Db } from '../db/db'
 
+const MAX_BYTES = 100 * 1024 * 1024
+
 export function Backup({ db, onRestored }: { db: Db; onRestored: () => void }) {
   const [status, setStatus] = useState<{ text: string; bad?: boolean } | null>(null)
 
@@ -10,7 +12,7 @@ export function Backup({ db, onRestored }: { db: Db; onRestored: () => void }) {
       const url = URL.createObjectURL(new Blob([await exportBackup(db)], { type: 'application/json' }))
       const a = Object.assign(document.createElement('a'), { href: url, download: `nihongo-backup-${new Date().toISOString().slice(0, 10)}.json` })
       a.click()
-      URL.revokeObjectURL(url)
+      setTimeout(() => URL.revokeObjectURL(url), 10_000) // revoking immediately can cancel the download in Safari/Firefox
       setStatus({ text: 'Backup downloaded.' })
     } catch (e) {
       setStatus({ text: `Export failed: ${e}`, bad: true })
@@ -19,6 +21,7 @@ export function Backup({ db, onRestored }: { db: Db; onRestored: () => void }) {
 
   async function restore(file: File | undefined) {
     if (!file) return
+    if (file.size > MAX_BYTES) return setStatus({ text: 'That file is over 100 MB, too large to be a backup.', bad: true })
     if (!window.confirm('Restoring replaces all current progress with the backup. Continue?')) return
     try {
       const r = await importBackup(db, await file.text())

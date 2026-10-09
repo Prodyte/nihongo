@@ -10,4 +10,4 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-registerSW({ immediate: true }) // autoUpdate: new versions install in the background and apply on next load
+registerSW({ immediate: true }) // autoUpdate: a new version installs in the background, then the page reloads once to switch to it

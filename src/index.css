@@ -30,3 +30,4 @@ ul.decks li { display: flex; justify-content: space-between; align-items: center
 p[role="status"], p[role="alert"] { margin: 0; }
 .card + .card { margin-top: 1rem; }
 .answer-slot { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.answer-slot:focus { outline: none; }
