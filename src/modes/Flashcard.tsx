@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
+import { Html } from '../anki/media'
 import type { ModeProps } from './types'
 
 const GRADES: [Grade, string][] = [[Rating.Again, 'Again'], [Rating.Hard, 'Hard'], [Rating.Good, 'Good'], [Rating.Easy, 'Easy']]
 
-export function Flashcard({ card, onGrade }: ModeProps) {
+export function Flashcard({ db, card, onGrade }: ModeProps) {
   const [shown, setShown] = useState(false)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -20,10 +21,14 @@ export function Flashcard({ card, onGrade }: ModeProps) {
 
   return (
     <div className="card">
-      <div className="kana">{card.front}</div>
+      {card.html ? (
+        <Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} />
+      ) : (
+        <div className="kana">{card.front}</div>
+      )}
       {shown ? (
         <>
-          <div className="answer">{card.back[0]}</div>
+          {!card.html && <div className="answer">{card.back[0]}</div>}
           <div className="row">
             {GRADES.map(([g, label], i) => (
               <button key={label} onClick={() => onGrade(g)}>{label} <kbd>{i + 1}</kbd></button>

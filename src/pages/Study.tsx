@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
-import { getCards, gradeCard, newToday, type Db, type StoredCard } from '../db/db'
+import { gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db/db'
 import { Flashcard } from '../modes/Flashcard'
 import { Quiz } from '../modes/Quiz'
 import { Typing } from '../modes/Typing'
@@ -20,7 +20,7 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
   useEffect(() => {
     let live = true
     void (async () => {
-      const cards = await getCards(db, deck)
+      const cards = await studyCards(db, deck, mode)
       const left = Math.max(0, DAILY_NEW - (await newToday(db)))
       if (!live) return
       setPool(cards)
@@ -29,7 +29,7 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
     return () => {
       live = false
     }
-  }, [db, deck])
+  }, [db, deck, mode])
 
   const onGrade = useCallback(
     async (g: Grade) => {
@@ -68,7 +68,7 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
         <span>{queue.length} left</span>
       </div>
       {error && <p role="alert" className="bad">{error}</p>}
-      <Current key={`${queue[0].id}:${reviewed}`} card={queue[0]} pool={pool} onGrade={onGrade} />
+      <Current key={`${queue[0].id}:${reviewed}`} db={db} card={queue[0]} pool={pool} onGrade={onGrade} />
     </>
   )
 }

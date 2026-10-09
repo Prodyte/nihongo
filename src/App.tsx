@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { openDb, seedKana, type Db } from './db/db'
 import { Home, type Config } from './pages/Home'
+import { Decks } from './pages/Decks'
 import { Stats } from './pages/Stats'
 import { Study } from './pages/Study'
 
-type View = 'home' | 'study' | 'stats'
+type View = 'home' | 'study' | 'stats' | 'decks'
 
 export default function App() {
   const [db, setDb] = useState<Db | null>(null)
@@ -29,11 +30,14 @@ export default function App() {
         <h1>日本語 <small>nihongo</small></h1>
         <nav>
           <button aria-current={view === 'home'} onClick={() => setView('home')}>Study</button>
+          <button aria-current={view === 'decks'} onClick={() => setView('decks')}>Decks</button>
           <button aria-current={view === 'stats'} onClick={() => setView('stats')}>Stats</button>
         </nav>
       </header>
       {view === 'study' ? (
         <Study db={db} deck={config.deck} mode={config.mode} onExit={() => setView('home')} />
+      ) : view === 'decks' ? (
+        <Decks db={db} />
       ) : view === 'stats' ? (
         <Stats db={db} />
       ) : (

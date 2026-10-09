@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { State, type Card, type Grade, type ReviewLog } from 'ts-fsrs'
+import type { Parsed } from '../anki/apkg'
 import { KANA } from '../data/kana'
 import { newFsrsCard, schedule } from '../srs/scheduler'
 
@@ -9,7 +10,10 @@ export interface StoredCard {
   front: string
   back: string[]
   fsrs: Card
+  html?: boolean // imported Anki card: front/back[0] are HTML, not kana/romaji
 }
+export interface DeckRecord { id: string; name: string }
+export interface MediaRecord { key: string; data: Uint8Array; type: string } // key = `${deck}\0${filename}`
 export interface ReviewRecord {
   id?: number
   cardId: string
@@ -20,14 +24,22 @@ export interface ReviewRecord {
 interface Schema extends DBSchema {
   cards: { key: string; value: StoredCard; indexes: { 'by-deck': string } }
   reviews: { key: number; value: ReviewRecord; indexes: { 'by-card': string } }
+  decks: { key: string; value: DeckRecord }
+  media: { key: string; value: MediaRecord }
 }
 export type Db = IDBPDatabase<Schema>
 
 export const openDb = (name = 'nihongo') =>
-  openDB<Schema>(name, 1, {
-    upgrade(db) {
-      db.createObjectStore('cards', { keyPath: 'id' }).createIndex('by-deck', 'deck')
-      db.createObjectStore('reviews', { keyPath: 'id', autoIncrement: true }).createIndex('by-card', 'cardId')
+  openDB<Schema>(name, 2, {
+    upgrade(db, old) {
+      if (old < 1) {
+        db.createObjectStore('cards', { keyPath: 'id' }).createIndex('by-deck', 'deck')
+        db.createObjectStore('reviews', { keyPath: 'id', autoIncrement: true }).createIndex('by-card', 'cardId')
+      }
+      if (old < 2) {
+        db.createObjectStore('decks', { keyPath: 'id' })
+        db.createObjectStore('media', { keyPath: 'key' })
+      }
     },
   })
 
@@ -45,6 +57,12 @@ export async function seedKana(db: Db, now = new Date()) {
 
 export const getDeck = (db: Db, deck: string) => db.getAllFromIndex('cards', 'by-deck', deck)
 export const getCards = (db: Db, deck: string) => (deck === 'all' ? db.getAll('cards') : getDeck(db, deck))
+
+/** Cards a study mode can use: typing and quiz need kana cards, flashcards take anything. */
+export async function studyCards(db: Db, deck: string, mode: string) {
+  const cards = await getCards(db, deck)
+  return mode === 'flashcard' ? cards : cards.filter((c) => !c.html)
+}
 
 /** Cards first studied since local midnight, to enforce the daily new-card cap. */
 export async function newToday(db: Db, now = new Date()) {
@@ -67,4 +85,43 @@ export async function gradeCard(db: Db, id: string, grade: Grade, now = new Date
   ])
   await tx.done
   return updated
+}
+
+export const mediaKey = (deck: string, name: string) => `${deck}\0${name}`
+const MIME: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+  mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac',
+}
+
+/** Store a parsed deck. Re-importing refreshes content but keeps each card's review progress. */
+export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs'] => newFsrsCard()) {
+  const tx = db.transaction(['cards', 'decks', 'media'], 'readwrite')
+  let added = 0
+  let updated = 0
+  for (const d of p.decks) await tx.objectStore('decks').put({ id: `anki:${d.id}`, name: d.name })
+  for (const c of p.cards) {
+    const id = `anki:${c.deckId}:${c.id}`
+    const old = await tx.objectStore('cards').get(id)
+    if (old) updated++
+    else added++
+    await tx.objectStore('cards').put({ id, deck: `anki:${c.deckId}`, front: c.front, back: [c.back], html: true, fsrs: old?.fsrs ?? fresh() })
+  }
+  for (const d of p.decks)
+    for (const [name, data] of p.media)
+      await tx.objectStore('media').put({
+        key: mediaKey(`anki:${d.id}`, name), data, type: MIME[name.split('.').pop()!.toLowerCase()] ?? 'application/octet-stream',
+      }) // ponytail: media is copied per deck; dedupe if multi-deck packages get large
+  await tx.done
+  return { added, updated, skipped: p.skipped }
+}
+
+export async function deleteDeck(db: Db, id: string) {
+  const tx = db.transaction(['cards', 'reviews', 'decks', 'media'], 'readwrite')
+  for (const cid of await tx.objectStore('cards').index('by-deck').getAllKeys(id)) {
+    for (const rid of await tx.objectStore('reviews').index('by-card').getAllKeys(cid)) await tx.objectStore('reviews').delete(rid)
+    await tx.objectStore('cards').delete(cid)
+  }
+  await tx.objectStore('media').delete(IDBKeyRange.bound(mediaKey(id, ''), mediaKey(id, '\uffff')))
+  await tx.objectStore('decks').delete(id)
+  await tx.done
 }

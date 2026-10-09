@@ -22,3 +22,9 @@ input { text-align: center; font-size: 1.3rem; width: 100%; }
 kbd { opacity: .6; font-size: .75em; }
 dl { display: grid; grid-template-columns: 1fr auto; gap: .4rem 1rem; width: 100%; margin: 0; } dd { margin: 0; text-align: right; }
 @media (max-width: 400px) { .row { grid-template-columns: 1fr 1fr; } }
+.html { width: 100%; text-align: center; font-size: 1.5rem; overflow-wrap: anywhere; }
+.html img { max-width: 100%; height: auto; } .html audio { width: 100%; }
+.html .cloze { color: var(--accent); font-weight: 600; } .html rt { font-size: .5em; }
+ul.decks { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: .5rem; }
+ul.decks li { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+p[role="status"], p[role="alert"] { margin: 0; }
