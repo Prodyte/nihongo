@@ -33,7 +33,7 @@ export async function parseApkg(bytes: ArrayBuffer | Uint8Array, SQL: SqlJsStati
     const [col] = db.exec('select models, decks from col')
     const models: Record<string, Model> = JSON.parse(String(col.values[0][0]))
     const deckNames: Record<string, { name: string }> = JSON.parse(String(col.values[0][1]))
-    const rows = db.exec('select c.id, c.did, c.ord, n.mid, n.flds from cards c join notes n on n.id = c.nid')[0]?.values ?? []
+    const rows = db.exec('select c.id, case when c.odid then c.odid else c.did end, c.ord, n.mid, n.flds from cards c join notes n on n.id = c.nid')[0]?.values ?? []
 
     const cards: ParsedCard[] = []
     const used = new Set<string>()

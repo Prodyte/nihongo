@@ -35,16 +35,17 @@ function applyFilter(filter: string, v: string, ctx: RenderCtx) {
 const SPECIAL = new Set(['Tags', 'Type', 'Deck', 'Subdeck', 'Card', 'CardFlag'])
 
 export function renderTemplate(tpl: string, fields: Record<string, string>, ctx: RenderCtx): string {
+  const field = (n: string) => (Object.hasOwn(fields, n) ? fields[n] : '') // {{constructor}} must not hit Object.prototype
   let t = tpl
   for (let prev = ''; prev !== t; ) {
     prev = t
-    t = t.replace(SECTION, (_, kind, name, body) => ((kind === '#') === !isEmpty(fields[name]) ? body : ''))
+    t = t.replace(SECTION, (_, kind, name, body) => ((kind === '#') === !isEmpty(field(name)) ? body : ''))
   }
   return t.replace(/\{\{([^{}]+?)\}\}/g, (_, spec: string) => {
     const filters = spec.trim().split(':')
     const name = filters.pop()!
     if (SPECIAL.has(name)) return ''
-    let v = name === 'FrontSide' ? ctx.frontSide : (fields[name] ?? '')
+    let v = name === 'FrontSide' ? ctx.frontSide : field(name)
     for (const f of filters.reverse()) v = applyFilter(f, v, ctx)
     return v
   })

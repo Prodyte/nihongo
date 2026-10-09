@@ -32,8 +32,9 @@ async function makeApkg(extra: Record<string, Uint8Array | string> = {}) {
   note(102, 1, ['', '']); card(1003, 102, 0) // blank question
   const zip = new JSZip()
   zip.file('collection.anki2', db.export())
-  zip.file('media', JSON.stringify({ 0: 'dog.png' }))
+  zip.file('media', JSON.stringify({ 0: 'dog.png', 1: 'unused.png' }))
   zip.file('0', new Uint8Array([137, 80, 78, 71]))
+  zip.file('1', new Uint8Array([1]))
   for (const [k, v] of Object.entries(extra)) zip.file(k, v)
   return zip.generateAsync({ type: 'uint8array' })
 }
@@ -76,6 +77,7 @@ describe('saveImport / deleteDeck', () => {
     expect(await studyCards(db, 'anki:10', 'flashcard')).toHaveLength(3)
     expect(await studyCards(db, 'anki:10', 'typing')).toHaveLength(0)
     expect(await db.get('media', 'anki:10\0dog.png')).toMatchObject({ type: 'image/png' })
+    expect(await db.get('media', 'anki:10\0unused.png')).toBeUndefined() // not referenced by any card
 
     await deleteDeck(db, 'anki:10')
     expect(await getDeck(db, 'anki:10')).toHaveLength(0)
@@ -97,10 +99,14 @@ describe('resolveMedia', () => {
       '<img src="nope.png">',
       '<a href="javascript:alert(3)">x</a>',
       '[sound:dog.png]',
+      '<img src="dog.png" srcset="https://evil.example/2x.png 2x">',
+      '<div style="background:url(https://evil.example/x)">s</div><style>body{display:none}</style>',
+      '<form action="https://evil.example"><input name="pw"></form>',
+      '<img src="dog%.png">', // malformed % must not blank the card
     ].join('')
     const out = await resolveMedia(db, 'anki:10', html, () => 'blob:test')
     expect(out).toContain('<b>ok</b>')
-    expect(out).not.toMatch(/script|onerror|javascript:|evil\.example|nope\.png/)
+    expect(out).not.toMatch(/script|onerror|javascript:|evil\.example|nope\.png|srcset|style|<form|<input/)
     expect(out).toContain('<img src="blob:test">')
     expect(out).toContain('<audio controls="" data-media="dog.png" src="blob:test"></audio>')
   })

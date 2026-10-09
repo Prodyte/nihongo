@@ -33,6 +33,9 @@ describe('renderTemplate', () => {
     expect(r('{{kanji:W}}', f, ctx)).toContain('漢字')
     expect(r('{{furigana:A}}', { A: '[sound:a.mp3]' }, ctx)).toBe('[sound:a.mp3]')
   })
+  it('template names that match Object.prototype members are just empty fields', () => {
+    expect(r('a{{constructor}}b{{#__proto__}}x{{/__proto__}}{{toString}}', { F: '1' }, ctx)).toBe('ab')
+  })
   it('text: strips html, hint: wraps in details, type: renders nothing', () => {
     expect(r('{{text:A}}', { A: '<b>x</b>' }, ctx)).toBe('x')
     expect(r('{{hint:A}}', { A: 'h' }, ctx)).toBe('<details><summary>Hint</summary>h</details>')

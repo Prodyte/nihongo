@@ -106,11 +106,21 @@ export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs
     else added++
     await tx.objectStore('cards').put({ id, deck: `anki:${c.deckId}`, front: c.front, back: [c.back], html: true, fsrs: old?.fsrs ?? fresh() })
   }
-  for (const d of p.decks)
-    for (const [name, data] of p.media)
-      await tx.objectStore('media').put({
-        key: mediaKey(`anki:${d.id}`, name), data, type: MIME[name.split('.').pop()!.toLowerCase()] ?? 'application/octet-stream',
-      }) // ponytail: media is copied per deck; dedupe if multi-deck packages get large
+  // Each deck gets only the files its cards reference (subdecks share a package, not necessarily media).
+  // ponytail: re-import never removes cards/media dropped upstream; a card moved between decks restarts.
+  const refs = new Map<string, Set<string>>()
+  for (const c of p.cards)
+    for (const m of (c.front + c.back).matchAll(/(?:src=["']|\[sound:)([^"'\]]+)/g)) {
+      const names = refs.get(c.deckId) ?? new Set<string>()
+      names.add(m[1])
+      try { names.add(decodeURIComponent(m[1])) } catch { /* keep raw */ }
+      refs.set(c.deckId, names)
+    }
+  for (const [deckId, names] of refs)
+    for (const name of names) {
+      const data = p.media.get(name)
+      if (data) await tx.objectStore('media').put({ key: mediaKey(`anki:${deckId}`, name), data, type: MIME[name.split('.').pop()!.toLowerCase()] ?? 'application/octet-stream' })
+    }
   await tx.done
   return { added, updated, skipped: p.skipped }
 }

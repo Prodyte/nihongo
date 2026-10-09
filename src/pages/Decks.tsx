@@ -3,6 +3,8 @@ import { ApkgError, parseApkg } from '../anki/apkg'
 import { loadSql } from '../anki/sql'
 import { deleteDeck, saveImport, type Db, type DeckRecord } from '../db/db'
 
+const MAX_BYTES = 500 * 1024 * 1024 // ponytail: crude guard against memory exhaustion; stream media if bigger decks matter
+
 export function Decks({ db }: { db: Db }) {
   const [decks, setDecks] = useState<(DeckRecord & { count: number })[]>([])
   const [status, setStatus] = useState<{ text: string; bad?: boolean } | null>(null)
@@ -24,6 +26,7 @@ export function Decks({ db }: { db: Db }) {
 
   async function onFile(file: File | undefined) {
     if (!file) return
+    if (file.size > MAX_BYTES) return setStatus({ text: 'That file is over 500 MB, too large to import in the browser.', bad: true })
     setBusy(true)
     setStatus({ text: `Reading ${file.name}…` })
     try {
