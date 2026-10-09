@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Db } from '../db/db'
+import { Icon } from '../icons'
 import { lastSync, session, supabase, sync } from '../sync'
 
 /** Sign in and keep progress in sync across devices. */
@@ -7,6 +8,7 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
   const [email, setEmail] = useState<string | null | undefined>(undefined) // undefined: checking; null: signed out
   const [typed, setTyped] = useState('')
   const [password, setPassword] = useState('')
+  const [create, setCreate] = useState(false)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<{ text: string; bad?: boolean } | null>(null)
 
@@ -30,55 +32,61 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
     setStatus({ text: 'Synced.' })
   }
   // email + password: works inside an installed app too (sign-in links open the browser, whose storage an iPhone app doesn't share)
-  const signIn = (create: boolean) => act(async () => {
+  const submit = act(async () => {
     const auth = (await supabase()).auth
     const creds = { email: typed.trim(), password }
-    const { data, error } = create ? await auth.signUp(creds) : await auth.signInWithPassword(creds)
+    const { data, error } = create ? await auth.signUp({ ...creds, options: { emailRedirectTo: location.origin + location.pathname } }) : await auth.signInWithPassword(creds)
     if (error) throw error
-    if (!data.session) throw new Error('Account created: confirm it from the email Supabase sent, then sign in.')
-    setEmail(data.user?.email ?? creds.email)
+    if (!data.session) {
+      setCreate(false)
+      setStatus({ text: `Almost done: open the link we emailed to ${creds.email}, then sign in here.` })
+      return
+    }
     setPassword('')
-    await syncNow()
+    await sync(db)
+    onSynced() // remounts this page signed in, and the header shows the account icon
   })
   const signOut = act(async () => {
     await (await supabase()).auth.signOut()
-    setEmail(null)
     onSynced() // the header's Sign in button comes back
-    setStatus({ text: 'Signed out. Your progress stays on this device.' })
   })
 
   const last = lastSync()
+  if (email === undefined) return <div className="card account" aria-busy="true"><div className="skeleton" /></div>
   return (
-    <div className="card form">
-      <h2>Account and sync</h2>
-      {email === undefined ? <p>…</p> : email ? (
+    <div className="card account">
+      <span className="account-icon" aria-hidden="true"><Icon name="user" size={28} /></span>
+      {email ? (
         <>
-          <p>Signed in as <strong>{email}</strong>. Progress syncs when you open and leave the app.{last && ` Last synced ${new Date(last).toLocaleString()}.`}</p>
-          <div className="row2 left">
-            <button className="primary" disabled={busy} onClick={() => void act(syncNow)()}>Sync now</button>
-            <button disabled={busy} onClick={() => void signOut()}>Sign out</button>
-          </div>
+          <h2>Account and sync</h2>
+          <p className="hint">Signed in as <strong>{email}</strong></p>
+          <p className="hint">Progress syncs when you open and leave the app.{last && <><br />Last synced {new Date(last).toLocaleString()}.</>}</p>
+          <button className="primary big" disabled={busy} onClick={() => void act(syncNow)()}>{busy ? 'Syncing…' : 'Sync now'}</button>
+          <button className="link-btn" disabled={busy} onClick={() => void signOut()}>Sign out</button>
         </>
       ) : (
         <>
-          <p>Sign in to keep your cards, lessons and streak on all your devices. Optional: everything works without it.</p>
-          <form onSubmit={(e) => { e.preventDefault(); void signIn(false)() }}>
+          <h2>{create ? 'Create your account' : 'Sign in'}</h2>
+          <p className="hint">Keep your cards, lessons and streak on all your devices. Optional: everything works without an account.</p>
+          <form onSubmit={(e) => { e.preventDefault(); void submit() }}>
             <label>
               Email
               <input type="email" required autoComplete="email" value={typed} onChange={(e) => setTyped(e.target.value)} />
             </label>
             <label>
               Password
-              <input type="password" required minLength={6} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <input type="password" required minLength={6} autoComplete={create ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
+              {create && <small className="hint left">At least 6 characters.</small>}
             </label>
-            <div className="row2 left">
-              <button className="primary" disabled={busy}>Sign in</button>
-              <button type="button" disabled={busy} onClick={(e) => { if (e.currentTarget.form?.reportValidity()) void signIn(true)() }}>Create account</button>
-            </div>
+            <button className="primary big" disabled={busy}>{busy ? 'One moment…' : create ? 'Create account' : 'Sign in'}</button>
           </form>
+          <p className="hint">
+            {create ? 'Already have an account? ' : 'New here? '}
+            <button className="link-btn" onClick={() => { setCreate(!create); setStatus(null) }}>{create ? 'Sign in' : 'Create an account'}</button>
+          </p>
         </>
       )}
-      {status && <p role="status" className={status.bad ? 'bad' : ''}>{status.text}</p>}
+      {status && <p role="status" className={status.bad ? 'bad' : 'note'}>{status.text}</p>}
     </div>
   )
 }

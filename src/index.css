@@ -372,6 +372,19 @@ header.brand h1 small { font-weight: 500; }
 header.brand { align-items: center; }
 .account-btn { margin-left: auto; }
 button.account-btn:not(.icon-btn) { padding: .4rem .9rem; font-size: .9rem; }
+@media (min-width: 48rem) { .account-btn { position: fixed; top: .55rem; right: 1rem; z-index: 11; } } /* in the top bar, at the far right */
+
+/* ============ account ============ */
+.card.account { max-width: 26rem; margin: 1rem auto 0; align-items: center; text-align: center; gap: .9rem; }
+.card.account h2 { margin: 0; }
+.account-icon { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.card.account form { display: flex; flex-direction: column; gap: .9rem; width: 100%; text-align: left; }
+.card.account label { display: flex; flex-direction: column; gap: .35rem; font-weight: 600; font-size: .95rem; }
+.card.account .big { width: 100%; }
+.card.account .note { color: var(--fg); background: var(--accent-soft); padding: .6rem .8rem; border-radius: var(--radius-s); }
+input[type="email"], input[type="password"] { text-align: left; font-size: 1rem; }
+input:-webkit-autofill { -webkit-box-shadow: 0 0 0 100px var(--raised, var(--card)) inset; -webkit-text-fill-color: var(--fg); caret-color: var(--fg); }
+.link-btn { border: 0; background: none; box-shadow: none; padding: 0; min-height: 0; color: var(--accent); font: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .logo { flex: none; border-radius: 7px; }
 
 /* ============ welcome ============ */

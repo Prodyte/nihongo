@@ -111,7 +111,7 @@ export default function App() {
         {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
         <header className={focused ? 'visually-hidden' : 'brand'}>
           <h1><Logo /> Nihongo <small lang="ja">日本語</small></h1>
-          {!focused && view !== 'account' && (maybeSignedIn()
+          {!focused && (maybeSignedIn()
             ? <button className="icon-btn account-btn" aria-label="Account and sync" onClick={() => setView('account')}><Icon name="user" /></button>
             : <button className="account-btn" onClick={() => setView('account')}>Sign in</button>)}
         </header>
