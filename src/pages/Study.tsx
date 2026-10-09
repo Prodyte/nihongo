@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
-import { DAILY_NEW, gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db/db'
+import { BUILTIN_DECKS, DAILY_NEW, gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db/db'
+import { Cloze } from '../modes/Cloze'
 import { Flashcard } from '../modes/Flashcard'
 import { Quiz } from '../modes/Quiz'
 import { Typing } from '../modes/Typing'
+import { ITEMS } from '../path/course'
 import { addReviewXp } from '../path/progress'
 import { shuffle } from '../modes/choices'
 import { dueCards } from '../srs/scheduler'
@@ -75,7 +77,7 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
         <button className="primary" onClick={onExit}>Back</button>
       </div>
     )
-  const Current = MODES[mode]
+  const Current = queue[0].deck === BUILTIN_DECKS.sentence.id && ITEMS.has(queue[0].id) ? Cloze : MODES[mode] // grammar is always fill-the-gap
   return (
     <>
       <div className="bar">

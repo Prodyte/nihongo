@@ -121,17 +121,7 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
   const translate = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...opts(it, 'gloss'), answer: it.gloss })
   const say = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...opts(it, 'jp'), answer: written(it) })
   const listen = (item: Item): Exercise => ({ type: 'listen', item, ...opts(item, 'jp', 'sound'), answer: written(item) })
-  const gap = (it: Item): Exercise => {
-    const tokens = it.tokens ?? fail(`Sentence ${it.id} has no tokens`)
-    // a curated gap (a verb form, a counter...): the English hint says which form is meant
-    if (it.gap) return { type: 'choice', item: it, dir: 'fill', prompt: displayJp(tokens, it.gap.at), hint: it.gloss, options: shuffle([tokens[it.gap.at], ...it.gap.wrong], rand), answer: tokens[it.gap.at] }
-    const at = tokens.findIndex((t) => PARTICLES.has(t))
-    if (at < 0) fail(`Sentence ${it.id} has no particle to blank out`)
-    const answer = tokens[at]
-    // a particle without curated wrong answers would give a one-option question that gets silently dropped: say so instead
-    const wrong = WRONG_PARTICLES[answer] ?? fail(`No wrong particles defined for ${answer} (sentence ${it.id}): add them to WRONG_PARTICLES`)
-    return { type: 'choice', item: it, dir: 'fill', prompt: displayJp(tokens, at), hint: it.gloss, options: shuffle([answer, ...wrong], rand), answer }
-  }
+  const gap = (it: Item) => gapFor(it, rand)
   const build = (it: Item): Exercise => {
     const tokens = it.tokens ?? fail(`Sentence ${it.id} has no tokens`)
     return { type: 'build', item: it, bank: bankFor(tokens, it.bank ?? [], rand), answer: tokens, alts: it.alts ?? [] }
@@ -176,6 +166,19 @@ function buildKanji(lesson: Lesson, mine: Item[], items: ReadonlyMap<string, Ite
   out.push(...shuffle(mine, rand).slice(0, 2).map((item): Exercise => ({ type: 'type', item, dir: 'toGloss', prompt: item.jp })))
   out.push(...readWords.slice(-2).map((item): Exercise => ({ type: 'type', item, dir: 'toReading', prompt: written(item) }))) // the last two: fresh ones when there are 5
   return out.filter((e) => !('options' in e) || e.options.length >= 2)
+}
+
+/** Fill-the-gap for a sentence: its curated gap, or its first particle with curated wrong particles. */
+export function gapFor(it: Item, rand: () => number = Math.random): Extract<Exercise, { type: 'choice' }> {
+  const tokens = it.tokens ?? fail(`Sentence ${it.id} has no tokens`)
+  // a curated gap (a verb form, a counter...): the English hint says which form is meant
+  if (it.gap) return { type: 'choice', item: it, dir: 'fill', prompt: displayJp(tokens, it.gap.at), hint: it.gloss, options: shuffle([tokens[it.gap.at], ...it.gap.wrong], rand), answer: tokens[it.gap.at] }
+  const at = tokens.findIndex((t) => PARTICLES.has(t))
+  if (at < 0) fail(`Sentence ${it.id} has no particle to blank out`)
+  const answer = tokens[at]
+  // a particle without curated wrong answers would give a one-option question that gets silently dropped: say so instead
+  const wrong = WRONG_PARTICLES[answer] ?? fail(`No wrong particles defined for ${answer} (sentence ${it.id}): add them to WRONG_PARTICLES`)
+  return { type: 'choice', item: it, dir: 'fill', prompt: displayJp(tokens, at), hint: it.gloss, options: shuffle([answer, ...wrong], rand), answer }
 }
 
 /** Cards you read and tap through: no right or wrong, so no accuracy and no misses. */

@@ -142,6 +142,8 @@ ul.results .tags { display: flex; gap: .25rem; }
 ul.results a { color: var(--accent); font-weight: 600; }
 .detail { display: flex; flex-direction: column; align-items: center; gap: .25rem; margin-top: .5rem; } .detail p { margin: 0; }
 input[type="search"] { text-align: left; }
+.grammar-level h3 { margin: .5rem 0; font-size: 1rem; color: var(--muted); }
+.explain-body { display: flex; flex-direction: column; gap: .6rem; margin-top: .6rem; } .explain-body p { margin: 0; line-height: 1.5; }
 ul.stages { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
 ul.stages li { display: flex; flex-direction: column; align-items: center; gap: .1rem; padding: .6rem .25rem; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); text-align: center; }
 ul.stages strong { font-size: 1.5rem; } ul.stages small { color: var(--muted); font-size: .7rem; line-height: 1.2; }

@@ -75,7 +75,7 @@ describe('saveImport / deleteDeck', () => {
     expect(await studyCards(db, 'anki:10', 'flashcard')).toHaveLength(3)
     expect(await studyCards(db, 'anki:10', 'typing')).toHaveLength(0)
     await db.put('cards', { id: 'sent:x', deck: 'grammar', front: 'わたしは がくせいです。', back: ['I am a student.'], fsrs: newFsrsCard() })
-    expect(await studyCards(db, 'grammar', 'typing')).toHaveLength(0) // whole sentences are not typed in Review
+    expect(await studyCards(db, 'grammar', 'typing')).toHaveLength(1) // grammar cards are reviewed fill-the-gap in every mode
     expect(await studyCards(db, 'grammar', 'flashcard')).toHaveLength(1)
     expect(await studyCards(db, 'grammar', 'quiz')).toHaveLength(1)
     expect(await db.get('media', 'anki:10\0dog.png')).toMatchObject({ type: 'image/png' })

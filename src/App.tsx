@@ -4,6 +4,7 @@ import { openDb, seedKana, type Db } from './db/db'
 import { Icon } from './icons'
 import { Credits } from './pages/Credits'
 import { Decks } from './pages/Decks'
+import { Grammar } from './pages/Grammar'
 import { Home, type Config } from './pages/Home'
 import { Lesson } from './pages/Lesson'
 import { Lookup } from './pages/Lookup'
@@ -18,10 +19,11 @@ import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
-type View = Tab | 'lesson' | 'study' | 'decks' | 'stats' | 'settings' | 'credits'
+type View = Tab | 'lesson' | 'study' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', review: 'review', study: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', review: 'review', study: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more' }
 const MORE: [View, string, string][] = [
+  ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
   ['stats', 'Stats', 'Your reviews and cards'],
   ['settings', 'Settings', 'Daily goal, theme, audio, backup'],
@@ -85,6 +87,8 @@ export default function App() {
         ) : view === 'settings' ? (
           <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
             furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} />
+        ) : view === 'grammar' ? (
+          <Grammar db={db} />
         ) : view === 'credits' ? (
           <Credits />
         ) : view === 'more' ? (

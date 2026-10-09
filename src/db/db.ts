@@ -81,7 +81,7 @@ export async function studyCards(db: Db, deck: string, mode: string) {
   let cards = await getCards(db, deck)
   // Mixed review never introduces kana you haven't met: the path teaches them. Picking a kana deck still offers them.
   if (deck === 'all') cards = cards.filter((c) => !(c.fsrs.state === State.New && (c.deck === 'hira' || c.deck === 'kata')))
-  return mode === 'flashcard' ? cards : cards.filter((c) => !c.html && !(mode === 'typing' && c.deck === BUILTIN_DECKS.sentence.id))
+  return mode === 'flashcard' ? cards : cards.filter((c) => !c.html) // grammar cards are reviewed fill-the-gap in every mode
 }
 
 export const DAILY_NEW = 20
