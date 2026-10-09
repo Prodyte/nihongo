@@ -2,21 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useJaVoice } from '../audio'
 import { canRecognise } from '../speech'
 import { readBool } from '../settings'
-import { Speak } from '../path/ui/Speak'
-import { Write } from '../path/ui/Write'
 import { sfx } from '../sfx'
 import { ExitButton } from '../icons'
+import { ExerciseView } from '../path/ui/ExerciseView'
 import { type Db } from '../db/db'
 import { ITEMS, LESSONS, type Lesson as LessonT } from '../path/course'
 import { accuracy, advance, buildLesson, startRun, type RunState } from '../path/lesson'
 import { completeLesson, getProgress, learnedItems } from '../path/progress'
-import { Choice } from '../path/ui/Choice'
-import { Intro } from '../path/ui/Intro'
-import { KanjiIntro } from '../path/ui/KanjiIntro'
-import { Build } from '../path/ui/Build'
-import { Explain } from '../path/ui/Explain'
-import { Match } from '../path/ui/Match'
-import { Type } from '../path/ui/Type'
 
 interface Summary { xp: number; first: boolean; accuracy: number; streak: number | null } // streak null: the lesson saved but the streak could not be read
 
@@ -104,14 +96,7 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
         <ExitButton onClick={onExit} />
         <progress max={run.initial} value={run.initial - run.queue.length} aria-label="Lesson progress" />
       </div>
-      {ex.type === 'intro' ? (ex.item.kind === 'kanji' ? <KanjiIntro key={step} item={ex.item} onDone={done} /> : <Intro key={step} item={ex.item} autoplay={autoplay} onDone={done} />)
-        : ex.type === 'explain' ? <Explain key={step} ex={ex} onDone={done} />
-        : ex.type === 'build' ? <Build key={step} ex={ex} onDone={done} />
-        : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={done} />
-        : ex.type === 'type' ? <Type key={step} ex={ex} autoplay={autoplay} onDone={done} />
-        : ex.type === 'write' ? <Write key={step} ex={ex} onDone={done} />
-        : ex.type === 'speak' ? <Speak key={step} ex={ex} onDone={done} onSkip={skipSpeaking} />
-        : <Choice key={step} ex={ex} autoplay={autoplay} onDone={done} />}
+      <ExerciseView ex={ex} step={step} autoplay={autoplay} onDone={done} onSkipSpeaking={skipSpeaking} />
     </>
   )
 }

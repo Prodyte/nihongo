@@ -4,6 +4,10 @@ import { openDb, seedKana, type Db } from './db/db'
 import { Icon } from './icons'
 import { Credits } from './pages/Credits'
 import { Decks } from './pages/Decks'
+import { Drill } from './pages/Drill'
+import { KanaChart } from './pages/KanaChart'
+import { Reading } from './pages/Reading'
+import type { DrillKind } from './path/drills'
 import { Grammar } from './pages/Grammar'
 import { Home, type Config } from './pages/Home'
 import { Lesson } from './pages/Lesson'
@@ -20,9 +24,9 @@ import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
-type View = Tab | 'lesson' | 'test' | 'study' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
+type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more' }
 const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
@@ -38,6 +42,7 @@ export default function App() {
   const [back, setBack] = useState<View>('today') // where a lesson or review session returns to
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [testUnit, setTestUnit] = useState<string | null>(null)
+  const [drill, setDrill] = useState<DrillKind>('speak-read')
   const [autoplay, setAutoplay] = useState(() => readBool('nihongo.autoplay', true))
   const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
   const [furigana, setFurigana] = useState<Furigana>(() => readStr('nihongo.furigana', FURIGANA, 'auto'))
@@ -64,7 +69,7 @@ export default function App() {
   const study = (from: View, c: Config) => { setSession(c); setBack(from); setView('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
-  const focused = !!lesson || !!unit || view === 'study' // lessons and reviews are full-screen: no tabs to wander off to
+  const focused = !!lesson || !!unit || view === 'study' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
   if (!db) return <main><p>Loading…</p></main>
@@ -77,10 +82,17 @@ export default function App() {
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
         ) : unit ? (
           <TestOut key={unit.id} db={db} unit={unit} onExit={() => setView('path')} />
+        ) : view === 'drill' ? (
+          <Drill key={drill} db={db} kind={drill} onExit={() => setView('review')} />
+        ) : view === 'reading' ? (
+          <Reading db={db} onExit={() => setView('review')} />
+        ) : view === 'kana' ? (
+          <KanaChart db={db} onExit={() => setView('review')} />
         ) : view === 'study' ? (
           <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => setView(back)} />
         ) : view === 'review' ? (
-          <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })} />
+          <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })}
+            onDrill={(k) => { setDrill(k); setView('drill') }} onRead={() => setView('reading')} onKana={() => setView('kana')} />
         ) : view === 'path' ? (
           <Path db={db} onStart={startLesson} onTest={(id) => { setTestUnit(id); setView('test') }} />
         ) : view === 'lookup' ? (

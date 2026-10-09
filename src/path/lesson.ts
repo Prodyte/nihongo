@@ -5,13 +5,13 @@ import { displayJp, PARTICLES, surfaceOf } from './romaji'
 export type Exercise = (
   | { type: 'intro'; item: Item }
   | { type: 'explain'; title: string; body: string[]; examples: Item[] } // a grammar lesson's opening card
-  | { type: 'choice'; item: Item; dir: 'toGloss' | 'toJp' | 'fill' | 'toReading'; prompt: string; options: string[]; answer: string; hint?: string; readings?: Readings } // fill: pick the particle that completes the sentence
+  | { type: 'choice'; item: Item; dir: 'toGloss' | 'toJp' | 'fill' | 'toReading' | 'hearMeaning'; prompt: string; options: string[]; answer: string; hint?: string; readings?: Readings } // fill: pick the particle that completes the sentence
   | { type: 'listen'; item: Item; options: string[]; answer: string; readings?: Readings } // hear item.jp, pick it
   | { type: 'match'; pairs: { id: string; jp: string; reading?: string; gloss: string }[] }
   | { type: 'build'; item: Item; bank: string[]; answer: string[]; alts: string[][] } // put the chunks of a sentence in order
-  | { type: 'speak'; item: Item } // say it aloud; the browser's speech recognition checks it
+  | { type: 'speak'; item: Item; mode?: 'read' | 'recall' | 'shadow' } // say it aloud (reading it, from the English, or after hearing it); speech recognition checks it
   | { type: 'write'; item: Item; guide: boolean } // write a kanji stroke by stroke: traced over a guide, or from memory
-  | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp' | 'toReading'; prompt: string } // kana: type the romaji; words: type the English, or the Japanese via romaji; toReading: a kanji word's reading
+  | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp' | 'toReading' | 'dictation' | 'conjugate'; prompt: string; label?: string; promptReading?: string } // kana: type the romaji; words: type the English, or the Japanese via romaji; toReading: a kanji word's reading
 ) & { retry?: boolean }
 
 /** Furigana for options written with kanji: written form -> reading. */

@@ -127,7 +127,8 @@ const KANJI_PER_LESSON = 5
 /** Chunks a grammar lesson teaches itself rather than as vocabulary: endings, counters, set phrases. */
 export const GRAMMAR_CHUNKS = new Set(['です', 'でした', 'じゃありません', 'じゃありませんでした', 'でしょう', 'いけません', 'ほう', 'けど'])
 const COUNTED = /^[一二三四五六七八九十]+(人|本|枚|時|分)$/ // 五人, 二本, 三時: taught by the counters lesson
-const KANA_VERBS: Record<string, string> = { あります: 'ある', います: 'いる' } // forms of kana-only verbs (a prefix match would be too loose)
+// forms of kana-only verbs, matched by their polite or て stems (a plain prefix match would be too loose)
+const KANA_VERBS: [RegExp, string][] = [[/^あり(ます|ません|まし|そう)|^あって|^あった/, 'ある'], [/^い(ます|ません|まし|て$|た$)/, 'いる']]
 
 /**
  * The course word a sentence chunk is (a form of): 食べました -> 食べる, 寒くない -> 寒い, 電話して -> 電話,
@@ -136,8 +137,11 @@ const KANA_VERBS: Record<string, string> = { あります: 'ある', います: 
 export function wordFor(chunk: string, words: Item[]): Item | undefined {
   const t = surfaceOf(chunk)
   const find = (w: string) => words.find((x) => x.written === w || x.kanji === w || x.jp === w)
-  const exact = find(t) ?? (KANA_VERBS[t] && find(KANA_VERBS[t]))
+  const exact = find(t) ?? KANA_VERBS.flatMap(([re, w]) => (re.test(t) ? [find(w)] : []))[0]
   if (exact) return exact
+  // a kana-only い-adjective, conjugated: おいしかった, おいしくない
+  const adj = words.find((x) => !x.written && !x.kanji && x.jp.length >= 3 && x.jp.endsWith('い') && new RegExp(`^${x.jp.slice(0, -1)}(く|かった)`).test(t))
+  if (adj) return adj
   if (/^よ(く|かった)/.test(t)) return find('いい') // いい conjugates from よい
   if (/^(し|さ)/.test(t)) return find('する') // します, して, したい, したくない
   // a conjugated verb or adjective: the dictionary form minus its last kana, which must include a kanji. Longest stem

@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ExitButton } from '../icons'
+import { ExerciseView } from '../path/ui/ExerciseView'
 import type { Db } from '../db/db'
 import { ITEMS, LESSONS, type Unit } from '../path/course'
 import { buildTest, TEST_PASS, type Exercise } from '../path/lesson'
 import { getProgress, testOut } from '../path/progress'
 import { sfx } from '../sfx'
-import { Build } from '../path/ui/Build'
-import { Choice } from '../path/ui/Choice'
-import { Type } from '../path/ui/Type'
 
 /** "Already know this?": a short test over every lesson up to the end of `unit` that isn't done yet. Pass to skip them. */
 export function TestOut({ db, unit, onExit }: { db: Db; unit: Unit; onExit: () => void }) {
@@ -66,10 +64,7 @@ export function TestOut({ db, unit, onExit }: { db: Db; unit: Unit; onExit: () =
         <progress max={exs.length} value={step} aria-label="Test progress" />
       </div>
       <p className="hint test-label">Test: {unit.title} · covers {todo} lesson{todo === 1 ? '' : 's'}</p>
-      {ex.type === 'type' ? <Type key={step} ex={ex} autoplay={false} onDone={done} />
-        : ex.type === 'build' ? <Build key={step} ex={ex} onDone={done} />
-        : ex.type === 'choice' || ex.type === 'listen' ? <Choice key={step} ex={ex} autoplay={false} onDone={done} />
-        : null}
+      <ExerciseView ex={ex} step={step} autoplay={false} onDone={done} onSkipSpeaking={() => done([])} />
     </>
   )
 }

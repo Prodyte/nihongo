@@ -312,3 +312,52 @@ ol.forecast small { color: var(--muted); font-size: .75rem; }
 .writeboard .ink { stroke: var(--fg); stroke-width: 4; }
 .writeboard .pen { stroke: var(--accent); stroke-width: 4; }
 .writeboard p { margin: 0; min-height: 1.5em; }
+
+/* ============ page heads, hub ============ */
+.page-head { margin: .25rem 0 1rem; } .page-head h2 { font-size: 1.6rem; } .page-head p { margin: .2rem 0 0; color: var(--muted); }
+.section-title { margin: 1.5rem 0 .6rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.hint.left, .row2.left { text-align: left; justify-content: flex-start; }
+.review-hero { align-items: stretch; }
+.review-hero .due { display: flex; align-items: center; gap: 1rem; }
+.big-number { font-size: 3rem; line-height: 1; font-weight: 750; color: var(--accent); font-variant-numeric: tabular-nums; min-width: 3.5rem; text-align: center; }
+details.options summary { cursor: pointer; color: var(--muted); font-weight: 600; font-size: .9rem; }
+details.options[open] { display: grid; gap: .75rem; }
+ul.tiles-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .75rem; }
+button.tile-btn { width: 100%; height: 100%; display: grid; align-content: start; gap: .3rem; text-align: left; padding: 1rem; border-radius: var(--radius); background: var(--card); }
+button.tile-btn small { color: var(--muted); font-weight: 400; line-height: 1.35; }
+button.tile-btn:disabled { opacity: .55; }
+.tile-icon { width: 2.5rem; height: 2.5rem; border-radius: 12px; display: grid; place-items: center; background: var(--indigo-soft); color: var(--indigo); margin-bottom: .2rem; }
+.form-label { margin: 0; font-weight: 650; color: var(--indigo); }
+.skeleton { border-radius: var(--radius); background: linear-gradient(90deg, var(--line) 25%, var(--card) 50%, var(--line) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite linear; height: 6rem; }
+.skeleton.tall { height: 18rem; } .skeleton + .skeleton { margin-top: 1rem; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.card.empty { text-align: center; padding-block: 2rem; }
+
+/* ============ reading ============ */
+ul.story-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+.story-card { align-items: stretch; }
+.story-head { text-align: center; } .story-head h2 { font-size: 1.6rem; }
+ol.story { list-style: none; padding: 0; margin: 0; display: grid; gap: .9rem; }
+ol.story li { padding: .6rem .7rem; border-radius: var(--radius-s); transition: background .2s; }
+ol.story li.playing { background: var(--indigo-soft); }
+.jp-line { margin: 0; font-size: 1.35rem; line-height: 2.1; word-break: keep-all; overflow-wrap: anywhere; }
+button.word { all: unset; cursor: pointer; border-radius: 6px; padding: 0 .05em; }
+button.word:hover { background: var(--accent-soft); }
+button.word:focus-visible { outline: 2px solid var(--indigo); }
+.line-tools { display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; }
+.line-tools .en { margin: 0; color: var(--muted); }
+.lookup-pop { position: sticky; top: .5rem; z-index: 5; display: flex; align-items: center; gap: .75rem; padding: .6rem .8rem; border-radius: var(--radius-s); background: var(--raised); border: 1.5px solid var(--indigo); box-shadow: var(--shadow); }
+.lookup-pop .jp { font-size: 1.5rem; font-weight: 600; } .lookup-pop span:nth-child(2) { flex: 1; }
+fieldset.question { border: 0; padding: 0; margin: 0; display: grid; gap: .5rem; }
+fieldset.question legend { font-weight: 650; margin-bottom: .4rem; }
+
+/* ============ kana chart ============ */
+.segmented { display: grid; grid-auto-flow: column; gap: .25rem; padding: .25rem; border-radius: 14px; background: var(--line); margin-bottom: 1rem; }
+.segmented button { border: 0; box-shadow: none; background: none; border-radius: 11px; font-weight: 600; color: var(--muted); }
+.segmented button[aria-selected="true"] { background: var(--card); color: var(--fg); box-shadow: var(--shadow); }
+.kana-block { width: 100%; } .kana-block .section-title { margin-top: .25rem; }
+.kana-grid { display: grid; gap: .4rem; }
+button.kana-cell { display: grid; place-items: center; gap: 0; padding: .4rem .2rem; min-height: 3.6rem; }
+button.kana-cell span { font-size: 1.5rem; line-height: 1.1; } button.kana-cell small { color: var(--muted); font-size: .72rem; }
+button.kana-cell.known { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }

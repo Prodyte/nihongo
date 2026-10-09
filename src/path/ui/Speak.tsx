@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { speak } from '../../audio'
 import { SpeakButton } from '../../modes/SpeakButton'
 import { Icon } from '../../icons'
 import { listen, saidIt, SpeechError } from '../../speech'
@@ -18,6 +19,10 @@ export function Speak({ ex, onDone, onSkip }: { ex: Ex; onDone: (missed: string[
   const stop = useRef<() => void>(() => {})
   useEffect(() => () => stop.current(), []) // leaving the exercise stops the microphone
   const sentence = ex.item.kind === 'sentence'
+  const mode = ex.mode ?? 'read'
+  useEffect(() => {
+    if (mode === 'shadow') speak(ex.item.jp) // shadowing: hear it first, then say it the same way
+  }, [mode, ex.item.jp])
 
   function start() {
     setError(null)
@@ -33,10 +38,16 @@ export function Speak({ ex, onDone, onSkip }: { ex: Ex; onDone: (missed: string[
 
   return (
     <div className="card">
-      <p className="q">Say it in Japanese</p>
-      <div className={`prompt kana${sentence ? ' sentence' : ''}`} lang="ja"><Ruby text={written(ex.item)} reading={ex.item.written && !sentence ? ex.item.jp : undefined} /></div>
-      <p className="hint">{ex.item.gloss}</p>
-      <SpeakButton text={ex.item.jp} />
+      <p className="q">{mode === 'recall' ? 'How do you say this in Japanese?' : mode === 'shadow' ? 'Listen, then say it the same way' : 'Say it in Japanese'}</p>
+      {mode === 'recall' && result === null ? (
+        <div className="prompt gloss">{ex.item.gloss}</div> // from memory: the Japanese stays hidden until answered
+      ) : (
+        <>
+          <div className={`prompt kana${sentence ? ' sentence' : ''}`} lang="ja"><Ruby text={written(ex.item)} reading={ex.item.written && !sentence ? ex.item.jp : undefined} /></div>
+          <p className="hint">{ex.item.gloss}</p>
+        </>
+      )}
+      {(mode !== 'recall' || result !== null) && <SpeakButton text={ex.item.jp} />}
       <div aria-live="polite" className="heard">{state === 'listening' ? 'Listening…' : heard !== null && result === null ? <>Heard: <span lang="ja">{heard}</span></> : ''}</div>
       {error && <p role="alert" className="bad">{error}</p>}
       {result === null && (

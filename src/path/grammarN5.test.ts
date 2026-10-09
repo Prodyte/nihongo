@@ -76,6 +76,8 @@ describe('wordFor', () => {
     expect(of('電話[でんわ]して')).toBe(of('電話[でんわ]'))
     expect(of('したくない')).toBe(of('する'))
     expect(of('います')).toBe(of('いる'))
+    expect(of('ありました')).toBe(of('ある'))
+    expect(of('おいしかった')).toBe(of('おいしい'))
   })
   it('finds nothing for words the course does not teach', () => {
     expect(of('猿[さる]')).toBeUndefined()

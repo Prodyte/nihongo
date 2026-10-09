@@ -10,8 +10,8 @@ type Ex = Extract<Exercise, { type: 'choice' | 'listen' }>
 /** Multiple choice, in both directions, and the listening variant (hear it, pick the Japanese). */
 export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDone: (missed: string[]) => void }) {
   const [picked, setPicked] = useState<string | null>(null)
-  const listening = ex.type === 'listen'
-  const toGloss = ex.type === 'choice' && ex.dir === 'toGloss'
+  const listening = ex.type === 'listen' || (ex.type === 'choice' && ex.dir === 'hearMeaning') // the sound is the question
+  const toGloss = ex.type === 'choice' && (ex.dir === 'toGloss' || ex.dir === 'hearMeaning')
   const toReading = ex.type === 'choice' && ex.dir === 'toReading'
   const kana = ex.item.kind === 'kana'
   const answered = picked !== null
@@ -35,7 +35,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
     return () => window.removeEventListener('keydown', onKey)
   }, [answered, ex.options])
 
-  const question = listening ? 'Tap what you hear'
+  const question = ex.type === 'choice' && ex.dir === 'hearMeaning' ? 'What does it mean?' : listening ? 'Tap what you hear'
     : fill ? 'Which word completes the sentence?'
     : toReading ? 'How is this read?'
     : ex.item.kind === 'kanji' && toGloss ? 'What does this kanji mean?'

@@ -91,13 +91,13 @@ export async function completeLesson(
   return { xp, first: !old, flawless, graded }
 }
 
-/** +1 XP for a card reviewed in Study, so a streak rewards reviewing as well as lessons. */
-export async function addReviewXp(db: Db, now = new Date()) {
+/** +1 XP (or `amount`) for practice outside lessons, so a streak rewards reviewing and practising as well as lessons. */
+export async function addReviewXp(db: Db, now = new Date(), amount = 1) {
   const tx = db.transaction('activity', 'readwrite')
   tx.done.catch(() => {})
   const day = dayKey(now)
   const act = await tx.store.get(day)
-  await tx.store.put({ date: day, xp: (act?.xp ?? 0) + 1, lessons: act?.lessons ?? 0 })
+  await tx.store.put({ date: day, xp: (act?.xp ?? 0) + amount, lessons: act?.lessons ?? 0 })
   await tx.done
 }
 

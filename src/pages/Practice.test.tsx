@@ -18,7 +18,7 @@ it('Review offers "Practise mistakes" for recent misses; drilling them leaves th
   const reviews = await db.count('reviews')
   const user = userEvent.setup()
   let practised = false
-  render(<Home db={db} config={{ deck: 'all', mode: 'flashcard' }} onChange={() => {}} onStart={() => {}} onPractice={() => { practised = true }} />)
+  render(<Home db={db} config={{ deck: 'all', mode: 'flashcard' }} onChange={() => {}} onStart={() => {}} onPractice={() => { practised = true }} onDrill={() => {}} onRead={() => {}} onKana={() => {}} />)
   await user.click(await screen.findByRole('button', { name: 'Practise mistakes (1)' }))
   expect(practised).toBe(true)
   cleanup()
@@ -37,7 +37,7 @@ it('when nothing is due, Review says so and when the next review comes', async (
   const db = await openDb('practice-2')
   await seedKana(db)
   await gradeCard(db, 'hira:い', Rating.Good)
-  render(<Home db={db} config={{ deck: 'all', mode: 'flashcard' }} onChange={() => {}} onStart={() => {}} onPractice={() => {}} />)
+  render(<Home db={db} config={{ deck: 'all', mode: 'flashcard' }} onChange={() => {}} onStart={() => {}} onPractice={() => {}} onDrill={() => {}} onRead={() => {}} onKana={() => {}} />)
   expect((await screen.findByText(/All caught up\. Next review in \d+ minutes?\./)).textContent).toBeTruthy()
   expect(screen.queryByRole('button', { name: /Practise mistakes/ })).toBeNull()
 })

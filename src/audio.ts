@@ -16,6 +16,23 @@ export function speak(text: string): boolean {
   return true
 }
 
+/** Speak several texts one after another; `onStart(i)` fires as each begins (to highlight it). Returns a stop function. */
+export function speakAll(texts: string[], onStart: (i: number) => void, onEnd: () => void): () => void {
+  const s = synth()
+  const voice = jaVoice()
+  if (!s || !voice) { onEnd(); return () => {} }
+  s.cancel()
+  texts.forEach((text, i) => {
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = 'ja-JP'
+    u.voice = voice
+    u.onstart = () => onStart(i)
+    if (i === texts.length - 1) u.onend = onEnd
+    s.speak(u)
+  })
+  return () => { s.cancel(); onEnd() }
+}
+
 /** Browsers load the voice list lazily on first use; ask early so the first spoken card isn't silent. */
 export const warmUpVoices = () => void synth()?.getVoices()
 
