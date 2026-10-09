@@ -19,7 +19,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
   const id = useId()
   const { item, dir } = ex
   const preview = dir === 'toJp' ? toKana(typed, false) : null
-  const answer = dir === 'toRomaji' ? item.gloss : dir === 'toGloss' ? item.gloss : `${item.jp} (${item.romaji})`
+  const answer = dir === 'toJp' ? item.jp : item.gloss // the detail line under it adds the reading and the meaning
 
   useEffect(() => {
     if (result && autoplay && item.kind === 'word') speak(item.jp) // after answering, hear the word

@@ -13,7 +13,7 @@ export function Explain({ ex, onDone }: { ex: Ex; onDone: (missed: string[]) => 
       <ul className="examples">
         {ex.examples.map((it) => (
           <li key={it.id}>
-            <span className="jp" lang="ja">{it.jp}</span> <SpeakButton text={it.jp} />
+            <div className="jpline"><span className="jp" lang="ja">{it.jp}</span><SpeakButton text={it.jp} /></div>
             <small>{it.romaji}</small>
             <small>{it.gloss}</small>
           </li>

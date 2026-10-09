@@ -1,12 +1,14 @@
 # Nihongo
 
-Learn Japanese in the browser: a guided path from hiragana and katakana to your first 144 words and phrases, spaced-repetition review, and import for Anki decks (with their audio and images). Everything runs on your device. There is no account and no server, and your progress is stored in your browser.
+Learn Japanese in the browser: a guided path from hiragana and katakana, through your first 144 words and phrases, to simple sentences, spaced-repetition review, and import for Anki decks (with their audio and images). Everything runs on your device. There is no account and no server, and your progress is stored in your browser.
 
 **Live:** https://prodyte.github.io/nihongo/ (installable as an app, works offline after the first visit)
 
 ## What it does
 
-- **Learning path:** 64 short lessons in 14 units: hiragana (basic, voiced, combined sounds), katakana, then starter vocabulary (greetings, numbers, family, food, places, time, verbs, adjectives). Each lesson introduces a few items, then practises them with multiple choice (both directions), matching pairs, and listening (needs a Japanese voice on your device). Wrong answers come back once. You earn XP, keep a daily streak and work towards a daily goal. Lessons unlock in order; "Let me choose any lesson" lets you skip ahead.
+- **Learning path:** 68 short lessons in 15 units: hiragana (basic, voiced, combined sounds), katakana, starter vocabulary (greetings, numbers, family, food, places, time, verbs, adjectives), then a grammar unit. Each lesson introduces a few items, then practises them with multiple choice (both directions), matching pairs, listening (needs a Japanese voice on your device), and typing. Wrong answers come back once. You earn XP, keep a daily streak and work towards a daily goal. Lessons unlock in order; "Let me choose any lesson" lets you skip ahead.
+- **Typing:** type the romaji for a kana; type the English for a word; or type the Japanese for an English word and watch the kana appear as you go (`mizu` becomes みず), like a Japanese keyboard. One wrong letter in a longer English answer is forgiven; Japanese must be exact, so the particle は is typed `ha`, as on a Japanese keyboard. If you already have a Japanese keyboard enabled, typing kana directly works too.
+- **Grammar:** four lessons of simple sentences: A は B です and questions with か; の and も; verbs with を; い-adjectives. Each opens with a short explanation, then you translate, fill the missing particle, build sentences from a word bank, listen, and type them. Sentences become Review cards in a "Grammar sentences" deck.
 - **Path and Review work together:** finishing a lesson puts its items into the same spaced-repetition scheduler that Review uses, so what you learn on the path comes back when it is due. Replaying a lesson for practice never inflates the schedule.
 - **Review:** 104 hiragana and 104 katakana cards plus the words you have learned. Flashcards, type-the-answer, and multiple choice.
 - **Scheduling:** [FSRS](https://github.com/open-spaced-repetition/ts-fsrs), the algorithm modern Anki uses. 20 new cards a day.
@@ -33,7 +35,7 @@ npm run build    # type-check and build to dist/
 
 To check the importer against a real deck: `REAL_APKG=/path/to/deck.apkg npm test -- real`.
 
-The starter vocabulary (`src/path/vocab.ts`) is written for this app. Tests check every romaji against its kana and that no two words share a spelling or meaning, but they can't judge a translation, so corrections are welcome.
+The starter vocabulary (`src/path/vocab.ts`) and the grammar unit (`src/path/grammar.ts`) are written for this app. Tests check every romaji against its kana, that sentences use only taught words and correctly derived ます-forms, and that nothing is duplicated, but they can't judge a translation or an explanation, so corrections are welcome.
 
 Pushes to `main` run lint, tests and build, then deploy to GitHub Pages (`.github/workflows/deploy.yml`).
 
@@ -42,7 +44,7 @@ Pushes to `main` run lint, tests and build, then deploy to GitHub Pages (`.githu
 | Path | What |
 |---|---|
 | `src/data/kana.ts` | the kana tables (katakana derived from hiragana) |
-| `src/path/` | course data and vocabulary, exercise engine, progress/XP/streak, exercise components |
+| `src/path/` | course data, vocabulary and grammar, exercise engine, typing (romaji to kana, answer checking), progress/XP/streak, exercise components |
 | `src/srs/` | scheduler wrapper around ts-fsrs |
 | `src/db/` | IndexedDB layer, backup and restore |
 | `src/anki/` | `.apkg` parsing, template rendering, media and sanitizing |

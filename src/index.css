@@ -63,7 +63,9 @@ ul.lessons button.primary small { opacity: 1; } /* dimmed white on the accent fa
 .preview .pending { opacity: .6; }
 .row2 { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
 
-.prompt.sentence { font-size: 1.9rem; line-height: 1.4; }
+.prompt.sentence { font-size: 1.6rem; line-height: 1.4; }
+/* break Japanese sentences at the spaces after particles, not in the middle of a word (and never overflow) */
+.prompt.sentence, ul.examples .jp, .preview, .feedback small { word-break: keep-all; overflow-wrap: anywhere; }
 .hint { margin: 0; text-align: center; opacity: .85; }
 .grid.wide { grid-template-columns: 1fr; }
 .grid.wide button { text-align: left; }
@@ -75,4 +77,5 @@ ul.lessons button.primary small { opacity: 1; } /* dimmed white on the accent fa
 .explain h2 { margin: 0; text-align: center; } .explain p { margin: 0; text-align: left; width: 100%; line-height: 1.5; }
 ul.examples { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: .75rem; }
 ul.examples li { display: flex; flex-direction: column; gap: .15rem; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 8px; }
-ul.examples .jp { font-size: 1.5rem; }
+ul.examples .jp { font-size: 1.25rem; }
+.jpline { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
