@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
 import { Html } from '../anki/media'
 import { speak } from '../audio'
+import { Ruby } from '../path/ui/Ruby'
 import { SpeakButton } from './SpeakButton'
 import type { ModeProps } from './types'
 
@@ -15,8 +16,8 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
     if (shown) slot.current?.focus()
   }, [shown])
   useEffect(() => {
-    if (shown && autoplay && !card.html) speak(card.front) // kana: say it once the answer is revealed
-  }, [shown, autoplay, card.html, card.front])
+    if (shown && autoplay && !card.html) speak(card.reading ?? card.front) // say it once the answer is revealed
+  }, [shown, autoplay, card.html, card.front, card.reading])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return // leave browser shortcuts (Cmd+1 switches tabs) alone
@@ -34,12 +35,13 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
       {card.html ? (
         <Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} autoplay={autoplay} />
       ) : (
-        <div className="kana" lang="ja">{card.front}</div>
+        <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
       )}
       <div className="answer-slot" aria-live="polite" tabIndex={-1} ref={slot}>
         {shown && (
           <>
-            {!card.html && <div className="answer">{card.back[0]} <SpeakButton text={card.front} /></div>}
+            {card.reading && <div className="reading" lang="ja">{card.reading}</div>}
+            {!card.html && <div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>}
             <div className="row">
               {GRADES.map(([g, label], i) => (
                 <button key={label} onClick={() => onGrade(g)}>{label} <kbd aria-hidden="true">{i + 1}</kbd></button>

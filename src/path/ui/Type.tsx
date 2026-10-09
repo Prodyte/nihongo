@@ -6,6 +6,7 @@ import { displayJp } from '../romaji'
 import { checkEnglish, checkJapanese, toKana, type Check } from '../typing'
 import type { Exercise } from '../lesson'
 import { Feedback } from './Feedback'
+import { Ruby } from './Ruby'
 
 type Ex = Extract<Exercise, { type: 'type' }>
 
@@ -39,7 +40,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
   return (
     <form className="card" onSubmit={check}>
       <label htmlFor={id} className="q">{item.kind === 'sentence' ? SENTENCE_QUESTION : QUESTION[dir]}</label>
-      {dir === 'toJp' ? <div className="prompt gloss">{ex.prompt}</div> : <div className="prompt kana" lang="ja">{ex.prompt}</div>}
+      {dir === 'toJp' ? <div className="prompt gloss">{ex.prompt}</div> : <div className="prompt kana" lang="ja"><Ruby text={ex.prompt} reading={item.written && item.jp} /></div>}
       <input id={id} autoFocus autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} enterKeyHint="done"
         lang={dir === 'toGloss' ? 'en' : undefined} readOnly={result !== null} value={typed} aria-describedby={preview ? `${id}-kana` : undefined}
         onKeyDown={(e) => e.key === 'Enter' && e.repeat && e.preventDefault()} onChange={(e) => setTyped(e.target.value)} />

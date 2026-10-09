@@ -23,11 +23,12 @@ const verbs = vocab.filter((w) => w[2].startsWith('to ')).map((w) => w[0])
 const masuForms = new Set(verbs.map(masu))
 
 describe('grammar unit content', () => {
-  it('is one unit of four lessons of six sentences, last in the course', () => {
-    expect(UNITS.at(-1)!.title).toBe('Grammar: simple sentences')
+  it('is one unit of four lessons of six sentences, ending the starter section', () => {
+    const starter = UNITS.filter((u) => u.section === 'Starter')
+    expect(starter.at(-1)!.title).toBe('Grammar: simple sentences')
     expect(grammar).toHaveLength(4)
     expect(grammar.map((l) => l.items.length)).toEqual([6, 6, 6, 6])
-    expect(LESSONS.slice(-4)).toEqual(grammar)
+    expect(LESSONS.slice(64, 68)).toEqual(grammar)
   })
   it('every sentence: tokens join to its display text, is built from taught words, particles and ます-forms', () => {
     const bad: string[] = []

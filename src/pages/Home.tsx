@@ -34,7 +34,7 @@ export function Home({ db, config, onChange, onStart }: { db: Db; config: Config
       <h2>Review</h2>
       <p className="counts">{counts ? `${counts.due} due · ${counts.fresh} new` : '…'}</p>
       {pick('deck', 'Deck', [['all', 'All decks'], ['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ...imported.map((d): [string, string] => [d.id, d.name])])}
-      {pick('mode', 'Mode', [['flashcard', 'Flashcards'], ['typing', 'Type the romaji'], ['quiz', 'Multiple choice']])}
+      {pick('mode', 'Mode', [['flashcard', 'Flashcards'], ['typing', 'Type the answer'], ['quiz', 'Multiple choice']])}
       {config.deck.startsWith('anki:') && config.mode !== 'flashcard' && <p>Imported decks work in flashcard mode.</p>}
       <button className="primary" disabled={!counts || counts.due + counts.fresh === 0} onClick={onStart}>Study</button>
     </div>

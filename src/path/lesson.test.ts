@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ITEMS, LESSONS, lessonById, type Item } from './course'
+import { ITEMS, LESSONS, lessonById, written, type Item } from './course'
 import { accuracy, advance, bankFor, buildLesson, startRun, type Exercise } from './lesson'
 import { displayJp, PARTICLES } from './romaji'
 
@@ -11,13 +11,19 @@ const seeded = (seed: number) => () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296
 }
 
-const learnedBefore = (i: number) => new Set(LESSONS.slice(0, i).flatMap((l) => l.items))
+const prefix: string[][] = [[]]
+for (const l of LESSONS) prefix.push([...prefix.at(-1)!, ...l.items]) // ponytail: O(n^2) memory over ~550 lessons is fine for a test
+const learnedBefore = (i: number) => new Set(prefix[i])
 /** none: first lesson ever; earlier: previous lessons done; repeat: this lesson and all before it done (practice) */
 const learnedFor = (mode: 'none' | 'earlier' | 'repeat', i: number) => (mode === 'none' ? new Set<string>() : learnedBefore(mode === 'earlier' ? i : i + 1))
 // gloss of a Japanese option string within an item's script bucket (for "two right answers" checks)
-const glossOfJp = (jp: string, like: Item) => [...ITEMS.values()].find((x) => x.jp === jp && x.kind === like.kind && x.script === like.script)?.gloss
-const dupSound = (it: Item) => [...ITEMS.values()].filter((x) => x.kind === it.kind && x.script === it.script && x.sound === it.sound).length > 1
-const dupGloss = (it: Item) => [...ITEMS.values()].filter((x) => x.kind === it.kind && x.script === it.script && x.gloss === it.gloss).length > 1
+const bucket = (it: Item, v: string) => `${it.kind}|${it.script}|${v}`
+const count = (f: (it: Item) => string) => { const m = new Map<string, number>(); for (const x of ITEMS.values()) m.set(bucket(x, f(x)), (m.get(bucket(x, f(x))) ?? 0) + 1); return m }
+const [bySound, byGloss] = [count((x) => x.sound), count((x) => x.gloss)]
+const glossByShown = new Map([...ITEMS.values()].map((x) => [bucket(x, written(x)), x.gloss]))
+const glossOfJp = (jp: string, like: Item) => glossByShown.get(bucket(like, jp))
+const dupSound = (it: Item) => bySound.get(bucket(it, it.sound))! > 1
+const dupGloss = (it: Item) => byGloss.get(bucket(it, it.gloss))! > 1
 
 describe('buildLesson invariants, over every lesson', () => {
   for (const canSpeak of [true, false])
@@ -54,7 +60,8 @@ describe('buildLesson invariants, over every lesson', () => {
             }
             if (e.type === 'type') {
               touched.add(e.item.id)
-              expect(e.prompt, where).toBe(e.dir === 'toJp' ? e.item.gloss : e.item.jp)
+              expect(e.prompt, where).toBe(e.dir === 'toJp' ? e.item.gloss : written(e.item))
+              if (e.dir === 'toJp') expect(dupGloss(e.item), `${where}: typing ${e.item.gloss} has two right answers`).toBe(false)
               expect(e.item.kind === 'kana' ? e.dir === 'toRomaji' : e.dir !== 'toRomaji', `${where}: ${e.dir} for a ${e.item.kind}`).toBe(true)
               continue
             }
@@ -121,7 +128,7 @@ describe('buildLesson specifics', () => {
     const e = buildLesson(l, ITEMS, { canSpeak: false, learned, rand: seeded(3) }).find((x) => x.type === 'choice')!
     expect(e.type === 'choice' && e.options).toHaveLength(4)
   })
-  it('ends with a typing round: kana type romaji (3); words type English (2) then Japanese (2); all different items', () => {
+  it('ends with a typing round: kana type romaji (3); words type English (2) then Japanese (up to 2, only unambiguous meanings); all different items', () => {
     for (const [i, lesson] of LESSONS.entries()) {
       if (lesson.explain) continue // grammar lessons have their own sequence (below)
       const exs = buildLesson(lesson, ITEMS, { canSpeak: true, learned: learnedBefore(i), rand: seeded(i + 9) })
@@ -129,7 +136,10 @@ describe('buildLesson specifics', () => {
       const kind = ITEMS.get(lesson.items[0])!.kind
       expect(exs.slice(-typing.length).every((e) => e.type === 'type'), lesson.id).toBe(true) // last, the hardest
       if (kind === 'kana') expect(typing.map((t) => t.dir), lesson.id).toEqual(Array(Math.min(3, lesson.items.length)).fill('toRomaji'))
-      else expect(typing.map((t) => t.dir), lesson.id).toEqual(['toGloss', 'toGloss', 'toJp', 'toJp'])
+      else {
+        const toJp = Math.min(2, lesson.items.filter((id) => !dupGloss(ITEMS.get(id)!)).length)
+        expect(typing.map((t) => t.dir), lesson.id).toEqual([...Array(Math.min(2, lesson.items.length - toJp)).fill('toGloss'), ...Array(toJp).fill('toJp')])
+      }
       expect(new Set(typing.map((t) => t.item.id)).size, lesson.id).toBe(typing.length)
     }
   })

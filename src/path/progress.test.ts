@@ -78,7 +78,7 @@ describe('completeLesson', () => {
     expect(cards.every((c) => c.fsrs.state !== State.New && c.fsrs.reps === 1)).toBe(true)
     expect(cards.find((c) => c.id === 'vocab:konnichiwa')).toMatchObject({ front: 'こんにちは', back: ['hello, good afternoon', 'hello', 'good afternoon'] })
     expect((await db.getAll('reviews')).map((x) => x.grade)).toEqual(Array(6).fill(Rating.Good))
-    expect(await db.get('decks', 'vocab')).toEqual({ id: 'vocab', name: 'Starter vocabulary' })
+    expect(await db.get('decks', 'vocab')).toEqual({ id: 'vocab', name: 'Path words' })
     expect(await db.get('lessons', lesson.id)).toEqual({ id: lesson.id, completedAt: now, plays: 1, bestAccuracy: 1 })
     expect(await db.get('activity', '2026-03-04')).toEqual({ date: '2026-03-04', xp: 15, lessons: 1 })
   })
@@ -89,6 +89,14 @@ describe('completeLesson', () => {
     expect(r).toMatchObject({ xp: 10, flawless: false })
     const grade = async (id: string) => (await db.getAllFromIndex('reviews', 'by-card', id))[0].grade
     expect([await grade(a), await grade(b), await grade(c)]).toEqual([Rating.Good, Rating.Hard, Rating.Again])
+  })
+  it('a JLPT word lesson makes cards showing the written form, keeping the reading for furigana and sound', async () => {
+    const db = await fresh()
+    const l = LESSONS.find((x) => x.items.includes('w:時間'))!
+    await completeLesson(db, l, ITEMS, {}, 1, now)
+    expect(await db.get('cards', 'w:時間')).toMatchObject({ deck: 'vocab', front: '時間', reading: 'じかん', back: ['time'] })
+    await completeLesson(db, lessonById('n5-v-1')!, ITEMS, {}, 1, now)
+    expect((await db.get('cards', 'w:ない'))!.reading).toBeUndefined() // written in kana: nothing to add
   })
   it('a grammar lesson creates its sentences as cards in the "grammar" deck (not "vocab")', async () => {
     const db = await fresh()

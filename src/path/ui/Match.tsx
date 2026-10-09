@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { shuffle } from '../../modes/choices'
 import type { Exercise } from '../lesson'
+import { Ruby } from './Ruby'
 
 type Pair = Extract<Exercise, { type: 'match' }>['pairs'][number]
 type Pick = { side: 'jp' | 'gloss'; id: string }
@@ -28,7 +29,7 @@ export function Match({ pairs, onDone }: { pairs: Pair[]; onDone: (missed: strin
     const on = sel?.side === side && sel.id === p.id
     return (
       <button key={`${side}${p.id}`} lang={side === 'jp' ? 'ja' : undefined} disabled={done} aria-pressed={on} className={done ? 'good' : on ? 'selected' : ''} onClick={() => tap(side, p.id)}>
-        {done && '✓ '}{side === 'jp' ? p.jp : p.gloss}
+        {done && '✓ '}{side === 'jp' ? <Ruby text={p.jp} reading={p.reading} /> : p.gloss}
       </button>
     )
   }

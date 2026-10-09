@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Db } from '../db/db'
-import { LESSONS, UNITS } from '../path/course'
+import { LESSONS, SECTIONS, UNITS } from '../path/course'
 import { currentLesson, getProgress, isUnlocked } from '../path/progress'
 import { readBool } from '../settings'
+
+const SECTION_NAMES: Record<string, string> = { Kana: 'Kana', Starter: 'First words and sentences', N5: 'JLPT N5', N4: 'JLPT N4', N3: 'JLPT N3' }
 
 export function Path({ db, onStart }: { db: Db; onStart: (lessonId: string) => void }) {
   const [done, setDone] = useState<ReadonlySet<string> | null>(null)
   const [skipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [error, setError] = useState<string | null>(null)
-  const here = useRef<HTMLButtonElement>(null)
+  const hereRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     let live = true
@@ -17,7 +19,7 @@ export function Path({ db, onStart }: { db: Db; onStart: (lessonId: string) => v
       live = false
     }
   }, [db])
-  useEffect(() => { here.current?.scrollIntoView?.({ block: 'center' }) }, [done]) // a long path: start where the learner is
+  useEffect(() => { hereRef.current?.scrollIntoView?.({ block: 'center' }) }, [done]) // a long path: start where the learner is
 
   if (error) return <p role="alert" className="bad">{error}</p>
   if (!done) return <p>Loading…</p>
@@ -33,27 +35,37 @@ export function Path({ db, onStart }: { db: Db; onStart: (lessonId: string) => v
         {current && <button className="primary big" onClick={() => onStart(current.id)}>Continue: <span lang="ja">{current.title}</span></button>}
         {!current && <p>You finished the whole path. 🎉 Keep your memory sharp in Review.</p>}
       </div>
-      {UNITS.map((u) => {
-        const doneCount = u.lessons.filter((l) => done.has(l.id)).length
+      {SECTIONS.map((section) => {
+        const units = UNITS.filter((u) => u.section === section)
+        const lessons = units.flatMap((u) => u.lessons)
+        const doneHere = lessons.filter((l) => done.has(l.id)).length
+        const here = current !== null && lessons.includes(current)
         return (
-          <details key={u.id} className="card unit" open={current !== null && u.lessons.some((l) => l.id === current.id)}>
-            <summary><strong>{u.title}</strong> <small>{doneCount === u.lessons.length ? '✓' : `${doneCount}/${u.lessons.length}`}</small></summary>
-            <p>{u.blurb}</p>
-            <ul className="lessons">
-              {u.lessons.map((l) => {
-                const idx = LESSONS.indexOf(l)
-                const open = isUnlocked(LESSONS, idx, done, skipAhead)
-                const isDone = done.has(l.id)
-                return (
-                  <li key={l.id}>
-                    <button ref={l === current ? here : undefined} disabled={!open} className={l === current ? 'primary' : isDone ? 'done' : ''} onClick={() => onStart(l.id)}>
-                      <span lang="ja">{l.title}</span>
-                      <small>{isDone ? '✓ Done · practise' : open ? 'Start' : '🔒 Locked'}</small>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+          <details key={section} className="section" open={here || (current === null && section === SECTIONS[0])}>
+            <summary><h2>{SECTION_NAMES[section] ?? section}</h2><small>{doneHere === lessons.length ? '✓ Done' : `${doneHere}/${lessons.length}`}</small></summary>
+            {units.map((u) => {
+              const doneCount = u.lessons.filter((l) => done.has(l.id)).length
+              return (
+                <details key={u.id} className="card unit" open={current !== null && u.lessons.includes(current)}>
+                  <summary><strong>{u.title}</strong> <small>{doneCount === u.lessons.length ? '✓' : `${doneCount}/${u.lessons.length}`}</small></summary>
+                  <p>{u.blurb}</p>
+                  <ul className="lessons">
+                    {u.lessons.map((l) => {
+                      const open = isUnlocked(LESSONS, LESSONS.indexOf(l), done, skipAhead)
+                      const isDone = done.has(l.id)
+                      return (
+                        <li key={l.id}>
+                          <button ref={l === current ? hereRef : undefined} disabled={!open} className={l === current ? 'primary' : isDone ? 'done' : ''} onClick={() => onStart(l.id)}>
+                            <span lang="ja">{l.title}</span>
+                            <small>{isDone ? '✓ Done · practise' : open ? 'Start' : '🔒 Locked'}</small>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </details>
+              )
+            })}
           </details>
         )
       })}

@@ -1,7 +1,7 @@
 import { Rating, State, type Grade } from 'ts-fsrs'
 import { newFsrsCard, schedule } from '../srs/scheduler'
 import { BUILTIN_DECKS, type Db, type StoredCard } from '../db/db'
-import type { Item, Lesson } from './course'
+import { written, type Item, type Lesson } from './course'
 
 // ---- pure helpers ----------------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ export async function completeLesson(
     let card: StoredCard | undefined = await cards.get(item.id)
     if (!card && item.kind !== 'kana') {
       const deck = BUILTIN_DECKS[item.kind]
-      card = { id: item.id, deck: deck.id, front: item.jp, back: item.kind === 'word' ? glossAnswers(item.gloss) : [item.gloss], fsrs: newFsrsCard(now) }
+      card = { id: item.id, deck: deck.id, front: written(item), back: item.kind === 'word' ? glossAnswers(item.gloss) : [item.gloss], fsrs: newFsrsCard(now), ...(item.written && { reading: item.jp }) }
       await tx.objectStore('decks').put(deck)
     }
     if (!card) continue // kana cards are seeded at startup; nothing to grade if one is somehow missing

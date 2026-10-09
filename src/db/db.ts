@@ -12,10 +12,11 @@ export interface StoredCard {
   back: string[]
   fsrs: Card
   html?: boolean // imported Anki card: front/back[0] are HTML, not kana/romaji
+  reading?: string // path words written with kanji: the kana reading (furigana, and what is spoken)
 }
 export interface DeckRecord { id: string; name: string }
 /** Built-in decks the path creates when a lesson first teaches words or sentences (kana cards are seeded at startup). */
-export const BUILTIN_DECKS = { word: { id: 'vocab', name: 'Starter vocabulary' }, sentence: { id: 'grammar', name: 'Grammar sentences' } } as const
+export const BUILTIN_DECKS = { word: { id: 'vocab', name: 'Path words' }, sentence: { id: 'grammar', name: 'Grammar sentences' } } as const
 export interface MediaRecord { key: string; data: Uint8Array; type: string } // key = `${deck}\0${filename}`
 export interface LessonRecord { id: string; completedAt: Date; plays: number; bestAccuracy: number }
 export interface ActivityRecord { date: string; xp: number; lessons: number } // date = local YYYY-MM-DD

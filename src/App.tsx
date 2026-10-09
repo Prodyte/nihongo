@@ -11,8 +11,10 @@ import { Settings } from './pages/Settings'
 import { Stats } from './pages/Stats'
 import { Study } from './pages/Study'
 import { Today } from './pages/Today'
-import { lessonById } from './path/course'
-import { readBool, writeBool } from './settings'
+import { lessonById, LESSONS } from './path/course'
+import { getProgress, learnedItems } from './path/progress'
+import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
+import { readBool, readStr, writeBool, writeStr } from './settings'
 
 type Tab = 'today' | 'path' | 'review' | 'more'
 type View = Tab | 'lesson' | 'study' | 'decks' | 'stats' | 'settings' | 'credits'
@@ -33,6 +35,8 @@ export default function App() {
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [autoplay, setAutoplay] = useState(() => readBool('nihongo.autoplay', true))
   const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
+  const [furigana, setFurigana] = useState<Furigana>(() => readStr('nihongo.furigana', FURIGANA, 'auto'))
+  const [known, setKnown] = useState<ReadonlySet<string>>(new Set()) // kanji the learner has had a kanji lesson for
   const [session, setSession] = useState<Config>(config) // what the running review studies (Today's doesn't change the Review tab)
 
   useEffect(() => {
@@ -45,7 +49,11 @@ export default function App() {
       })
       .catch((e) => setError(String(e)))
   }, [])
-  useEffect(() => { window.scrollTo(0, 0) }, [view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
+  useEffect(() => { window.scrollTo(0, 0) }, [view])
+  useEffect(() => {
+    // refreshed on every screen change, so a finished kanji lesson drops its furigana straight away
+    if (db) void getProgress(db).then((p) => setKnown(new Set([...learnedItems(LESSONS, p.done)].filter((id) => id.startsWith('kanji:')).map((id) => id.slice(6)))), () => {})
+  }, [db, view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
 
   const startLesson = (id: string) => { setBack(view); setLessonId(id); setView('lesson') }
   const study = (from: View, c: Config) => { setSession(c); setBack(from); setView('study') }
@@ -55,9 +63,10 @@ export default function App() {
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
   if (!db) return <main><p>Loading…</p></main>
   return (
-    <>
+    <FuriganaContext.Provider value={{ mode: furigana, known }}>
       <main className={focused ? 'focused' : ''}>
-        {!focused && <header><h1><span lang="ja">日本語</span> <small>nihongo</small></h1></header>}
+        {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
+        <header className={focused ? 'visually-hidden' : ''}><h1><span lang="ja">日本語</span> <small>nihongo</small></h1></header>
         {lesson ? (
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
         ) : view === 'study' ? (
@@ -71,7 +80,8 @@ export default function App() {
         ) : view === 'stats' ? (
           <Stats db={db} />
         ) : view === 'settings' ? (
-          <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }} />
+          <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
+            furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} />
         ) : view === 'credits' ? (
           <Credits />
         ) : view === 'more' ? (
@@ -94,6 +104,6 @@ export default function App() {
           ))}
         </nav>
       )}
-    </>
+    </FuriganaContext.Provider>
   )
 }

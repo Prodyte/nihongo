@@ -3,6 +3,7 @@ import { speak } from '../../audio'
 import { SpeakButton } from '../../modes/SpeakButton'
 import type { Exercise } from '../lesson'
 import { Feedback } from './Feedback'
+import { Ruby } from './Ruby'
 
 type Ex = Extract<Exercise, { type: 'choice' | 'listen' }>
 
@@ -45,7 +46,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
       {listening ? (
         <SpeakButton text={ex.item.jp} />
       ) : toGloss || fill ? (
-        <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja">{prompt}</div>
+        <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja">{toGloss ? <Ruby text={prompt} reading={ex.item.written && ex.item.jp} /> : prompt}</div>
       ) : (
         <div className="prompt gloss">{prompt}</div>
       )}
@@ -54,7 +55,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
         {ex.options.map((o, i) => (
           <button key={o} lang={toGloss ? undefined : 'ja'} disabled={answered} onClick={() => setPicked(o)}
             className={`${toGloss ? '' : 'jp-option'} ${!answered ? '' : o === right ? 'good' : o === picked ? 'bad' : ''}`}>
-            {answered && (o === right ? '✓ ' : o === picked ? '✗ ' : '')}{o} {!answered && <kbd aria-hidden="true">{i + 1}</kbd>}
+            {answered && (o === right ? '✓ ' : o === picked ? '✗ ' : '')}<Ruby text={o} reading={ex.readings?.[o]} /> {!answered && <kbd aria-hidden="true">{i + 1}</kbd>}
           </button>
         ))}
       </div>

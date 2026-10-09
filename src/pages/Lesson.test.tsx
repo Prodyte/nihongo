@@ -148,7 +148,7 @@ it('a vocabulary lesson creates the words as cards and shows reading and meaning
   expect(screen.getByText('water')).toBeTruthy()
   await drive(u, lesson)
   expect(await db.getAllFromIndex('cards', 'by-deck', 'vocab')).toHaveLength(6)
-  expect(await db.get('decks', 'vocab')).toEqual({ id: 'vocab', name: 'Starter vocabulary' })
+  expect(await db.get('decks', 'vocab')).toEqual({ id: 'vocab', name: 'Path words' })
 })
 
 it('Loading is never a dead end: Exit is there even if the lesson never finishes loading', async () => {

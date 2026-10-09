@@ -1,4 +1,4 @@
-import type { Item } from '../course'
+import { written, type Item } from '../course'
 
 /** Result line (always mounted so screen readers announce changes) plus a Continue button once answered. */
 export function Feedback({ result, item, answer, note, onContinue }: { result: boolean | null; item: Item; answer: string; note?: string; onContinue: () => void }) {
@@ -10,7 +10,7 @@ export function Feedback({ result, item, answer, note, onContinue }: { result: b
             <div>{result ? '✓ Correct' : `✗ Correct answer: ${answer}`}</div>
             {note && <div>{note}</div>}
             <small>
-              <span lang="ja">{item.jp}</span> {item.kind === 'kana' ? '= ' : `(${item.romaji}) `}
+              <span lang="ja">{written(item)}{item.written && ` ${item.jp}`}</span> {item.kind === 'kana' ? '= ' : `(${item.romaji}) `}
               {item.gloss}
               {item.kanji && <> · <span lang="ja">{item.kanji}</span></>}
             </small>

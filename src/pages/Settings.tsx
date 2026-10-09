@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { Db } from '../db/db'
 import { applyTheme, GOALS, readBool, readGoal, readStr, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
+import { FURIGANA, type Furigana } from '../path/ui/furigana'
 import { Backup } from './Backup'
 
-export function Settings({ db, autoplay, onAutoplay }: { db: Db; autoplay: boolean; onAutoplay: (v: boolean) => void }) {
+export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana }: { db: Db; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void }) {
   const [goal, setGoal] = useState(readGoal)
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
@@ -24,6 +25,12 @@ export function Settings({ db, autoplay, onAutoplay }: { db: Db; autoplay: boole
             <option value="system">Match my device</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
+          </select>
+        </label>
+        <label>
+          Furigana (readings over kanji)
+          <select value={furigana} onChange={(e) => onFurigana(e.target.value as Furigana)}>
+            {FURIGANA.map((f) => <option key={f} value={f}>{{ auto: 'Over kanji I haven’t learned yet', always: 'Always', never: 'Never' }[f]}</option>)}
           </select>
         </label>
         <label className="check">

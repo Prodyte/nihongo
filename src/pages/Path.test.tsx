@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { openDb, seedKana } from '../db/db'
-import { ITEMS, LESSONS } from '../path/course'
+import { ITEMS, LESSONS, UNITS } from '../path/course'
 import { completeLesson } from '../path/progress'
 import { Path } from './Path'
 
@@ -25,8 +25,20 @@ it('a new learner: first lesson open, the rest locked, first unit expanded', asy
   expect((second as HTMLButtonElement).disabled).toBe(true)
   expect(second.textContent).toContain('🔒 Locked')
   const units = [...document.querySelectorAll<HTMLDetailsElement>('details.unit')]
-  expect(units).toHaveLength(15)
-  expect(units.map((u) => u.open)).toEqual([true, ...Array(14).fill(false)])
+  expect(units).toHaveLength(UNITS.length)
+  expect(units.map((u) => u.open)).toEqual([true, ...Array(UNITS.length - 1).fill(false)])
+})
+
+it('sections by level: only the one holding the current lesson is open', async () => {
+  const db = await freshDb()
+  for (const l of LESSONS.slice(0, 68)) await db.put('lessons', { id: l.id, completedAt: new Date(), plays: 1, bestAccuracy: 1 })
+  render(<Path db={db} onStart={() => {}} />)
+  await screen.findByRole('heading', { name: 'JLPT N5' })
+  const sections = [...document.querySelectorAll<HTMLDetailsElement>('details.section')]
+  expect(sections.map((d) => d.querySelector('h2')!.textContent)).toEqual(['Kana', 'First words and sentences', 'JLPT N5', 'JLPT N4', 'JLPT N3'])
+  expect(sections.map((d) => d.open)).toEqual([false, false, true, false, false])
+  expect(sections[0].querySelector('summary small')!.textContent).toBe('✓ Done')
+  expect(screen.getByRole('button', { name: new RegExp(`^Continue: ${LESSONS[68].title}`) })).toBeTruthy()
 })
 
 it('starting a lesson reports its id, from the Continue button or the list', async () => {

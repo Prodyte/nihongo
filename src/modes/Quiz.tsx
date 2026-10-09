@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Rating } from 'ts-fsrs'
 import { speak } from '../audio'
 import { choices } from './choices'
+import { Ruby } from '../path/ui/Ruby'
 import { SpeakButton } from './SpeakButton'
 import type { ModeProps } from './types'
 
@@ -10,11 +11,11 @@ export function Quiz({ card, pool, autoplay, onGrade }: ModeProps) {
   const [picked, setPicked] = useState<string | null>(null)
   const right = card.back[0]
   useEffect(() => {
-    if (picked !== null && autoplay) speak(card.front) // only after answering
-  }, [picked, autoplay, card.front])
+    if (picked !== null && autoplay) speak(card.reading ?? card.front) // only after answering
+  }, [picked, autoplay, card.front, card.reading])
   return (
     <div className="card">
-      <div className="kana" lang="ja">{card.front}</div>
+      <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
       <div className="grid">
         {options.map((o) => (
           <button key={o} disabled={picked !== null} onClick={() => setPicked(o)}
@@ -26,7 +27,8 @@ export function Quiz({ card, pool, autoplay, onGrade }: ModeProps) {
       <div role="status" className={picked === null ? '' : picked === right ? 'answer good' : 'answer bad'}>
         {picked === null ? '' : picked === right ? '✓ Correct' : `✗ Incorrect, the answer is ${right}`}
       </div>
-      {picked !== null && <SpeakButton text={card.front} />}
+      {picked !== null && card.reading && <div className="reading" lang="ja">{card.reading}</div>}
+      {picked !== null && <SpeakButton text={card.reading ?? card.front} />}
       {picked !== null && (
         <button className="primary" autoFocus onClick={() => onGrade(picked === right ? Rating.Good : Rating.Again)}>Next</button>
       )}

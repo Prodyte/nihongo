@@ -1,16 +1,19 @@
 import { shuffle } from '../modes/choices'
-import type { Item, Lesson } from './course'
+import { written, type Item, type Lesson } from './course'
 import { displayJp, PARTICLES } from './romaji'
 
 export type Exercise = (
   | { type: 'intro'; item: Item }
   | { type: 'explain'; title: string; body: string[]; examples: Item[] } // a grammar lesson's opening card
-  | { type: 'choice'; item: Item; dir: 'toGloss' | 'toJp' | 'fill'; prompt: string; options: string[]; answer: string; hint?: string } // fill: pick the particle that completes the sentence
-  | { type: 'listen'; item: Item; options: string[]; answer: string } // hear item.jp, pick it
-  | { type: 'match'; pairs: { id: string; jp: string; gloss: string }[] }
+  | { type: 'choice'; item: Item; dir: 'toGloss' | 'toJp' | 'fill'; prompt: string; options: string[]; answer: string; hint?: string; readings?: Readings } // fill: pick the particle that completes the sentence
+  | { type: 'listen'; item: Item; options: string[]; answer: string; readings?: Readings } // hear item.jp, pick it
+  | { type: 'match'; pairs: { id: string; jp: string; reading?: string; gloss: string }[] }
   | { type: 'build'; item: Item; bank: string[]; answer: string[]; alts: string[][] } // put the chunks of a sentence in order
   | { type: 'type'; item: Item; dir: 'toRomaji' | 'toGloss' | 'toJp'; prompt: string } // kana: type the romaji; words: type the English, or the Japanese via romaji
 ) & { retry?: boolean }
+
+/** Furigana for options written with kanji: written form -> reading. */
+export type Readings = Record<string, string>
 
 export interface BuildOpts {
   canSpeak: boolean // a Japanese voice exists; otherwise there are no listening exercises
@@ -21,17 +24,21 @@ export interface BuildOpts {
 const sameBucket = (a: Item, b: Item) => a.kind === b.kind && a.script === b.script
 const key = (it: Item, by: 'gloss' | 'sound') => `${it.kind}|${it.script}|${it[by]}`
 
-/** `n` shuffled options: the answer plus distractors from `pool` (taken in order, so put the closest items first). */
-function options(answer: Item, field: 'jp' | 'gloss', pool: Item[], same: 'gloss' | 'sound', n = 4): string[] {
-  const picked = [answer[field]]
+const show = (it: Item, field: 'jp' | 'gloss') => (field === 'jp' ? written(it) : it.gloss)
+
+/** `n` options: the answer plus distractors from `pool` (taken in order, so put the closest items first). Japanese options
+ * are shown as written (kanji where the word has them). */
+function options(answer: Item, field: 'jp' | 'gloss', pool: Item[], same: 'gloss' | 'sound', n = 4): { options: string[]; readings?: Readings } {
+  const chosen = [answer]
   for (const it of pool) {
-    if (picked.length === n) break
+    if (chosen.length === n) break
     if (it.id === answer.id || !sameBucket(it, answer)) continue // never mix hiragana into a katakana question
     if (it[same] === answer[same]) continue // would be a second right answer (じ/ぢ are both "ji"; お/を both sound "o")
-    if (picked.includes(it[field])) continue
-    picked.push(it[field])
+    if (chosen.some((c) => show(c, field) === show(it, field))) continue
+    chosen.push(it)
   }
-  return picked
+  const withKanji = field === 'jp' ? chosen.filter((c) => c.written) : []
+  return { options: chosen.map((c) => show(c, field)), ...(withKanji.length && { readings: Object.fromEntries(withKanji.map((c) => [c.written, c.jp])) }) }
 }
 
 /** Particles offered as wrong answers for a gap. Chosen so none of them also makes a correct sentence: a blank は is never
@@ -60,22 +67,24 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   const askable = shuffle(mine.filter(uniqueGloss), rand)
   const audible = shuffle(askable.filter(uniqueSound), rand)
 
-  const shuffled = (it: Item, field: 'jp' | 'gloss', same: 'gloss' | 'sound' = 'gloss') => shuffle(options(it, field, pool, same), rand)
-  const toGloss = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, options: shuffled(it, 'gloss'), answer: it.gloss })
-  const toJp = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, options: shuffled(it, 'jp'), answer: it.jp })
+  const shuffled = (it: Item, field: 'jp' | 'gloss', same: 'gloss' | 'sound' = 'gloss') => { const o = options(it, field, pool, same); return { ...o, options: shuffle(o.options, rand) } }
+  const toGloss = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...shuffled(it, 'gloss'), answer: it.gloss })
+  const toJp = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...shuffled(it, 'jp'), answer: written(it) })
 
   const out: Exercise[] = mine.filter((it) => !learned.has(it.id)).map((item) => ({ type: 'intro', item }))
   out.push(...shuffle(mine, rand).map(toGloss))
-  if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss })) })
-  if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, options: shuffled(item, 'jp', 'sound'), answer: item.jp })))
+  if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: written(it), ...(it.written && { reading: it.jp }), gloss: it.gloss })) })
+  if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, ...shuffled(item, 'jp', 'sound'), answer: written(item) })))
   out.push(...shuffle(askable, rand).slice(0, canSpeak ? 3 : 4).map(toJp))
   // typing comes last: it is the hardest. Kana: type the romaji. Words: type the English, and type the Japanese from the English.
-  const typed = (item: Item, dir: 'toRomaji' | 'toGloss' | 'toJp'): Exercise => ({ type: 'type', item, dir, prompt: dir === 'toJp' ? item.gloss : item.jp })
+  const typed = (item: Item, dir: 'toRomaji' | 'toGloss' | 'toJp'): Exercise => ({ type: 'type', item, dir, prompt: dir === 'toJp' ? item.gloss : written(item) })
   if (mine.length === 0) return out
   if (mine[0].kind === 'kana') out.push(...shuffle(mine, rand).slice(0, 3).map((it) => typed(it, 'toRomaji')))
   else {
-    const order = shuffle(mine, rand)
-    out.push(...order.slice(0, 2).map((it) => typed(it, 'toGloss')), ...order.slice(2, 4).map((it) => typed(it, 'toJp')))
+    // typing Japanese from English needs a meaning only one word has ("white" is both しろ and しろい)
+    const toJpTyped = shuffle(askable, rand).slice(0, 2)
+    const toGlossTyped = shuffle(mine.filter((it) => !toJpTyped.includes(it)), rand).slice(0, 2)
+    out.push(...toGlossTyped.map((it) => typed(it, 'toGloss')), ...toJpTyped.map((it) => typed(it, 'toJp')))
   }
   // a question needs at least two options (a course edit could leave a tiny pool)
   return out.filter((e) => !('options' in e) || e.options.length >= 2)
@@ -97,11 +106,11 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)]
   const o = shuffle(mine, rand)
   const pick = (...at: number[]) => at.flatMap((i) => (o[i] ? [o[i]] : []))
-  const opts = (it: Item, field: 'jp' | 'gloss', same: 'gloss' | 'sound' = 'gloss') => shuffle(options(it, field, pool, same), rand)
+  const opts = (it: Item, field: 'jp' | 'gloss', same: 'gloss' | 'sound' = 'gloss') => { const o = options(it, field, pool, same); return { ...o, options: shuffle(o.options, rand) } }
 
-  const translate = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, options: opts(it, 'gloss'), answer: it.gloss })
-  const say = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, options: opts(it, 'jp'), answer: it.jp })
-  const listen = (item: Item): Exercise => ({ type: 'listen', item, options: opts(item, 'jp', 'sound'), answer: item.jp })
+  const translate = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...opts(it, 'gloss'), answer: it.gloss })
+  const say = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...opts(it, 'jp'), answer: written(it) })
+  const listen = (item: Item): Exercise => ({ type: 'listen', item, ...opts(item, 'jp', 'sound'), answer: written(item) })
   const gap = (it: Item): Exercise => {
     const tokens = it.tokens ?? fail(`Sentence ${it.id} has no tokens`)
     const at = tokens.findIndex((t) => PARTICLES.has(t))
