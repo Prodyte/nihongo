@@ -119,6 +119,9 @@ describe('buildLesson specifics', () => {
     expect(buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(1) })).toEqual(a)
     expect(buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(2) })).not.toEqual(a)
   })
+  it('an empty lesson builds nothing instead of crashing', () => {
+    expect(buildLesson({ id: 'empty', title: 'empty', items: [] }, ITEMS, { canSpeak: true, learned: new Set() })).toEqual([])
+  })
   it('a lesson of 3 items still builds valid 3-option questions', () => {
     const l = lessonById('hira-combos-6')!
     expect(l.items).toHaveLength(3)
@@ -156,6 +159,14 @@ describe('advance (run state)', () => {
     s = advance(s, [a.id])
     expect(s.queue).toHaveLength(0)
     expect(s.misses[a.id]).toBe(2)
+  })
+  it('a missed typing exercise is requeued once, like any other', () => {
+    const t: Exercise = { type: 'type', item: a, dir: 'toRomaji', prompt: a.jp }
+    let s = advance(startRun([t]), [a.id])
+    expect(s.queue).toEqual([{ ...t, retry: true }])
+    expect(s.misses).toEqual({ [a.id]: 1 })
+    s = advance(s, [a.id])
+    expect(s.queue).toHaveLength(0)
   })
   it('a match with several wrong pairs records every missed item', () => {
     const m: Exercise = { type: 'match', pairs: [a, b].map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss })) }

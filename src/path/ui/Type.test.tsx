@@ -68,6 +68,12 @@ it('Japanese -> English forgives one wrong letter in a longer answer, and says h
   expect(screen.getByText('Check the spelling: “tomorrow”.')).toBeTruthy()
 })
 
+it('after answering, focus moves to Continue so the keyboard flows on (Enter would not resubmit)', async () => {
+  const { u } = show(ex('vocab:mizu', 'toJp'))
+  await u.type(box(), 'mizu{Enter}')
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Continue' }))
+})
+
 it('"I don\'t know" is a miss that shows the answer; an empty Check is not possible', async () => {
   const { onDone, u } = show(ex('vocab:ashita', 'toGloss'))
   expect((screen.getByRole('button', { name: 'Check' }) as HTMLButtonElement).disabled).toBe(true)

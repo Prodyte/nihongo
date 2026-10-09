@@ -62,6 +62,7 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, { 
   out.push(...shuffle(askable, rand).slice(0, canSpeak ? 3 : 4).map(toJp))
   // typing comes last: it is the hardest. Kana: type the romaji. Words: type the English, and type the Japanese from the English.
   const typed = (item: Item, dir: 'toRomaji' | 'toGloss' | 'toJp'): Exercise => ({ type: 'type', item, dir, prompt: dir === 'toJp' ? item.gloss : item.jp })
+  if (mine.length === 0) return out
   if (mine[0].kind === 'kana') out.push(...shuffle(mine, rand).slice(0, 3).map((it) => typed(it, 'toRomaji')))
   else {
     const order = shuffle(mine, rand)
