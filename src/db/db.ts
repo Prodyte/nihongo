@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import type { Card, Grade, ReviewLog } from 'ts-fsrs'
+import { State, type Card, type Grade, type ReviewLog } from 'ts-fsrs'
 import { KANA } from '../data/kana'
 import { newFsrsCard, schedule } from '../srs/scheduler'
 
@@ -44,6 +44,15 @@ export async function seedKana(db: Db, now = new Date()) {
 }
 
 export const getDeck = (db: Db, deck: string) => db.getAllFromIndex('cards', 'by-deck', deck)
+export const getCards = (db: Db, deck: string) => (deck === 'all' ? db.getAll('cards') : getDeck(db, deck))
+
+/** Cards first studied since local midnight, to enforce the daily new-card cap. */
+export async function newToday(db: Db, now = new Date()) {
+  const start = new Date(now)
+  start.setHours(0, 0, 0, 0)
+  // ponytail: full scan of reviews; add an 'at' index if history grows large
+  return (await db.getAll('reviews')).filter((r) => r.at >= start && r.log.state === State.New).length
+}
 
 /** Apply a grade: update the card and append a review record in one transaction. */
 export async function gradeCard(db: Db, id: string, grade: Grade, now = new Date()): Promise<StoredCard> {

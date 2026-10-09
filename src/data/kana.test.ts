@@ -22,8 +22,8 @@ describe('kana table', () => {
     expect(by('hira:ぢ').romaji).toContain('di')
   })
   it('matches typed answers case-insensitively with alternates', () => {
-    expect(matches(by('hira:し'), ' SHI ')).toBe(true)
-    expect(matches(by('hira:し'), 'si')).toBe(true)
-    expect(matches(by('hira:し'), 'ci')).toBe(false)
+    expect(matches(by('hira:し').romaji, ' SHI ')).toBe(true)
+    expect(matches(by('hira:し').romaji, 'si')).toBe(true)
+    expect(matches(by('hira:し').romaji, 'ci')).toBe(false)
   })
 })

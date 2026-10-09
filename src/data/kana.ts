@@ -46,4 +46,4 @@ export const KANA: Kana[] = [
   ...hira.map((k) => ({ ...k, kana: toKata(k.kana), id: `kata:${toKata(k.kana)}`, script: 'kata' as const })),
 ]
 
-export const matches = (k: Kana, typed: string) => k.romaji.includes(typed.trim().toLowerCase())
+export const matches = (answers: string[], typed: string) => answers.includes(typed.trim().toLowerCase())

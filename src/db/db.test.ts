@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { describe, expect, it } from 'vitest'
 import { Rating, State } from 'ts-fsrs'
 import { KANA } from '../data/kana'
-import { getDeck, gradeCard, openDb, seedKana } from './db'
+import { getDeck, gradeCard, newToday, openDb, seedKana } from './db'
 
 let n = 0
 const fresh = () => openDb(`test-${n++}`)
@@ -36,5 +36,15 @@ describe('db', () => {
     const db = await fresh()
     await expect(gradeCard(db, 'nope', Rating.Good)).rejects.toThrow('unknown card')
     expect(await db.count('reviews')).toBe(0)
+  })
+  it('newToday counts first-ever reviews today only', async () => {
+    const db = await fresh()
+    await seedKana(db)
+    const now = new Date('2026-03-10T12:00:00')
+    await gradeCard(db, 'hira:あ', Rating.Good, new Date('2026-03-09T12:00:00')) // yesterday
+    await gradeCard(db, 'hira:い', Rating.Good, now)
+    await gradeCard(db, 'hira:う', Rating.Again, now)
+    await gradeCard(db, 'hira:い', Rating.Good, new Date('2026-03-10T12:30:00')) // repeat, not new
+    expect(await newToday(db, new Date('2026-03-10T13:00:00'))).toBe(2)
   })
 })
