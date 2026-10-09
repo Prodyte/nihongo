@@ -14,15 +14,21 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
   const [pool, setPool] = useState<StoredCard[]>([])
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
   const [reviewed, setReviewed] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const busy = useRef(false)
 
   useEffect(() => {
+    let live = true
     void (async () => {
       const cards = await getCards(db, deck)
       const left = Math.max(0, DAILY_NEW - (await newToday(db)))
+      if (!live) return
       setPool(cards)
       setQueue(dueCards(cards, new Date(), left))
-    })()
+    })().catch((e) => live && setError(String(e)))
+    return () => {
+      live = false
+    }
   }, [db, deck])
 
   const onGrade = useCallback(
@@ -34,6 +40,9 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
         // Again: see it once more this session (FSRS also schedules it for later)
         setQueue((q) => [...q!.slice(1), ...(g === Rating.Again ? [updated] : [])])
         setReviewed((n) => n + 1)
+        setError(null)
+      } catch (e) {
+        setError(`Couldn't save that answer (${e}). Try again.`)
       } finally {
         busy.current = false
       }
@@ -41,6 +50,7 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
     [db, queue],
   )
 
+  if (error && !queue) return <p role="alert">{error}</p>
   if (!queue) return <p>Loading…</p>
   if (!queue.length)
     return (
@@ -57,6 +67,7 @@ export function Study({ db, deck, mode, onExit }: { db: Db; deck: string; mode: 
         <button onClick={onExit}>← Exit</button>
         <span>{queue.length} left</span>
       </div>
+      {error && <p role="alert" className="bad">{error}</p>}
       <Current key={`${queue[0].id}:${reviewed}`} card={queue[0]} pool={pool} onGrade={onGrade} />
     </>
   )

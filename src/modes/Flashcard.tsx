@@ -8,7 +8,10 @@ export function Flashcard({ card, onGrade }: ModeProps) {
   const [shown, setShown] = useState(false)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!shown && (e.key === ' ' || e.key === 'Enter')) setShown(true)
+      if (e.repeat) return
+      if (!shown && (e.key === ' ' || e.key === 'Enter')) {
+        if (!(e.target instanceof HTMLButtonElement)) setShown(true) // a focused button handles its own click
+      }
       else if (shown && e.key.length === 1 && '1234'.includes(e.key)) onGrade(GRADES[Number(e.key) - 1][0])
     }
     window.addEventListener('keydown', onKey)

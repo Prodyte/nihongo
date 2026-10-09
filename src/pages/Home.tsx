@@ -8,15 +8,20 @@ export interface Config { deck: string; mode: Mode }
 export function Home({ db, config, onChange, onStart }: { db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void }) {
   const [counts, setCounts] = useState<{ due: number; fresh: number } | null>(null)
   useEffect(() => {
+    let live = true
     void (async () => {
       const cards = await getCards(db, config.deck)
       const now = new Date()
       const left = Math.max(0, DAILY_NEW - (await newToday(db)))
-      setCounts({
-        due: cards.filter((c) => c.fsrs.state !== State.New && c.fsrs.due <= now).length,
-        fresh: Math.min(left, cards.filter((c) => c.fsrs.state === State.New).length),
-      })
-    })()
+      if (live)
+        setCounts({
+          due: cards.filter((c) => c.fsrs.state !== State.New && c.fsrs.due <= now).length,
+          fresh: Math.min(left, cards.filter((c) => c.fsrs.state === State.New).length),
+        })
+    })().catch(() => live && setCounts({ due: 0, fresh: 0 }))
+    return () => {
+      live = false
+    }
   }, [db, config.deck])
 
   const pick = <K extends keyof Config>(k: K, label: string, opts: [Config[K], string][]) => (
