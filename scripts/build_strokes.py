@@ -24,5 +24,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:
         # paths are numbered -s1, -s2 ... in drawing order; sort by that number, not file order
         strokes = sorted(re.findall(r'<path id="kvg:[0-9a-f]+-s(\d+)"[^>]* d="([^"]+)"', svg), key=lambda m: int(m[0]))
         out[k] = [d for _, d in strokes]
-(ROOT / 'public' / 'strokes.json').write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+# one kanji per line: a rebuild diffs readably
+text = '{\n' + ',\n'.join(f'{json.dumps(k, ensure_ascii=False)}:{json.dumps(v, separators=(",", ":"))}' for k, v in out.items()) + '\n}\n'
+(ROOT / 'public' / 'strokes.json').write_text(text, encoding='utf-8')
 print(f'{len(out)} kanji, {sum(map(len, out.values()))} strokes', file=sys.stderr)
