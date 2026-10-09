@@ -90,17 +90,20 @@ const PARTICLES: Record<string, { sounds: string; typed: string; reads: string }
 /**
  * Is `typed` (romaji, or kana from an IME) the Japanese `expected`? Exact: no typo forgiveness.
  * `word`: a word ending in は also accepts わ (こんにちは is taught as "konnichiwa").
- * For sentences, typing "wa" for the particle は fails with a hint.
+ * For sentences, typing "wa" for the particle は fails with a hint; pass `tokens` so only real particle tokens (not は inside はな) get one.
  */
-export function checkJapanese(typed: string, expected: string, o: { alts?: string[]; word?: boolean } = {}): Check {
+export function checkJapanese(typed: string, expected: string, o: { alts?: string[]; word?: boolean; tokens?: string[] } = {}): Check {
   const got = normKana(toKana(typed).kana)
   const forms = [expected, ...(o.alts ?? [])].map(normKana)
   if (forms.includes(got)) return { ok: true }
   if (o.word) {
-    return forms[0].endsWith('は') && got === `${forms[0].slice(0, -1)}わ` ? { ok: true, note: `It is written ${expected}: は is read “wa” here.` } : { ok: false }
+    return forms[0].length > 1 && forms[0].endsWith('は') && got === `${forms[0].slice(0, -1)}わ` ? { ok: true, note: `It is written ${expected}: は is read “wa” here.` } : { ok: false }
   }
+  // positions (in the normalised first form) that really are particles; without tokens, assume any は/を/へ could be
+  const at = o.tokens && new Set(o.tokens.flatMap((t, i) => (t in PARTICLES ? [normKana(o.tokens!.slice(0, i).join('')).length] : [])))
   for (const f of forms)
     for (let i = 0; i < f.length; i++) {
+      if (at && !at.has(i)) continue
       const p = PARTICLES[f[i]]
       if (p && got === f.slice(0, i) + p.sounds + f.slice(i + 1)) return { ok: false, note: `The particle ${f[i]} is typed “${p.typed}”, even though it sounds like “${p.reads}”.` }
     }

@@ -91,6 +91,6 @@ describe('course structure', () => {
     expect(ITEMS.get('kata:キャ')).toMatchObject({ script: 'kata', gloss: 'kya' })
     expect(ITEMS.get('vocab:mizu')).toMatchObject({ kind: 'word', jp: 'みず', gloss: 'water', kanji: '水' })
     expect(ITEMS.get('vocab:yoroshiku-onegaishimasu')).toBeTruthy()
-    expect(ITEMS.get('vocab:kinyoubi')).toMatchObject({ romaji: "kin'youbi", sound: 'kinyoubi' }) // stable id, apostrophe only in the reading
+    expect(ITEMS.get('vocab:kinyoubi')).toMatchObject({ romaji: "kin'youbi", sound: "kin'youbi" }) // the id is stable; the reading keeps the apostrophe
   })
 })

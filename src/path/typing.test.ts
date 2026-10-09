@@ -77,6 +77,7 @@ describe('checkJapanese', () => {
     expect(checkJapanese('konnichiwa', 'こんにちは', { word: true }).ok).toBe(true)
     expect(checkJapanese('konnichiwa', 'こんにちは', { word: true }).note).toMatch(/read “wa”/)
     expect(checkJapanese('wasi', 'はし', { word: true }).ok).toBe(false)
+    expect(checkJapanese('wa', 'は', { word: true }).ok).toBe(false) // a lone は is not a greeting
   })
   it('sentences: particles are typed as written, and the hint says so', () => {
     const s = 'わたしは がくせいです。'
@@ -88,6 +89,12 @@ describe('checkJapanese', () => {
     expect(checkJapanese('mizu o nomimasu', 'みずを のみます。').note).toMatch(/particle を is typed “wo”/)
     expect(checkJapanese('mizu wo nomimasu', 'みずを のみます。').ok).toBe(true)
     expect(checkJapanese('gakusei desu watashi ha', s).ok).toBe(false)
+  })
+  it('the particle hint only fires for real particle tokens, not は/を inside a word', () => {
+    const t = ['わたし', 'は', 'はな', 'です']
+    expect(checkJapanese('watashi ha wana desu', 'わたしは はなです。', { tokens: t }).note).toBeUndefined() // wrong, but は in はな is not a particle
+    expect(checkJapanese('watashi wa hana desu', 'わたしは はなです。', { tokens: t }).note).toMatch(/particle は/)
+    expect(checkJapanese('watashi wa hana desu', 'わたしは はなです。', { tokens: t }).ok).toBe(false)
   })
   it('alternative word orders are accepted', () => {
     expect(checkJapanese('sakana wo tomodachi ha tabemasu', 'ともだちは さかなを たべます。', { alts: ['さかなを ともだちは たべます。'] }).ok).toBe(true)
