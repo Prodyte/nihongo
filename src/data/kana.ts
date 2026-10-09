@@ -46,4 +46,11 @@ export const KANA: Kana[] = [
   ...hira.map((k) => ({ ...k, kana: toKata(k.kana), id: `kata:${toKata(k.kana)}`, script: 'kata' as const })),
 ]
 
+/** Loanword sounds written with a small vowel (ファ, ティ, チェ). Not taught as kana cards; used for reading and typing words.
+ * Spelled as a Japanese IME types them: ティ is "thi", because "ti" already means ち. */
+export const LOAN_KANA: [kana: string, romaji: string][] = [
+  ['ふぁ', 'fa'], ['ふぃ', 'fi'], ['ふぇ', 'fe'], ['ふぉ', 'fo'], ['てぃ', 'thi'], ['でぃ', 'dhi'],
+  ['ちぇ', 'che'], ['じぇ', 'je'], ['しぇ', 'she'], ['うぃ', 'wi'], ['うぇ', 'we'],
+]
+
 export const matches = (answers: string[], typed: string) => answers.includes(typed.trim().toLowerCase())

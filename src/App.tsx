@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { warmUpVoices } from './audio'
 import { openDb, seedKana, type Db } from './db/db'
 import { Icon } from './icons'
+import { Credits } from './pages/Credits'
 import { Decks } from './pages/Decks'
 import { Home, type Config } from './pages/Home'
 import { Lesson } from './pages/Lesson'
@@ -14,13 +15,14 @@ import { lessonById } from './path/course'
 import { readBool, writeBool } from './settings'
 
 type Tab = 'today' | 'path' | 'review' | 'more'
-type View = Tab | 'lesson' | 'study' | 'decks' | 'stats' | 'settings'
+type View = Tab | 'lesson' | 'study' | 'decks' | 'stats' | 'settings' | 'credits'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', review: 'review', study: 'review', more: 'more', decks: 'more', stats: 'more', settings: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', review: 'review', study: 'review', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more' }
 const MORE: [View, string, string][] = [
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
   ['stats', 'Stats', 'Your reviews and cards'],
   ['settings', 'Settings', 'Daily goal, theme, audio, backup'],
+  ['credits', 'Credits', 'Where the course data comes from'],
 ]
 
 export default function App() {
@@ -70,6 +72,8 @@ export default function App() {
           <Stats db={db} />
         ) : view === 'settings' ? (
           <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }} />
+        ) : view === 'credits' ? (
+          <Credits />
         ) : view === 'more' ? (
           <ul className="menu">
             {MORE.map(([v, label, blurb]) => (

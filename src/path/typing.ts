@@ -1,4 +1,4 @@
-import { KANA } from '../data/kana'
+import { KANA, LOAN_KANA } from '../data/kana'
 
 // ---- romaji -> hiragana ----------------------------------------------------------------------
 
@@ -7,6 +7,7 @@ const VOWELS = 'aiueo'
 const TABLE = new Map<string, string>()
 for (const k of KANA)
   if (k.script === 'hira') for (const r of k.romaji) if (r !== 'n' && r !== 'nn' && !TABLE.has(r)) TABLE.set(r, k.kana)
+for (const [k, r] of LOAN_KANA) TABLE.set(r, k)
 const KEYS = [...TABLE.keys()]
 
 const isLetter = (c: string | undefined): c is string => !!c && c >= 'a' && c <= 'z'
@@ -63,9 +64,12 @@ export function toKana(input: string, final = true): { kana: string; pending: st
 
 const VOWEL_KANA: Record<string, string> = { a: 'あ', i: 'い', u: 'う', e: 'え', o: 'お' }
 const VOWEL_OF = new Map<string, string>() // hiragana syllable -> the kana for its vowel (for ー)
-for (const k of KANA) if (k.script === 'hira') { const v = VOWEL_KANA[k.romaji[0].slice(-1)]; if (v) VOWEL_OF.set(k.kana, v) }
+for (const [kana, r] of [...KANA.filter((k) => k.script === 'hira').map((k): [string, string] => [k.kana, k.romaji[0]]), ...LOAN_KANA]) {
+  const v = VOWEL_KANA[r.slice(-1)]
+  if (v) VOWEL_OF.set(kana, v)
+}
 
-/** Katakana -> hiragana, ー -> the previous vowel (コーヒー = こおひい), and spaces/punctuation dropped. */
+/** Katakana -> hiragana, ー -> the previous vowel (コーヒー = こおひい), ぢ/づ -> じ/ず (same sound: "tsuzukeru" is つづける), and spaces/punctuation dropped. */
 export function normKana(s: string): string {
   let out = ''
   for (const ch of s) {
@@ -73,7 +77,7 @@ export function normKana(s: string): string {
     if (c === 'ー') { out += VOWEL_OF.get(out.slice(-2)) ?? VOWEL_OF.get(out.slice(-1)) ?? c; continue }
     out += c
   }
-  return out.replace(/[\s　。、．，.,!?！？「」]/g, '')
+  return out.replace(/[\s　。、．，.,!?！？「」]/g, '').replace(/ぢ/g, 'じ').replace(/づ/g, 'ず')
 }
 
 // ---- checking answers -------------------------------------------------------------------------

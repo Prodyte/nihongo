@@ -69,6 +69,13 @@ describe('checkJapanese', () => {
     expect(checkJapanese('こおひい', 'コーヒー', { word: true }).ok).toBe(true)
     expect(checkJapanese('mizu', 'みず', { word: true }).ok).toBe(true)
   })
+  it('ぢ/づ sound like じ/ず, so typing either spelling is right; loanword sounds use IME spellings', () => {
+    for (const t of ['tsuzukeru', 'tsudukeru', 'つずける']) expect(checkJapanese(t, 'つづける', { word: true }).ok, t).toBe(true)
+    expect(checkJapanese('hanaji', 'はなぢ', { word: true }).ok).toBe(true)
+    expect(checkJapanese('paathii', 'パーティー', { word: true }).ok).toBe(true)
+    expect(checkJapanese('fooku', 'フォーク', { word: true }).ok).toBe(true)
+    expect(checkJapanese('chekku', 'チェック', { word: true }).ok).toBe(true)
+  })
   it('is exact: a wrong or misspelt word fails', () => {
     for (const t of ['mizo', 'mizuu', 'miz', 'mi zu u', 'water', '']) expect(checkJapanese(t, 'みず', { word: true }).ok, t).toBe(false)
   })

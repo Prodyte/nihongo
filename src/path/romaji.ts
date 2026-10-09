@@ -1,6 +1,7 @@
-import { KANA } from '../data/kana'
+import { KANA, LOAN_KANA, toKata } from '../data/kana'
 
-const MAP = new Map(KANA.map((k) => [k.kana, k.romaji[0]])) // hiragana and katakana, incl. combinations
+// hiragana and katakana, incl. combinations and loanword sounds (フォ, ティ)
+const MAP = new Map([...KANA.map((k): [string, string] => [k.kana, k.romaji[0]]), ...LOAN_KANA.flatMap(([k, r]): [string, string][] => [[k, r], [toKata(k), r]])])
 
 /** Hepburn romaji for a run of kana: gakkou, koohii, kin'youbi (the apostrophe marks ん before a vowel or y). */
 export function kanaToRomaji(input: string): string {
@@ -12,7 +13,7 @@ export function kanaToRomaji(input: string): string {
     if (doubled && (c === 'ん' || c === 'ン' || c === 'ー')) throw new Error(`Dangling っ before ${c} in ${input}`)
     if (c === 'ー') { syl.push([...(syl.at(-1) ?? '')].reverse().find((x) => 'aeiou'.includes(x)) ?? ''); continue }
     const two = input.slice(i, i + 2)
-    const kana = /[ゃゅょャュョ]/.test(input[i + 1] ?? '') && MAP.has(two) ? two : c
+    const kana = /[ゃゅょャュョぁぃぅぇぉァィゥェォ]/.test(input[i + 1] ?? '') && MAP.has(two) ? two : c
     const r = MAP.get(kana)
     if (r === undefined) throw new Error(`No romaji for ${kana} in ${input}`)
     if (kana === two) i++
