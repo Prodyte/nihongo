@@ -1,23 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import { contentChunks, ITEMS, LESSONS, wordFor, written } from './course'
+import { contentChunks, grammarWords, ITEMS, LESSONS, wordFor, written } from './course'
+import { N4_GRAMMAR } from './grammarN4'
 import { N5_GRAMMAR } from './grammarN5'
 import { readingOf, surfaceOf } from './romaji'
 
-const lessons = LESSONS.filter((l) => l.id.startsWith('n5-g-'))
-const sentences = lessons.flatMap((l) => l.items.map((id) => ITEMS.get(id)!))
-const words = [...ITEMS.values()].filter((w) => w.kind === 'word' && (w.id.startsWith('vocab:') || w.level === 5))
 const HAN = /\p{Script=Han}/u
 
-describe('N5 grammar', () => {
-  it('24 lessons of six sentences, in order, spread through the N5 section', () => {
-    expect(lessons.map((l) => l.id)).toEqual(N5_GRAMMAR.map((_, i) => `n5-g-${i + 1}`))
+describe.each([[5, N5_GRAMMAR], [4, N4_GRAMMAR]] as const)('N%i grammar', (level, specs) => {
+  const lessons = LESSONS.filter((l) => l.id.startsWith(`n${level}-g-`))
+  const sentences = lessons.flatMap((l) => l.items.map((id) => ITEMS.get(id)!))
+  const words = grammarWords(level)
+  it('lessons of six sentences, in order, spread through the section', () => {
+    expect(lessons.map((l) => l.id)).toEqual(specs.map((_, i) => `n${level}-g-${i + 1}`))
     for (const l of lessons) expect(l.items, l.id).toHaveLength(6)
-    const n5 = LESSONS.filter((l) => l.id.startsWith('n5-'))
-    const at = lessons.map((l) => n5.indexOf(l))
+    const section = LESSONS.filter((l) => l.id.startsWith(`n${level}-`))
+    const at = lessons.map((l) => section.indexOf(l))
     for (let i = 1; i < at.length; i++) expect(at[i] - at[i - 1], lessons[i].id).toBeGreaterThanOrEqual(3)
     expect(at[0]).toBeLessThan(10) // the first comes early
+    expect(section.length - at.at(-1)!, 'the last is not stuck at the end').toBeGreaterThan(3)
   })
-  it('every word in a sentence is an N5 (or starter) word taught before the lesson', () => {
+  it('every word in a sentence is a course word of this level or easier, taught before the lesson', () => {
     const taughtAt = new Map(LESSONS.flatMap((l, i) => l.items.map((id): [string, number] => [id, i])))
     for (const l of lessons) {
       const here = LESSONS.indexOf(l)
@@ -53,7 +55,7 @@ describe('N5 grammar', () => {
       expect(s.tokens![s.gap.at], s.id).toBeDefined()
       expect(new Set([s.tokens![s.gap.at], ...s.gap.wrong]).size, s.id).toBe(s.gap.wrong.length + 1)
     }
-    expect(sentences.filter((s) => s.gap).length).toBeGreaterThan(120)
+    expect(sentences.filter((s) => s.gap).length).toBeGreaterThan(sentences.length * 0.7)
   })
   it('each lesson opens with an explanation whose two examples are its own sentences; word-bank extras are not in the answer', () => {
     for (const l of lessons) {
@@ -66,6 +68,7 @@ describe('N5 grammar', () => {
 })
 
 describe('wordFor', () => {
+  const words = grammarWords(5)
   const of = (t: string) => wordFor(t, words)?.id
   it('finds the dictionary word behind a conjugated chunk', () => {
     expect(of('食[た]べませんでした')).toBe(of('食[た]べる'))

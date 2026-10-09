@@ -2,8 +2,10 @@ import { KANA, toKata } from '../data/kana'
 import jlptKanji from '../data/jlpt/kanji.json'
 import jlptWords from '../data/jlpt/words.json'
 import { GRAMMAR_LESSONS, GRAMMAR_UNIT, type GrammarLessonSpec } from './grammar'
+import { N4_GRAMMAR } from './grammarN4'
 import { N5_GRAMMAR } from './grammarN5'
 import { displayJp, kanaToRomaji, PARTICLES, readingOf, surfaceOf, tokensToRomaji } from './romaji'
+import { verbClass } from './conjugate'
 import { VOCAB_UNITS } from './vocab'
 
 /** One thing a lesson teaches. For kana, `gloss` is the romaji; for words it is the English meaning. */
@@ -86,7 +88,7 @@ function vocabUnits(): Unit[] {
 
 /** Register a grammar lesson's sentences and make the lesson. Chunks may carry furigana (学校[がっこう]): jp is then the
  * kana sentence (typed, spoken) and `written` the marked-up one (shown). */
-function grammarLesson(spec: GrammarLessonSpec, id: string, level?: 5): Lesson {
+function grammarLesson(spec: GrammarLessonSpec, id: string, level?: 5 | 4): Lesson {
   const ids = spec.sentences.map((s) => {
     const romaji = tokensToRomaji(s.tokens)
     const sid = `sent:${romaji.replace(/'/g, '').replace(/ /g, '-')}`
@@ -123,12 +125,16 @@ export function starterTwin(written: string, reading: string, gloss: string, sta
 }
 
 const KANJI_PER_LESSON = 5
+/** The words a level's grammar sentences may use: starter words and that level or easier. */
+export const grammarWords = (level: number) => [...ITEMS.values()].filter((w) => w.kind === 'word' && (w.id.startsWith('vocab:') || (w.level ?? 0) >= level))
 
 /** Chunks a grammar lesson teaches itself rather than as vocabulary: endings, counters, set phrases. */
-export const GRAMMAR_CHUNKS = new Set(['です', 'でした', 'じゃありません', 'じゃありませんでした', 'でしょう', 'いけません', 'ほう', 'けど'])
+export const GRAMMAR_CHUNKS = new Set(['です', 'でした', 'じゃありません', 'じゃありませんでした', 'でしょう', 'いけません', 'ほう', 'けど',
+  'だ', 'だった', 'じゃない', 'だったら', 'なら', 'ので', 'のに', 'ように', 'よう', 'みたい', 'らしい', 'かもしれません', 'とき', 'よ', 'ね', 'つもり', 'はず'])
 const COUNTED = /^[一二三四五六七八九十]+(人|本|枚|時|分)$/ // 五人, 二本, 三時: taught by the counters lesson
 // forms of kana-only verbs, matched by their polite or て stems (a plain prefix match would be too loose)
-const KANA_VERBS: [RegExp, string][] = [[/^あり(ます|ません|まし|そう)|^あって|^あった/, 'ある'], [/^い(ます|ません|まし|て$|た$)/, 'いる']]
+// (checked before exact matches: いない is いる, not 以内; した is する, not 下)
+const KANA_VERBS: [RegExp, string][] = [[/^あり(ます|ません|まし|そう)|^あって|^あった|^あれば/, 'ある'], [/^い(ます|ません|まし|て$|た$|ない$)/, 'いる'], [/^した$/, 'する'], [/^おり(ます|ません|まし)/, 'おる']]
 
 /**
  * The course word a sentence chunk is (a form of): 食べました -> 食べる, 寒くない -> 寒い, 電話して -> 電話,
@@ -137,26 +143,42 @@ const KANA_VERBS: [RegExp, string][] = [[/^あり(ます|ません|まし|そう
 export function wordFor(chunk: string, words: Item[]): Item | undefined {
   const t = surfaceOf(chunk)
   const find = (w: string) => words.find((x) => x.written === w || x.kanji === w || x.jp === w)
-  const exact = find(t) ?? KANA_VERBS.flatMap(([re, w]) => (re.test(t) ? [find(w)] : []))[0]
+  const exact = KANA_VERBS.flatMap(([re, w]) => (re.test(t) ? [find(w)] : []))[0] ?? find(t)
   if (exact) return exact
   // a kana-only い-adjective, conjugated: おいしかった, おいしくない
-  const adj = words.find((x) => !x.written && !x.kanji && x.jp.length >= 3 && x.jp.endsWith('い') && new RegExp(`^${x.jp.slice(0, -1)}(く|かった)`).test(t))
+  const adj = words.find((x) => !x.written && !x.kanji && x.jp.length >= 3 && x.jp.endsWith('い') && new RegExp(`^${x.jp.slice(0, -1)}(く|かった|けれ|そう|すぎ)`).test(t))
   if (adj) return adj
-  if (/^よ(く|かった)/.test(t)) return find('いい') // いい conjugates from よい
-  if (/^(し|さ)/.test(t)) return find('する') // します, して, したい, したくない
+  if (/^よ(く|かった|けれ|さそう)/.test(t)) return find('いい') // いい conjugates from よい
+  if (/^(し|さ|すれ)/.test(t)) return find('する') // します, して, したい, したくない, すれば
   // a conjugated verb or adjective: the dictionary form minus its last kana, which must include a kanji. Longest stem
-  // wins; on a tie a verb or い-adjective beats a noun (休みましょう is 休む, not 休み)
+  // wins; on a tie a verb or い-adjective beats a noun (休みましょう is 休む, not 休み). With furigana, the reading must
+  // agree too: 着[つ]いた is 着く, not 着る; 降[ふ]りそう is 降る, not 降りる
+  const reading = chunk.includes('[') ? readingOf(chunk) : undefined
   const score = (x: Item) => { const w = x.written ?? x.kanji ?? ''; return (w.length - 1) * 2 + (/[うくぐすつぬぶむるい]$/.test(w) ? 1 : 0) }
   let best: Item | undefined
   for (const x of words) {
     const w = x.written ?? x.kanji ?? ''
     const stem = w.slice(0, -1)
-    if (/[\p{Script=Han}]/u.test(stem) && /[ぁ-ん]$/.test(w) && t.startsWith(stem) && (!best || score(x) > score(best))) best = x
+    if (/[\p{Script=Han}]/u.test(stem) && /[ぁ-ん]$/.test(w) && t.startsWith(stem) && (!reading || reading.startsWith(x.jp.slice(0, -1)) || (x.jp === 'くる' && /^[きこ]/.test(reading))) && (!best || score(x) > score(best))) best = x
   }
   if (best) return best
-  const suru = t.match(/^(.{2,}?)(し|す|さ)(て|ま|た)/) // 電話して, 結婚しています: a noun (2+ characters) + する
-  return suru ? find(suru[1]) : undefined
+  const suru = t.match(/^(.{2,}?)(し|する|すれ|さ|せ)/) // 電話して, 結婚しよう, 勉強する: a noun (2+ characters) + する
+  const noun = suru && find(suru[1])
+  if (noun) return noun
+  // a kana-only verb, conjugated: もらいました, くれます, なります, いらっしゃいます (the kana word over a kanji homophone)
+  if (/\p{Script=Han}/u.test(t)) return undefined
+  let verb: Item | undefined
+  for (const x of words) {
+    const cls = verbClass(x.jp, x.written)
+    if ((cls !== 'godan' && cls !== 'ichidan') || x.jp.endsWith('ます')) continue // not いただきます
+    const stem = x.jp.slice(0, -1)
+    const next = cls === 'ichidan' ? 'まなてたられよさろず' : GODAN_NEXT[x.jp.slice(-1)] + (/[ゃさ]る$/.test(x.jp) ? 'い' : '') // いらっしゃいます
+    if (t.startsWith(stem) && next.includes(t[stem.length]) && (!verb || stem.length > verb.jp.length - 1 || (stem.length === verb.jp.length - 1 && verb.written && !x.written))) verb = x
+  }
+  return verb
 }
+/** The kana that can follow a godan verb's stem: the i/a/e/o rows and the て-form sound. */
+const GODAN_NEXT: Record<string, string> = { う: 'いわえおっ', く: 'きかけこい', ぐ: 'ぎがげごい', す: 'しさせそ', つ: 'ちたてとっ', ぬ: 'になねのん', ぶ: 'びばべぼん', む: 'みまめもん', る: 'りられろっ' }
 /** Chunks of a sentence that must be taught words (not particles, endings or counters). */
 export const contentChunks = (tokens: string[]) => tokens.filter((t) => !PARTICLES.has(t) && !GRAMMAR_CHUNKS.has(surfaceOf(t)) && !COUNTED.test(surfaceOf(t)))
 
@@ -240,7 +262,9 @@ function jlptUnits(): Unit[] {
       id: `n${level}-k-${i + 1}`, title: `Kanji ${items.map((id) => id.slice(6)).join(' ')}`, items,
     }))
     let path = interleave(vocab, kanjiLessons)
-    if (level === 5) path = placeGrammar(path, N5_GRAMMAR.map((spec, i) => grammarLesson(spec, `n5-g-${i + 1}`, 5)), allWords.filter((w) => w.id.startsWith('vocab:') || w.level === 5))
+    // N4 words keep their frequency order (pulling them forward like N5's would move words between saved lessons)
+    const grammar = level === 5 ? N5_GRAMMAR : level === 4 ? N4_GRAMMAR : []
+    if (grammar.length) path = placeGrammar(path, grammar.map((spec, i) => grammarLesson(spec, `n${level}-g-${i + 1}`, level as 5 | 4)), grammarWords(level))
     return chunk(path, LESSONS_PER_UNIT).map((lessons, u): Unit => {
       const chars = lessons.filter((l) => l.id.includes('-k-')).flatMap((l) => l.items.map((id) => id.slice(6)))
       const nWords = lessons.filter((l) => l.id.includes('-v-')).flatMap((l) => l.items).length

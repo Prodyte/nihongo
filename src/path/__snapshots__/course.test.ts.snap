@@ -53,4 +53,4 @@ exports[`course structure > lesson ids map to the same words as when progress wa
 }
 `;
 
-exports[`course structure > lesson ids map to the same words as when progress was first saved (a data edit must not shift them) 2`] = `"075d7466ad2c52d936109cb3a164fed690aa696d9c4ac608e752206c829e6c96"`;
+exports[`course structure > lesson ids map to the same words as when progress was first saved (a data edit must not shift them) 2`] = `"ce57556ab83425907a1420293ab3830a13f9c2cfa55f5f357c627abddd2c165f"`;

@@ -7,7 +7,7 @@ import { JaText } from '../path/ui/JaText'
 import { Ruby } from '../path/ui/Ruby'
 
 const GRAMMAR = LESSONS.filter((l) => l.explain)
-const LEVEL = (id: string) => (id.startsWith('n5-') ? 'N5' : 'First steps')
+const LEVEL = (id: string) => (id.startsWith('n5-') ? 'N5' : id.startsWith('n4-') ? 'N4' : 'First steps')
 
 /** Every grammar point in the course: its explanation and all its sentences, to look back at any time (like Bunpro's grammar pages). */
 export function Grammar({ db }: { db: Db }) {
@@ -27,7 +27,7 @@ export function Grammar({ db }: { db: Db }) {
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="て-form, past, より…" autoCapitalize="none" />
       </label>
       <p role="status" className="hint">{done.size ? `${GRAMMAR.filter((l) => done.has(l.id)).length} of ${GRAMMAR.length} learned` : `${GRAMMAR.length} grammar points`}{q.trim() ? ` · ${shown.length} shown` : ''}</p>
-      {['First steps', 'N5'].map((level) => {
+      {['First steps', 'N5', 'N4'].map((level) => {
         const here = shown.filter((l) => LEVEL(l.id) === level)
         if (!here.length) return null
         return (
