@@ -1,6 +1,6 @@
 import { createEmptyCard, Rating, State } from 'ts-fsrs'
 import { describe, expect, it } from 'vitest'
-import { forecast, isLeech, mistakes, nextDue, stage, until } from './stages'
+import { forecast, isLeech, nextDue, stage, until, weakSpots } from './stages'
 
 const c = createEmptyCard(new Date('2026-01-01'))
 const card = (o: Partial<typeof c>) => ({ ...c, ...o })
@@ -35,14 +35,25 @@ describe('forecast and next review', () => {
   })
 })
 
-describe('mistakes', () => {
-  it('cards answered Again in the last 7 days, plus leeches', () => {
+describe('weakSpots', () => {
+  const r = (cardId: string, grade: number, at: string) => ({ cardId, grade, at: new Date(at) })
+  it('ranks recent misses and lapses, weakest first, with a reason; drops old misses and recovered cards', () => {
     const reviews = [
-      { cardId: 'a', grade: Rating.Again, at: new Date('2026-03-09') },
-      { cardId: 'b', grade: Rating.Good, at: new Date('2026-03-09') },
-      { cardId: 'c', grade: Rating.Again, at: new Date('2026-02-01') }, // too long ago
+      r('a', Rating.Again, '2026-03-09'), r('a', Rating.Again, '2026-03-08'), // two misses this week: 6
+      r('b', Rating.Again, '2026-02-20'), // one miss this month, not this week: 2
+      r('c', Rating.Again, '2026-01-01'), // too long ago: 0
+      r('f', Rating.Again, '2026-03-01'), r('f', Rating.Good, '2026-03-05'), r('f', Rating.Good, '2026-03-07'), r('f', Rating.Easy, '2026-03-09'), // recovered
+      r('g', Rating.Hard, '2026-03-09'), // one Hard: 1, not enough alone
+      r('h', Rating.Hard, '2026-03-09'), r('h', Rating.Hard, '2026-03-08'),
     ]
-    const cards = [{ id: 'd', fsrs: card({ lapses: 8 }) }, { id: 'e', fsrs: c }]
-    expect([...mistakes(reviews, cards, now)].sort()).toEqual(['a', 'd'])
+    const ids = ['a', 'b', 'c', 'f', 'g', 'h'].map((id) => ({ id, fsrs: c }))
+    const cards = [...ids, { id: 'd', fsrs: card({ lapses: 8 }) }, { id: 'e', fsrs: card({ lapses: 1 }) }]
+    expect(weakSpots(reviews, cards, now)).toEqual([
+      { id: 'd', why: 'forgotten 8 times' },
+      { id: 'a', why: 'missed 2× this month' },
+      { id: 'b', why: 'missed 1× this month' },
+      { id: 'h', why: 'hard lately' },
+    ])
+    expect(weakSpots(reviews, cards, now, 2).map((w) => w.id)).toEqual(['d', 'a'])
   })
 })

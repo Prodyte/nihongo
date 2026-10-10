@@ -48,10 +48,28 @@ export function until(when: Date, now: Date): string {
   return `in ${d} days`
 }
 
-/** Card ids answered wrong (Again) in the last `days` days, or leeches: what "practise mistakes" drills. */
-export function mistakes(reviews: { cardId: string; grade: number; at: Date }[], cards: { id: string; fsrs: Card }[], now: Date, days = 7): Set<string> {
-  const since = now.getTime() - days * 86400000
-  const ids = new Set(reviews.filter((r) => r.grade === Rating.Again && r.at.getTime() >= since).map((r) => r.cardId))
-  for (const c of cards) if (isLeech(c.fsrs)) ids.add(c.id)
-  return ids
+/**
+ * Your weakest cards, weakest first: what "practise weak spots" drills. Misses in the last 30 days count (Again 2, or 3
+ * within the last week; Hard 1), plus every lapse FSRS has recorded. A card answered right three times in a row since is
+ * dropped: it has recovered. `why` says in a few words what put it on the list.
+ */
+export function weakSpots(reviews: { cardId: string; grade: number; at: Date }[], cards: { id: string; fsrs: Card }[], now: Date, limit = 20): { id: string; why: string }[] {
+  const month = now.getTime() - 30 * 86400000
+  const week = now.getTime() - 7 * 86400000
+  const byCard = new Map<string, { grade: number; at: Date }[]>()
+  for (const r of reviews) byCard.set(r.cardId, [...(byCard.get(r.cardId) ?? []), r])
+  const out: { id: string; why: string; score: number }[] = []
+  for (const c of cards) {
+    const rs = (byCard.get(c.id) ?? []).sort((a, b) => a.at.getTime() - b.at.getTime())
+    const last3 = rs.slice(-3)
+    if (last3.length === 3 && last3.every((r) => r.grade >= Rating.Good)) continue
+    const recent = rs.filter((r) => r.at.getTime() >= month)
+    const missed = recent.filter((r) => r.grade === Rating.Again)
+    const hard = recent.filter((r) => r.grade === Rating.Hard).length
+    const score = missed.reduce((n, r) => n + (r.at.getTime() >= week ? 3 : 2), 0) + hard + c.fsrs.lapses
+    if (score < 2) continue
+    const why = isLeech(c.fsrs) ? `forgotten ${c.fsrs.lapses} times` : missed.length ? `missed ${missed.length}× this month` : hard ? 'hard lately' : `forgotten ${c.fsrs.lapses} times`
+    out.push({ id: c.id, why, score })
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, limit).map(({ id, why }) => ({ id, why }))
 }

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useJaVoice } from '../audio'
-import { BUILTIN_DECKS, reviewCounts, type Db, type DeckRecord } from '../db/db'
+import { BUILTIN_DECKS, reviewCounts, studyCards, type Db, type DeckRecord, type StoredCard } from '../db/db'
 import { Icon, type IconName } from '../icons'
 import { DRILL_TITLE, learnedForDrills, verbsIn, type DrillKind } from '../path/drills'
 import { canRecognise } from '../speech'
-import { mistakes, nextDue, until } from '../srs/stages'
+import { Ruby } from '../path/ui/Ruby'
+import { nextDue, until, weakSpots } from '../srs/stages'
 import type { Mode } from './Study'
 
 export interface Config { deck: string; mode: Mode }
@@ -22,7 +23,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
   const [loaded, setLoaded] = useState<{ key: string; due: number; fresh: number; empty?: boolean } | null>(null)
   const key = `${config.deck}|${config.mode}`
   const counts = loaded?.key === key ? loaded : null // a different deck: never show the previous deck's numbers while loading
-  const [info, setInfo] = useState<{ next: string | null; mistakes: number; words: number; verbs: number }>({ next: null, mistakes: 0, words: 0, verbs: 0 })
+  const [info, setInfo] = useState<{ next: string | null; weak: { card: StoredCard; why: string }[]; words: number; verbs: number }>({ next: null, weak: [], words: 0, verbs: 0 })
   const [imported, setImported] = useState<DeckRecord[]>([])
   useEffect(() => {
     void db.getAll('decks').then((d) => {
@@ -40,15 +41,16 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
   }, [db, config.deck, config.mode, key])
   useEffect(() => {
     let live = true
-    void Promise.all([db.getAll('cards'), db.getAll('reviews'), learnedForDrills(db)]).then(([cards, reviews, items]) => {
+    // studyCards: the same cards a weak-spots session can show
+    void Promise.all([studyCards(db, 'all', config.mode), db.getAll('reviews'), learnedForDrills(db)]).then(([cards, reviews, items]) => {
       const now = new Date()
       const next = nextDue(cards, now)
-      if (live) setInfo({ next: next && until(next, now), mistakes: mistakes(reviews, cards, now).size, words: items.length, verbs: verbsIn(items).length })
+      if (live) setInfo({ next: next && until(next, now), weak: weakSpots(reviews, cards, now).flatMap((w) => { const card = cards.find((c) => c.id === w.id); return card ? [{ card, why: w.why }] : [] }), words: items.length, verbs: verbsIn(items).length })
     }, () => {})
     return () => {
       live = false
     }
-  }, [db])
+  }, [db, config.mode])
 
   const pick = <K extends keyof Config>(k: K, label: string, opts: [Config[K], string][]) => (
     <label>
@@ -88,7 +90,6 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
         </div>
         <div className="row2 left">
           {total > 0 && <button className="primary big" onClick={onStart}>Study</button>}
-          {info.mistakes > 0 && <button className="big" onClick={onPractice}>Practise mistakes ({info.mistakes})</button>}
         </div>
         <details className="options">
           <summary>Deck and mode</summary>
@@ -97,6 +98,22 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
           {config.deck.startsWith('anki:') && config.mode !== 'flashcard' && <p className="hint left">Imported decks work in flashcard mode.</p>}
         </details>
       </section>
+      {info.weak.length > 0 && (
+        <section className="card weak" aria-labelledby="weak-title">
+          <h3 id="weak-title">Weak spots</h3>
+          <p className="hint left">The cards you’ve missed most lately. Practising them doesn’t change their schedule.</p>
+          <ul>
+            {info.weak.slice(0, 5).map(({ card, why }) => (
+              <li key={card.id}>
+                <span className="jp" lang="ja">{card.html ? card.front.replace(/<[^>]*>/g, '').slice(0, 20) : <Ruby text={card.front} reading={card.reading} />}</span>
+                <span className="gloss">{card.html ? '' : card.back[0]}</span>
+                <small>{why}</small>
+              </li>
+            ))}
+          </ul>
+          <button className="big" onClick={onPractice}>Practise weak spots ({info.weak.length})</button>
+        </section>
+      )}
       <h3 className="section-title">Practice</h3>
       <ul className="tiles-grid">
         {tiles.map((t) => (

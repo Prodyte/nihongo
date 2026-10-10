@@ -7,6 +7,7 @@ const SOURCES: [name: string, url: string, what: string, licence: string][] = [
   ['KANJIDIC2 (EDRDG)', 'https://www.edrdg.org/wiki/index.php/KANJIDIC_Project', 'kanji meanings and readings', 'CC BY-SA 4.0'],
   ['kanji-data', 'https://github.com/davidluzgouveia/kanji-data', 'KANJIDIC and the levels in JSON form', 'MIT'],
   ['KanjiVG by Ulrich Apel', 'https://kanjivg.tagaini.net', 'kanji stroke order and parts', 'CC BY-SA 3.0'],
+  ['Tatoeba', 'https://tatoeba.org', 'example sentences and their English', 'CC BY 2.0 FR'],
   ['wordfreq', 'https://github.com/rspeer/wordfreq', 'used to order words most frequent first', 'CC BY-SA 4.0'],
 ]
 

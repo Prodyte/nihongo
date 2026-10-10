@@ -9,14 +9,13 @@ import { Quiz } from '../modes/Quiz'
 import { Typing } from '../modes/Typing'
 import { ITEMS } from '../path/course'
 import { addReviewXp } from '../path/progress'
-import { shuffle } from '../modes/choices'
 import { dueCards } from '../srs/scheduler'
-import { mistakes } from '../srs/stages'
+import { weakSpots } from '../srs/stages'
 
 export type Mode = 'flashcard' | 'typing' | 'quiz'
 const MODES = { flashcard: Flashcard, typing: Typing, quiz: Quiz }
 
-/** Deck id for "practise mistakes": recent misses and leeches, drilled without changing their schedule. */
+/** Deck id for "practise weak spots" (see weakSpots), drilled without changing their schedule. */
 export const MISTAKES = 'mistakes'
 
 export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: string; mode: Mode; autoplay: boolean; onExit: () => void }) {
@@ -32,10 +31,11 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
     void (async () => {
       const cards = await studyCards(db, practice ? 'all' : deck, mode)
       if (practice) {
-        const missed = mistakes(await db.getAll('reviews'), cards, new Date())
+        const weak = weakSpots(await db.getAll('reviews'), cards, new Date())
         if (!live) return
+        const byId = new Map(cards.map((c) => [c.id, c]))
         setPool(cards)
-        setQueue(shuffle(cards.filter((c) => missed.has(c.id)), Math.random))
+        setQueue(weak.flatMap((w) => byId.get(w.id) ?? [])) // weakest first
         return
       }
       const left = Math.max(0, DAILY_NEW - (await newToday(db)))

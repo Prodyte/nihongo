@@ -62,7 +62,7 @@ export function Stats({ db }: { db: Db }) {
             </li>
           ))}
         </ul>
-        {s.leeches > 0 && <p className="hint">{s.leeches} card{s.leeches === 1 ? '' : 's'} you keep forgetting (leeches): drill them with “Practise mistakes” in Review.</p>}
+        {s.leeches > 0 && <p className="hint">{s.leeches} card{s.leeches === 1 ? '' : 's'} you keep forgetting (leeches): drill them with “Practise weak spots” in Review.</p>}
       </div>
       <div className="card form">
         <h2>Coming up</h2>

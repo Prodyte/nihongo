@@ -234,6 +234,16 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .note { margin: 0; font-size: .9rem; text-align: center; color: var(--muted); }
 /* memory aid: a kanji's parts or a word's kanji, as a soft chip under the meaning */
 .mnemonic { margin: 0; padding: .45rem .75rem; border-radius: var(--radius-s); background: var(--accent-soft); color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
+.example { margin: 0; padding: .55rem .8rem; border-left: 3px solid var(--indigo); border-radius: 0 var(--radius-s) var(--radius-s) 0; background: var(--indigo-soft); text-align: left; width: 100%; box-sizing: border-box; }
+.example p { margin: 0; font-size: 1.15rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; }
+.example .speak-btns { margin-left: auto; }
+.example figcaption { color: var(--muted); font-size: .95rem; margin-top: .15rem; }
+.card.weak ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; }
+.card.weak li { text-align: left; display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
+.card.weak li:last-child { border-bottom: 0; }
+.card.weak .jp { font-size: 1.3rem; font-weight: 600; }
+.card.weak .gloss { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card.weak small { color: var(--muted); white-space: nowrap; }
 .mnemonic p { margin: 0; } .mnemonic p + p { margin-top: .25rem; }
 .mnemonic .label { color: var(--muted); }
 .mnemonic [lang="ja"] { font-size: 1.15em; font-weight: 600; }
