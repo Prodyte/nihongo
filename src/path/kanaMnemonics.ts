@@ -1,0 +1,113 @@
+// Picture hints for the basic kana, written for this app: one image per character that links its shape to its sound.
+// Voiced kana (が) and combinations (きゃ) get a rule built from their parts instead: see kanaHint.
+import { KANA } from '../data/kana'
+
+const HIRA: Record<string, string> = {
+  あ: 'A sword (+) slicing through an apple: “Ah!”',
+  い: 'Two eels swimming side by side: “ee”.',
+  う: 'Someone hunched over a sore tummy: “ooh”.',
+  え: 'A ninja mid-kick, shouting “eh!”',
+  お: 'Like あ with a UFO (the dot) zooming past: “oh!”',
+  か: 'A blade swinging with a splinter flying off: “ka-chop!”',
+  き: 'A key: the two bars are its teeth.',
+  く: 'A bird’s open beak calling “coo”.',
+  け: 'A keg with a tap on its side.',
+  こ: 'Two coils lying on top of each other: “co”.',
+  さ: 'A samurai’s sword stuck in a hillside: “sa”.',
+  し: 'A fish hook: she goes fishing.',
+  す: 'A swing hanging from a bar, looping round: “sw-”.',
+  せ: 'A face with a big moustache, about to say something: “say…”',
+  そ: 'A zigzag stitch: sew.',
+  た: 'The letters t and a squeezed together: “ta”.',
+  ち: 'A cheerleader’s arm on her hip: “chee(r)”.',
+  つ: 'A tsunami wave curling over.',
+  て: 'A hand reaching out to the side: て (te) also means hand, 手.',
+  と: 'A toe with a splinter (the short stroke) in it.',
+  な: 'A nun kneeling by a cross (+) holding her rosary loop.',
+  に: 'A knee: a leg (the line) next to two bent strokes: “ni”.',
+  ぬ: 'Noodles twisted round chopsticks: “noo-dle”.',
+  ね: 'A cat curling its tail: ねこ (neko) is cat.',
+  の: 'A “no entry” sign: a circle with a slash.',
+  は: 'Someone laughing “ha!” next to a wall.',
+  ひ: 'A big wide grin: “hee hee”.',
+  ふ: 'Mount Fuji with clouds puffing round it: “fu”.',
+  へ: 'A hilltop: “hey, look up there!”',
+  ほ: 'Like は with an extra bar: a garden hoe: “ho”.',
+  ま: 'A mama with her arms (the bars) wrapped round a baby (the loop).',
+  み: 'The number 21 scribbled quickly: “me at 21”.',
+  む: 'A cow’s head with a nose ring: “moo”.',
+  め: 'An eye with a lash: め (me) means eye, 目.',
+  も: 'A fish hook with two worms: more fish!',
+  や: 'A yak with its horns.',
+  ゆ: 'The swirl on a hot-spring sign ♨: ゆ (yu) means hot water.',
+  よ: 'A yo-yo on its string.',
+  ら: 'A rabbit crouching with one ear up: “ra-bbit”.',
+  り: 'A river running between two banks: “ri-ver”.',
+  る: 'Like ろ but the road loops back: a route.',
+  れ: 'A runner leaning forward, ready to race: “re-ady”.',
+  ろ: 'A road with one bend: “ro-ad”.',
+  わ: 'A person waving: “wa-ve”.',
+  を: 'Someone tripping over: “wo-ah!”',
+  ん: 'Just like a handwritten n.',
+}
+const KATA: Record<string, string> = {
+  ア: 'An axe: the hook is the blade: “a-xe”.',
+  イ: 'The person radical 亻: a person leaning on an easel, “ee-sel”.',
+  ウ: 'う with a crown on top: “ooh, a crown”.',
+  エ: 'An elevator shaft: two floors joined by a post.',
+  オ: 'An opera singer with arms out: “oh!”',
+  カ: 'か without its splinter: same sound, ka.',
+  キ: 'き without its curl: a key, ki.',
+  ク: 'A cuckoo’s beak: “ku”.',
+  ケ: 'A tilted K: “ke”.',
+  コ: 'A corner of a box: “co-rner”.',
+  サ: 'A saddle with two posts: “sa-ddle”.',
+  シ: 'A smiling face looking up: “she” smiles. The last stroke sweeps up from the bottom (unlike ツ).',
+  ス: 'A swing hanging from a beam: “su”.',
+  セ: 'せ with one stroke fewer: se.',
+  ソ: 'A needle sewing downwards: “so”. Both strokes fall from the top (unlike ン).',
+  タ: 'ク with a table top inside: “ta-ble”.',
+  チ: 'Looks like 千, a thousand cheering fans: “chi”.',
+  ツ: 'A tsunami falling from above: the drops come down from the top (unlike シ).',
+  テ: 'A telephone pole with its cross bar: “te”.',
+  ト: 'A totem pole with one branch: “to”.',
+  ナ: 'A knife held crosswise: “na-ife”.',
+  ニ: 'Two lines, like 二 (two): ni.',
+  ヌ: 'Chopsticks lifting noodles: “nu”.',
+  ネ: 'A necktie knot: “ne”.',
+  ノ: 'One slash: “no!”',
+  ハ: 'Two strokes like 八 (eight): someone laughing “ha” with their arms out.',
+  ヒ: 'A high heel: “hi”.',
+  フ: 'The slope of Mount Fuji: “fu”.',
+  ヘ: 'Same as へ: a hilltop, he.',
+  ホ: 'A holy cross with two candles: “ho-ly”.',
+  マ: 'A martini glass tipped over: “ma”.',
+  ミ: 'Three slanted lines, like 三 (three): “mi”.',
+  ム: 'A moose head: “mu”.',
+  メ: 'An X marking the spot: “me” (here!).',
+  モ: 'も without its hook: mo.',
+  ヤ: 'や made sharp: a yak, ya.',
+  ユ: 'A U-turn sign: “yu”.',
+  ヨ: 'A yo-yo trick with three strings: “yo”.',
+  ラ: 'ら made sharp: ra.',
+  リ: 'Same as り: a river, ri.',
+  ル: 'Two legs running: “ru-n”.',
+  レ: 'A leg kicked out to the right: “re”.',
+  ロ: 'A road block, square like 口: “ro”.',
+  ワ: 'A wine glass: “wa”.',
+  ヲ: 'フ with a bar through it: “wo”.',
+  ン: 'One stroke and a sweep up from the bottom: “n”. It rises like シ (unlike ソ).',
+}
+
+const ROMAJI = new Map(KANA.map((k) => [k.kana, k.romaji[0]]))
+const SMALL: Record<string, string> = { ゃ: 'ya', ゅ: 'yu', ょ: 'yo', ャ: 'ya', ュ: 'yu', ョ: 'yo' }
+
+/** The hint for a kana card: a picture for basic kana, a rule for voiced kana and combinations. */
+export function kanaHint(kana: string): string | undefined {
+  const picture = HIRA[kana] ?? KATA[kana]
+  if (picture) return picture
+  if (kana.length === 2) return `${kana[0]} (${ROMAJI.get(kana[0])}) + small ${kana[1]} (${SMALL[kana[1]]}): blend them into one sound, ${ROMAJI.get(kana)}.`
+  const [base, mark] = kana.normalize('NFD')
+  if (!mark) return undefined
+  return `${base} (${ROMAJI.get(base)}) with ${mark === '゙' ? 'two ticks ゛' : 'a circle ゜'}: ${ROMAJI.get(base)} becomes ${ROMAJI.get(kana)}.`
+}

@@ -16,7 +16,6 @@ export function Intro({ item, autoplay, onDone }: { item: Item; autoplay: boolea
       {item.kind === 'word' && <div className="reading">{item.written && <><span lang="ja">{item.jp}</span> · </>}{item.romaji}{item.kanji && <> · <span lang="ja">{item.kanji}</span></>}</div>}
       <div className="answer">{item.gloss} <SpeakButton text={item.jp} /></div>
       <Mnemonic item={item} />
-      {item.note && <p className="note">{item.note}</p>}
       <button className="primary" autoFocus onKeyDown={(e) => e.repeat && e.preventDefault()} onClick={() => onDone([])}>Got it</button>
     </div>
   )

@@ -2,6 +2,7 @@ import { toKata } from '../../data/kana'
 import { useEffect } from 'react'
 import { sfx } from '../../sfx'
 import { written, type Item } from '../course'
+import { hintFor } from '../mnemonic'
 import { Ruby } from './Ruby'
 
 /** The result in a bar pinned to the bottom (its text is always mounted so screen readers announce changes), with Continue. */
@@ -22,6 +23,7 @@ export function Feedback({ result, item, answer, note, onContinue }: { result: b
               {item.gloss}
               {item.kanji && <> · <span lang="ja">{item.kanji}</span></>}
             </small>
+            {!result && hintFor(item) && <small className="memo-hint">Remember: {hintFor(item)}</small>}
           </>
         )}
       </div>

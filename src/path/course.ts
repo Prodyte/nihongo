@@ -5,6 +5,7 @@ import { GRAMMAR_LESSONS, GRAMMAR_UNIT, type GrammarLessonSpec } from './grammar
 import { N3_GRAMMAR } from './grammarN3'
 import { N4_GRAMMAR } from './grammarN4'
 import { N5_GRAMMAR } from './grammarN5'
+import { kanaHint } from './kanaMnemonics'
 import { displayJp, kanaToRomaji, PARTICLES, readingOf, surfaceOf, tokensToRomaji } from './romaji'
 import { verbClass } from './conjugate'
 import { VOCAB_UNITS } from './vocab'
@@ -57,7 +58,7 @@ export function registerItem(items: Map<string, Item>, item: Item) {
 export const ITEMS = new Map<string, Item>()
 const NOTES: Record<string, string> = { 'hira:を': 'Written "wo" but pronounced "o". Mostly used as a grammar particle.', 'kata:ヲ': 'Written "wo" but pronounced "o". Rare in katakana.' }
 for (const k of KANA)
-  registerItem(ITEMS, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: NOTES[k.id], accepts: k.romaji })
+  registerItem(ITEMS, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: [kanaHint(k.kana), NOTES[k.id]].filter(Boolean).join(' '), accepts: k.romaji })
 
 function kanaUnits(script: 'hira' | 'kata'): Unit[] {
   const name = script === 'hira' ? 'Hiragana' : 'Katakana'

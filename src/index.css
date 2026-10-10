@@ -234,6 +234,7 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .note { margin: 0; font-size: .9rem; text-align: center; color: var(--muted); }
 /* memory aid: a kanji's parts or a word's kanji, as a soft chip under the meaning */
 .mnemonic { margin: 0; padding: .45rem .75rem; border-radius: var(--radius-s); background: var(--accent-soft); color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
+.mnemonic p { margin: 0; } .mnemonic p + p { margin-top: .25rem; }
 .mnemonic .label { color: var(--muted); }
 .mnemonic [lang="ja"] { font-size: 1.15em; font-weight: 600; }
 .jp-option { font-size: 1.5rem; }
@@ -248,7 +249,8 @@ button.selected, button[aria-pressed="true"] { border-color: var(--indigo); back
 .feedback { position: fixed; z-index: var(--z-feedback); left: 0; right: 0; bottom: 0; padding: 1rem max(1rem, env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   border-top: 2px solid; animation: rise .18s ease-out; display: grid; gap: .25rem; font-weight: 650; font-size: 1.1rem; }
 .feedback > * { max-width: 40rem; margin-inline: auto; width: 100%; }
-.feedback small { display: block; font-weight: 400; font-size: .9rem; color: var(--fg); opacity: .9; }
+.feedback small { display: block; } .feedback .memo-hint { margin-top: .25rem; font-style: italic; }
+.feedback small { font-weight: 400; font-size: .9rem; color: var(--fg); opacity: .9; }
 .feedback.good { background: var(--good-soft); border-color: var(--good); color: var(--good); }
 .feedback.bad { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
 .feedback button.primary { margin-top: .5rem; width: 100%; max-width: 40rem; justify-self: center; min-height: 3.25rem; font-size: 1.05rem; }
