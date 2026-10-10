@@ -88,7 +88,7 @@ describe('course structure', () => {
     for (const k of KANA) expect(counts.get(k.id), k.id).toBe(1)
     expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('vocab:'))).toHaveLength(144)
     expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('w:')).length).toBeGreaterThan(3200)
-    expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('sent:'))).toHaveLength(24 + 144 + 192)
+    expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('sent:'))).toHaveLength(24 + 144 + 192 + 192)
     for (const [id, n] of counts) expect(n, id).toBe(1)
   })
   it('items carry the right fields', () => {

@@ -2,6 +2,7 @@ import { KANA, toKata } from '../data/kana'
 import jlptKanji from '../data/jlpt/kanji.json'
 import jlptWords from '../data/jlpt/words.json'
 import { GRAMMAR_LESSONS, GRAMMAR_UNIT, type GrammarLessonSpec } from './grammar'
+import { N3_GRAMMAR } from './grammarN3'
 import { N4_GRAMMAR } from './grammarN4'
 import { N5_GRAMMAR } from './grammarN5'
 import { displayJp, kanaToRomaji, PARTICLES, readingOf, surfaceOf, tokensToRomaji } from './romaji'
@@ -88,7 +89,7 @@ function vocabUnits(): Unit[] {
 
 /** Register a grammar lesson's sentences and make the lesson. Chunks may carry furigana (学校[がっこう]): jp is then the
  * kana sentence (typed, spoken) and `written` the marked-up one (shown). */
-function grammarLesson(spec: GrammarLessonSpec, id: string, level?: 5 | 4): Lesson {
+function grammarLesson(spec: GrammarLessonSpec, id: string, level?: 5 | 4 | 3): Lesson {
   const ids = spec.sentences.map((s) => {
     const romaji = tokensToRomaji(s.tokens)
     const sid = `sent:${romaji.replace(/'/g, '').replace(/ /g, '-')}`
@@ -130,7 +131,9 @@ export const grammarWords = (level: number) => [...ITEMS.values()].filter((w) =>
 
 /** Chunks a grammar lesson teaches itself rather than as vocabulary: endings, counters, set phrases. */
 export const GRAMMAR_CHUNKS = new Set(['です', 'でした', 'じゃありません', 'じゃありませんでした', 'でしょう', 'いけません', 'ほう', 'けど',
-  'だ', 'だった', 'じゃない', 'だったら', 'なら', 'ので', 'のに', 'ように', 'よう', 'みたい', 'らしい', 'かもしれません', 'とき', 'よ', 'ね', 'つもり', 'はず'])
+  'だ', 'だった', 'じゃない', 'だったら', 'なら', 'ので', 'のに', 'ように', 'よう', 'みたい', 'らしい', 'かもしれません', 'とき', 'よ', 'ね', 'つもり', 'はず',
+  'ばかり', 'ところ', 'ために', 'について', 'によると', 'によって', 'として', 'にとって', 'うちに', 'まま', 'たびに', 'ほしい', 'べき', '代わりに',
+  'おかげで', 'せいで', 'という', 'とか', 'ほど', 'くらい', 'だけでなく', 'わけ', 'にも', 'では'])
 const COUNTED = /^[一二三四五六七八九十]+(人|本|枚|時|分)$/ // 五人, 二本, 三時: taught by the counters lesson
 // forms of kana-only verbs, matched by their polite or て stems (a plain prefix match would be too loose)
 // (checked before exact matches: いない is いる, not 以内; した is する, not 下)
@@ -159,7 +162,8 @@ export function wordFor(chunk: string, words: Item[]): Item | undefined {
   for (const x of words) {
     const w = x.written ?? x.kanji ?? ''
     const stem = w.slice(0, -1)
-    if (/[\p{Script=Han}]/u.test(stem) && /[ぁ-ん]$/.test(w) && t.startsWith(stem) && (!reading || reading.startsWith(x.jp.slice(0, -1)) || (x.jp === 'くる' && /^[きこ]/.test(reading))) && (!best || score(x) > score(best))) best = x
+    // only verbs, い-adjectives and nouns like 休み conjugate or take endings; an adverb like 言わば is matched exactly or not at all
+    if (/[\p{Script=Han}]/u.test(stem) && /[ぁ-ん]$/.test(w) && !/[ばらとに]$/.test(w) && t.startsWith(stem) && (!reading || reading.startsWith(x.jp.slice(0, -1)) || (x.jp === 'くる' && /^[きこ]/.test(reading))) && (!best || score(x) > score(best))) best = x
   }
   if (best) return best
   const suru = t.match(/^(.{2,}?)(し|する|すれ|さ|せ)/) // 電話して, 結婚しよう, 勉強する: a noun (2+ characters) + する
@@ -263,8 +267,8 @@ function jlptUnits(): Unit[] {
     }))
     let path = interleave(vocab, kanjiLessons)
     // N4 words keep their frequency order (pulling them forward like N5's would move words between saved lessons)
-    const grammar = level === 5 ? N5_GRAMMAR : level === 4 ? N4_GRAMMAR : []
-    if (grammar.length) path = placeGrammar(path, grammar.map((spec, i) => grammarLesson(spec, `n${level}-g-${i + 1}`, level as 5 | 4)), grammarWords(level))
+    const grammar = level === 5 ? N5_GRAMMAR : level === 4 ? N4_GRAMMAR : N3_GRAMMAR
+    if (grammar.length) path = placeGrammar(path, grammar.map((spec, i) => grammarLesson(spec, `n${level}-g-${i + 1}`, level)), grammarWords(level))
     return even(path, LESSONS_PER_UNIT).map((lessons, u): Unit => {
       const chars = lessons.filter((l) => l.id.includes('-k-')).flatMap((l) => l.items.map((id) => id.slice(6)))
       const nWords = lessons.filter((l) => l.id.includes('-v-')).flatMap((l) => l.items).length

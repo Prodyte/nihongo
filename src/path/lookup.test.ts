@@ -30,7 +30,7 @@ describe('coverage', () => {
     expect(none.map((c) => c.level)).toEqual([5, 4, 3])
     expect(none[0].kanji).toEqual([0, 79])
     expect(none[0].grammar).toEqual([0, 24])
-    expect(none[2].grammar).toEqual([0, 0])
+    expect(none[2].grammar).toEqual([0, 32])
     expect(none[0].words[1]).toBeGreaterThan(650) // N5 words including the starter ones
     const starter = coverage(LESSONS, ITEMS, new Set(LESSONS.filter((l) => l.items[0].startsWith('vocab:')).map((l) => l.id)))
     expect(starter[0].words[0]).toBeGreaterThan(100)

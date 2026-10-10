@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { contentChunks, grammarWords, ITEMS, LESSONS, wordFor, written } from './course'
+import { N3_GRAMMAR } from './grammarN3'
 import { N4_GRAMMAR } from './grammarN4'
 import { N5_GRAMMAR } from './grammarN5'
 import { readingOf, surfaceOf } from './romaji'
 
 const HAN = /\p{Script=Han}/u
 
-describe.each([[5, N5_GRAMMAR], [4, N4_GRAMMAR]] as const)('N%i grammar', (level, specs) => {
+describe.each([[5, N5_GRAMMAR], [4, N4_GRAMMAR], [3, N3_GRAMMAR]] as const)('N%i grammar', (level, specs) => {
   const lessons = LESSONS.filter((l) => l.id.startsWith(`n${level}-g-`))
   const sentences = lessons.flatMap((l) => l.items.map((id) => ITEMS.get(id)!))
   const words = grammarWords(level)
@@ -78,6 +79,7 @@ describe('wordFor', () => {
     expect(of('よくなかった')).toBe(of('いい'))
     expect(of('電話[でんわ]して')).toBe(of('電話[でんわ]'))
     expect(of('したくない')).toBe(of('する'))
+    expect(of('言[い]わないで')).toBe(of('言[い]う')) // the verb, not the adverb 言わば (which never conjugates)
     expect(of('います')).toBe(of('いる'))
     expect(of('ありました')).toBe(of('ある'))
     expect(of('おいしかった')).toBe(of('おいしい'))

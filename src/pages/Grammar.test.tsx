@@ -10,13 +10,13 @@ import { Grammar } from './Grammar'
 
 afterEach(cleanup)
 
-it('lists all 60 grammar points with learned state; filtering finds one; opening shows its explanation and sentences', async () => {
+it('lists all 92 grammar points with learned state; filtering finds one; opening shows its explanation and sentences', async () => {
   const db = await openDb('grammar-ref')
   await completeLesson(db, lessonById('grammar-1-1')!, ITEMS, {}, 1)
   const user = userEvent.setup()
   render(<Grammar db={db} />)
-  await screen.findByText('1 of 60 learned')
-  expect(document.querySelectorAll('ul.results > li')).toHaveLength(60)
+  await screen.findByText('1 of 92 learned')
+  expect(document.querySelectorAll('ul.results > li')).toHaveLength(92)
   await user.type(screen.getByRole('searchbox'), 'より')
   expect(document.querySelectorAll('ul.results > li')).toHaveLength(1)
   const item = document.querySelector('ul.results > li')!
