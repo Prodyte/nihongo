@@ -23,6 +23,17 @@ export const maybeSignedIn = () => {
   }
 }
 
+const hash = new URLSearchParams(typeof location === 'undefined' ? '' : location.hash.slice(1))
+/** From an email link: "reset your password" (the Account page asks for a new one), or an expired link's error. Read before supabase-js clears the hash. */
+export const recovery = { pending: hash.get('type') === 'recovery', error: hash.get('error_description') }
+export const endRecovery = () => { recovery.pending = false }
+/** The expired link's error, once. */
+export const takeLinkError = () => {
+  const e = recovery.error
+  recovery.error = null
+  return e
+}
+
 export async function session(): Promise<Session | null> {
   if (!maybeSignedIn()) return null
   return (await (await supabase()).auth.getSession()).data.session

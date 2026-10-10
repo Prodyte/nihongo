@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Db } from '../db/db'
 import { Icon } from '../icons'
-import { lastSync, session, supabase, sync } from '../sync'
+import { endRecovery, lastSync, recovery, session, supabase, sync, takeLinkError } from '../sync'
 
 /** Sign in and keep progress in sync across devices. */
 export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
@@ -9,9 +9,13 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
   const [typed, setTyped] = useState('')
   const [password, setPassword] = useState('')
   const [create, setCreate] = useState(false)
+  const [resetting, setResetting] = useState(recovery.pending) // arrived from a reset email: signed in, needs a new password
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [status, setStatus] = useState<{ text: string; bad?: boolean } | null>(null)
+  const [status, setStatus] = useState<{ text: string; bad?: boolean } | null>(() => {
+    const e = takeLinkError()
+    return e ? { text: `${e}. Sign in, or use Forgot password? for a new link.`, bad: true } : null
+  })
 
   useEffect(() => {
     void session().then((s) => setEmail(s?.user.email ?? null), () => setEmail(null))
@@ -48,6 +52,21 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
     onSynced() // the header shows the account icon
     await syncNow()
   })
+  const forgot = act(async () => {
+    const to = typed.trim()
+    if (!to) throw new Error('Type your email above first.')
+    const { error } = await (await supabase()).auth.resetPasswordForEmail(to, { redirectTo: location.origin + location.pathname })
+    if (error) throw error
+    setStatus({ text: `If ${to} has an account, a link to choose a new password is on its way.` })
+  })
+  const newPassword = act(async () => {
+    const { error } = await (await supabase()).auth.updateUser({ password })
+    if (error) throw error
+    endRecovery()
+    setResetting(false)
+    setPassword('')
+    setStatus({ text: 'Password changed.' })
+  })
   const signOut = act(async () => {
     await (await supabase()).auth.signOut()
     setEmail(null)
@@ -56,11 +75,31 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
   })
 
   const last = lastSync()
+  const passwordField = (
+    <div className="field">
+      <label htmlFor="account-password">Password</label>
+      <span className="password">
+        <input id="account-password" type={show ? 'text' : 'password'} required minLength={6} autoComplete={create || resetting ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)}
+          aria-describedby={create || resetting ? 'password-hint' : undefined} />
+        <button type="button" aria-pressed={show} aria-label="Show password" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button>
+      </span>
+      {(create || resetting) && <small id="password-hint" className="hint left">At least 6 characters.</small>}
+    </div>
+  )
   if (email === undefined) return <div className="card account" aria-busy="true"><div className="skeleton" /></div>
   return (
     <div className="card account">
       <span className="account-icon" aria-hidden="true"><Icon name="user" size={28} /></span>
-      {email ? (
+      {email && resetting ? (
+        <>
+          <h2>Choose a new password</h2>
+          <p className="hint">For <strong>{email}</strong></p>
+          <form onSubmit={(e) => { e.preventDefault(); void newPassword() }}>
+            {passwordField}
+            <button className="primary big" disabled={busy}>{busy ? 'One moment…' : 'Save password'}</button>
+          </form>
+        </>
+      ) : email ? (
         <>
           <h2>Account and sync</h2>
           <p className="hint">Signed in as <strong>{email}</strong></p>
@@ -77,17 +116,10 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
               Email
               <input type="email" required autoComplete="email" value={typed} onChange={(e) => setTyped(e.target.value)} />
             </label>
-            <div className="field">
-              <label htmlFor="account-password">Password</label>
-              <span className="password">
-                <input id="account-password" type={show ? 'text' : 'password'} required minLength={6} autoComplete={create ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                  aria-describedby={create ? 'password-hint' : undefined} />
-                <button type="button" aria-pressed={show} aria-label="Show password" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button>
-              </span>
-              {create && <small id="password-hint" className="hint left">At least 6 characters.</small>}
-            </div>
+            {passwordField}
             <button className="primary big" disabled={busy}>{busy ? 'One moment…' : create ? 'Create account' : 'Sign in'}</button>
           </form>
+          {!create && <button className="link-btn" disabled={busy} onClick={() => void forgot()}>Forgot password?</button>}
           <p className="hint">
             {create ? 'Already have an account? ' : 'New here? '}
             <button className="link-btn" onClick={() => { setCreate(!create); setStatus(null) }}>{create ? 'Sign in' : 'Create an account'}</button>

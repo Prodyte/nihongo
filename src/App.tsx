@@ -24,7 +24,7 @@ import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
-import { maybeSignedIn, sync } from './sync'
+import { maybeSignedIn, recovery, sync } from './sync'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
 type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
@@ -54,7 +54,7 @@ function useMedia(query: string) {
 export default function App() {
   const [db, setDb] = useState<Db | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [view, setView] = useState<View>('today')
+  const [view, setView] = useState<View>(recovery.pending || recovery.error ? 'account' : 'today')
   const [back, setBack] = useState<View>('today') // where a lesson or review session returns to
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [testUnit, setTestUnit] = useState<string | null>(null)

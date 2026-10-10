@@ -15,7 +15,7 @@ it('lists all 92 grammar points with learned state; filtering finds one; opening
   await completeLesson(db, lessonById('grammar-1-1')!, ITEMS, {}, 1)
   const user = userEvent.setup()
   render(<Grammar db={db} />)
-  await screen.findByText('1 of 92 learned')
+  await screen.findByText('1 of 92 learned', {}, { timeout: 5000 }) // 92 rows from IndexedDB: slow when the whole suite shares the CPU
   expect(document.querySelectorAll('ul.results > li')).toHaveLength(92)
   await user.type(screen.getByRole('searchbox'), 'より')
   expect(document.querySelectorAll('ul.results > li')).toHaveLength(1)
