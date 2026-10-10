@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { audiosToPlay, playInOrder, speak } from './audio'
+import { audiosToPlay, playInOrder, slowly, speak } from './audio'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -87,5 +87,19 @@ describe('speak', () => {
     speak('い', 60)
     localStorage.removeItem('nihongo.rate')
     expect(s.speak.mock.calls.map((c) => (c[0] as Utterance & { rate: number }).rate)).toEqual([0.8, 0.6])
+  })
+  it('slow speech also pauses, for voices that ignore the rate: between chunks of a sentence, between syllables of a word', () => {
+    expect(slowly('わたしは がくせいです。')).toBe('わたしは、がくせいです。')
+    expect(slowly('きって')).toBe('きっ、て')
+    expect(slowly('ちょっと')).toBe('ちょっ、と')
+    expect(slowly('コーヒー')).toBe('コー、ヒー')
+    expect(slowly('日')).toBe('日') // a lone kanji or one kana: as is
+    expect(slowly('あ')).toBe('あ')
+    const s = synth([{ lang: 'ja-JP' }])
+    vi.stubGlobal('speechSynthesis', s)
+    vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
+    speak('みず')
+    speak('みず', 60)
+    expect(s.speak.mock.calls.map((c) => (c[0] as Utterance).text)).toEqual(['みず', 'み、ず'])
   })
 })

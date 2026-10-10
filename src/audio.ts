@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
-import { readSpeed } from './settings'
+import { readSpeed, SLOW } from './settings'
 
 const synth = () => (typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null)
 const jaVoice = () => synth()?.getVoices().find((v) => v.lang.toLowerCase().replace('_', '-').startsWith('ja'))
+
+/** Pauses for slow speech, because some voices ignore `rate` (iPhones since iOS 17): a sentence pauses between its chunks
+ * (displayJp spaces them after particles and て-forms), a short kana word between syllables (ゃ, っ, ー stay attached). */
+export const slowly = (text: string) =>
+  /\s/.test(text.trim()) ? text.trim().replace(/\s+/g, '、')
+    : /^[\u3040-\u30ff]{2,10}$/.test(text) ? text.match(/.[ゃゅょぁぃぅぇぉャュョァィゥェォっッー]*/g)!.join('、')
+      : text
 
 /** Speak Japanese with the device's voice, at `speed` percent (else the Settings speed). Returns false when there is
  * no voice (nothing is played). */
@@ -11,7 +18,7 @@ export function speak(text: string, speed = readSpeed()): boolean {
   const voice = jaVoice()
   if (!s || !voice) return false
   s.cancel() // never queue up overlapping speech
-  const u = new SpeechSynthesisUtterance(text)
+  const u = new SpeechSynthesisUtterance(speed <= SLOW ? slowly(text) : text)
   u.lang = 'ja-JP'
   u.voice = voice
   u.rate = speed / 100
@@ -26,7 +33,7 @@ export function speakAll(texts: string[], onStart: (i: number) => void, onEnd: (
   if (!s || !voice) { onEnd(); return () => {} }
   s.cancel()
   texts.forEach((text, i) => {
-    const u = new SpeechSynthesisUtterance(text)
+    const u = new SpeechSynthesisUtterance(readSpeed() <= SLOW ? slowly(text) : text)
     u.lang = 'ja-JP'
     u.voice = voice
     u.rate = readSpeed() / 100

@@ -4,6 +4,7 @@ import { Html } from '../anki/media'
 import { speak } from '../audio'
 import { BUILTIN_DECKS } from '../db/db'
 import { ITEMS } from '../path/course'
+import { Mnemonic } from '../path/ui/Mnemonic'
 import { Ruby } from '../path/ui/Ruby'
 import { intervals } from '../srs/scheduler'
 import { SpeakButton } from './SpeakButton'
@@ -50,10 +51,11 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
             {kanji ? (
               <>
                 <div className="answer">{kanji.gloss}</div>
+                <Mnemonic item={kanji} />
                 <p className="kanji-readings" lang="ja">{[kanji.on?.length && `音 ${kanji.on.join('・')}`, kanji.kun?.length && `訓 ${kanji.kun.join('・')}`].filter(Boolean).join('　')}</p>
                 {example && <p className="kanji-example"><span lang="ja"><Ruby text={example.written ?? example.kanji ?? example.jp} reading={example.written ?? example.kanji ? example.jp : undefined} /></span> {example.gloss} <SpeakButton text={example.jp} /></p>}
               </>
-            ) : !card.html && <div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>}
+            ) : !card.html && <><div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>{ITEMS.get(card.id) && <Mnemonic item={ITEMS.get(card.id)!} />}</>}
             <div className="grades">
               {GRADES.map(([g, label, cls]) => (
                 <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small aria-label={`next in ${next[g]}`}>{next[g]}</small></button>

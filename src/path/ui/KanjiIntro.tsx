@@ -1,5 +1,6 @@
 import { toKata } from '../../data/kana'
 import { ITEMS, written, type Item } from '../course'
+import { Mnemonic } from './Mnemonic'
 import { Strokes } from './Strokes'
 
 /** A new kanji: stroke order, meanings, readings, and course words written with it. */
@@ -10,6 +11,7 @@ export function KanjiIntro({ item, onDone }: { item: Item; onDone: (missed: stri
       <p className="q">New kanji</p>
       <Strokes char={item.jp} />
       <div className="answer">{item.gloss}</div>
+      <Mnemonic item={item} />
       <dl className="kanji-readings">
         {!!item.on?.length && <><dt>On reading</dt><dd lang="ja">{item.on.map(toKata).join('、')}</dd></>}
         {!!item.kun?.length && <><dt>Kun reading</dt><dd lang="ja">{item.kun.join('、')}</dd></>}

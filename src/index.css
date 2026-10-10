@@ -232,6 +232,10 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .kanji-example { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; } .kanji-example [lang] { font-size: 1.4rem; }
 .answer { font-size: 1.6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; text-align: center; }
 .note { margin: 0; font-size: .9rem; text-align: center; color: var(--muted); }
+/* memory aid: a kanji's parts or a word's kanji, as a soft chip under the meaning */
+.mnemonic { margin: 0; padding: .45rem .75rem; border-radius: var(--radius-s); background: var(--accent-soft); color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
+.mnemonic .label { color: var(--muted); }
+.mnemonic [lang="ja"] { font-size: 1.15em; font-weight: 600; }
 .jp-option { font-size: 1.5rem; }
 .grid button, .match button { min-height: 3.5rem; border-width: 2px; }
 .grid.wide { grid-template-columns: 1fr; } .grid.wide button { text-align: left; }

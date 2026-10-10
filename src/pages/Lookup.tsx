@@ -6,6 +6,7 @@ import { ITEMS, written, type Item } from '../path/course'
 import { ENTRIES, MAX, search } from '../path/lookup'
 import { stage } from '../srs/stages'
 import { loadStrokes } from '../path/strokes'
+import { Mnemonic } from '../path/ui/Mnemonic'
 import { Strokes } from '../path/ui/Strokes'
 import { WriteBoard } from '../path/ui/WriteBoard'
 
@@ -42,7 +43,7 @@ export function Lookup({ db }: { db: Db }) {
                     {st && <span className={`tag ${st.toLowerCase()}`}>{st}</span>}
                   </span>
                 </summary>
-                {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <p className="hint">{it.romaji}</p>}
+                {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <><p className="hint">{it.romaji}</p><Mnemonic item={it} /></>}
                 <a href={`https://jisho.org/search/${encodeURIComponent((it.written ?? it.kanji ?? written(it)) + (it.kind === 'kanji' ? ' #kanji' : ''))}`} target="_blank" rel="noopener noreferrer">
                   Jisho<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span>
                 </a>
@@ -81,6 +82,7 @@ function KanjiDetail({ it }: { it: Item }) {
         </>
       )}
       <p lang="ja">{[...(it.on ?? []).map(toKata), ...(it.kun ?? [])].join('、')}</p>
+      <Mnemonic item={it} />
       {examples.map((w) => <p key={w.id}><span lang="ja">{w.written ?? w.kanji ?? w.jp} {w.jp}</span> {w.gloss}</p>)}
       <p className="hint">{it.strokes} strokes</p>
     </div>

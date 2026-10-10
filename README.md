@@ -56,7 +56,7 @@ The JLPT words, kanji and stroke order come from open data, cleaned by `scripts/
 
 - JLPT word lists and kanji levels: Jonathan Waller ([tanos.co.uk](http://www.tanos.co.uk/jlpt/)), CC BY, via [open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks).
 - Kanji meanings and readings: [KANJIDIC2](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) (EDRDG), CC BY-SA 4.0, via [kanji-data](https://github.com/davidluzgouveia/kanji-data). `src/data/jlpt/kanji.json` is shared under CC BY-SA 4.0.
-- Stroke order: [KanjiVG](https://kanjivg.tagaini.net) by Ulrich Apel, CC BY-SA 3.0. `public/strokes.json` is shared under CC BY-SA 3.0.
+- Stroke order and kanji parts: [KanjiVG](https://kanjivg.tagaini.net) by Ulrich Apel, CC BY-SA 3.0. `public/strokes.json` and `src/data/jlpt/parts.json` (built by `scripts/build_strokes.py` and `scripts/build_parts.py`) are shared under CC BY-SA 3.0.
 - Word order uses frequencies from [wordfreq](https://github.com/rspeer/wordfreq) (build time only).
 
 Pushes to `main` run lint, tests and build, then deploy to GitHub Pages (`.github/workflows/deploy.yml`).
