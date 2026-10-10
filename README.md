@@ -52,7 +52,7 @@ The starter vocabulary (`src/path/vocab.ts`) and the grammar (`src/path/grammar.
 
 The JLPT words, kanji and stroke order come from open data, cleaned by `scripts/build_course_data.py` and `scripts/build_strokes.py`; sources, licences and how to rebuild are in `data/raw/README.md`. Lesson ids are snapshot-tested: saved progress refers to them, so a data change must not reshuffle existing lessons.
 
-## Credits and licences
+## Credits and licences (also on the About page)
 
 - JLPT word lists and kanji levels: Jonathan Waller ([tanos.co.uk](http://www.tanos.co.uk/jlpt/)), CC BY, via [open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks).
 - Kanji meanings and readings: [KANJIDIC2](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) (EDRDG), CC BY-SA 4.0, via [kanji-data](https://github.com/davidluzgouveia/kanji-data). `src/data/jlpt/kanji.json` is shared under CC BY-SA 4.0.

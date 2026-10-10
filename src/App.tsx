@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { warmUpVoices } from './audio'
 import { openDb, seedKana, type Db } from './db/db'
 import { Icon, Logo } from './icons'
+import { About } from './pages/About'
 import { Account } from './pages/Account'
-import { Credits } from './pages/Credits'
 import { Decks } from './pages/Decks'
 import { Drill } from './pages/Drill'
 import { KanaChart } from './pages/KanaChart'
@@ -27,15 +27,15 @@ import { readBool, readStr, writeBool, writeStr } from './settings'
 import { maybeSignedIn, sync } from './sync'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
-type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'credits' | 'grammar' | 'account'
+type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', credits: 'more', grammar: 'more', account: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', about: 'more', grammar: 'more', account: 'more' }
 const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
   ['stats', 'Stats', 'Your reviews and cards'],
   ['settings', 'Settings', 'Sync, theme, audio, furigana, backup'],
-  ['credits', 'Credits', 'Where the course data comes from'],
+  ['about', 'About', 'The app on GitHub, and credits for the course data'],
 ]
 
 /** Whether a media query matches, kept current (false where matchMedia is missing, as in tests). */
@@ -168,8 +168,8 @@ export default function App() {
           <Account db={db} onSynced={rerender} />
         ) : view === 'grammar' ? (
           <Grammar db={db} />
-        ) : view === 'credits' ? (
-          <Credits />
+        ) : view === 'about' ? (
+          <About />
         ) : view === 'more' ? (
           <ul className="menu">
             {MORE.map(([v, label, blurb]) => (

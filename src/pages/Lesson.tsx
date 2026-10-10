@@ -91,13 +91,13 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
     setStep((s) => s + 1)
   }
   return (
-    <>
+    <div className="lesson">
       <div className="bar">
         <ExitButton onClick={onExit} />
         <progress max={run.initial} value={run.initial - run.queue.length} aria-label="Lesson progress" />
       </div>
       <ExerciseView ex={ex} step={step} autoplay={autoplay} onDone={done} onSkipSpeaking={skipSpeaking} />
-    </>
+    </div>
   )
 }
 

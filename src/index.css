@@ -273,6 +273,25 @@ ul.examples .jp { font-size: 1.25rem; }
 button.mic { display: inline-flex; align-items: center; gap: .5rem; }
 .test-label { margin: 0 0 .75rem; }
 
+/* phones: the exercise fills the screen, the prompt centred and the answers down in thumb reach.
+   Typing keeps its natural flow (the keyboard covers the bottom of the screen anyway). */
+@media (max-width: 47.99rem) {
+  main.focused:has(> .lesson) { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+  .lesson { display: flex; flex-direction: column; min-height: calc(100dvh - max(1rem, env(safe-area-inset-top)) - 1rem - env(safe-area-inset-bottom));
+    transition: padding-bottom var(--dur-2) var(--ease-out); }
+  .lesson > .card:not(form) { flex: 1; }
+  .lesson > .card:not(form) > :is(.kana, .prompt, .strokes) { margin-block: auto; }
+  /* intros: the character with its meaning centred together, Got it full width at the bottom */
+  .lesson > .card > :is(.kana, .strokes):has(+ .answer, + .reading) { margin-block: auto 0; }
+  .lesson > .card > .match { margin-top: auto; } /* pairs in thumb reach too */
+  .lesson > .card > :has(+ button.primary:last-child) { margin-bottom: auto; }
+  .lesson > .card > button.primary:last-child { align-self: stretch; min-height: 3.5rem; font-size: 1.1rem; }
+  .lesson > .card > .grid button, .lesson > .card > .match button { min-height: 3.75rem; }
+  /* after answering, the answers rise above the result bar so both stay in view */
+  .lesson:has(.feedback:not(.inline).good, .feedback:not(.inline).bad) { padding-bottom: 11rem; }
+}
+@media (max-width: 47.99rem) and (prefers-reduced-motion: reduce) { .lesson { transition: none; } }
+
 /* lesson complete */
 .done-card { text-align: center; padding-block: 2rem; position: relative; overflow: hidden; }
 .done-card h2 { font-size: 1.8rem; }
@@ -431,6 +450,8 @@ input:-webkit-autofill { -webkit-box-shadow: 0 0 0 100px var(--raised, var(--car
 .password button:active:not(:disabled) { transform: translateY(-50%); }
 .link-btn { border: 0; background: none; box-shadow: none; padding: 0; min-height: 0; color: var(--accent); font: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .logo { flex: none; border-radius: 7px; }
+.about-head { display: flex; align-items: center; gap: .9rem; } .about-head .logo { border-radius: 12px; }
+.about-head h2 small { font-weight: 500; color: var(--muted); font-size: .9rem; }
 
 /* ============ welcome ============ */
 .welcome { max-width: 28rem; margin: 0 auto; padding-top: 1rem; }
