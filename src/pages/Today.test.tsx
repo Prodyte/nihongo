@@ -39,7 +39,7 @@ it('with cards due, reviewing leads; the streak shows, done for today', async ()
   const user = userEvent.setup()
   render(<Today db={db} onReview={onReview} onLesson={() => {}} />)
   await screen.findByText('1-day streak')
-  expect(screen.getByText(/Done for today ✓/)).toBeTruthy()
+  expect(screen.getByText(/Done for today\./)).toBeTruthy()
   expect(screen.queryByText(/XP/)).toBeNull()
   const [first, second] = buttons()
   expect(first).toEqual(['Review', true]) // reviews first, as the primary action

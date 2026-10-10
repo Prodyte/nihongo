@@ -9,6 +9,7 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
   const [typed, setTyped] = useState('')
   const [password, setPassword] = useState('')
   const [create, setCreate] = useState(false)
+  const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<{ text: string; bad?: boolean } | null>(null)
 
@@ -43,12 +44,15 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
       return
     }
     setPassword('')
-    await sync(db)
-    onSynced() // remounts this page signed in, and the header shows the account icon
+    setEmail(data.user?.email ?? creds.email)
+    onSynced() // the header shows the account icon
+    await syncNow()
   })
   const signOut = act(async () => {
     await (await supabase()).auth.signOut()
+    setEmail(null)
     onSynced() // the header's Sign in button comes back
+    setStatus({ text: 'Signed out. Your progress stays on this device.' })
   })
 
   const last = lastSync()
@@ -73,11 +77,15 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
               Email
               <input type="email" required autoComplete="email" value={typed} onChange={(e) => setTyped(e.target.value)} />
             </label>
-            <label>
-              Password
-              <input type="password" required minLength={6} autoComplete={create ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
-              {create && <small className="hint left">At least 6 characters.</small>}
-            </label>
+            <div className="field">
+              <label htmlFor="account-password">Password</label>
+              <span className="password">
+                <input id="account-password" type={show ? 'text' : 'password'} required minLength={6} autoComplete={create ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                  aria-describedby={create ? 'password-hint' : undefined} />
+                <button type="button" aria-pressed={show} aria-label="Show password" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button>
+              </span>
+              {create && <small id="password-hint" className="hint left">At least 6 characters.</small>}
+            </div>
             <button className="primary big" disabled={busy}>{busy ? 'One moment…' : create ? 'Create account' : 'Sign in'}</button>
           </form>
           <p className="hint">

@@ -107,6 +107,12 @@ export async function getProgress(db: Db, now = new Date()) {
     done: new Set(lessons.map((l) => l.id)),
     streak: streak(days, now),
     xpToday: activity.find((a) => a.date === dayKey(now))?.xp ?? 0,
+    // the last seven days, oldest first: which ones had a lesson or review (Today's week strip)
+    week: Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now)
+      d.setDate(d.getDate() - 6 + i)
+      return { day: d, on: days.has(dayKey(d)) }
+    }),
   }
 }
 

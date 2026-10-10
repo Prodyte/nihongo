@@ -163,7 +163,9 @@ describe('getProgress / addReviewXp', () => {
     await completeLesson(db, LESSONS[0], ITEMS, {}, 1, at('2026-03-09T12:00:00'))
     await addReviewXp(db, at('2026-03-10T08:00:00'))
     await addReviewXp(db, at('2026-03-10T08:05:00'))
-    expect(await getProgress(db, at('2026-03-10T09:00:00'))).toEqual({ done: new Set([LESSONS[0].id]), streak: 2, xpToday: 2 })
+    const p = await getProgress(db, at('2026-03-10T09:00:00'))
+    expect(p).toMatchObject({ done: new Set([LESSONS[0].id]), streak: 2, xpToday: 2 })
+    expect(p.week.map((d) => d.on)).toEqual([false, false, false, false, false, true, true]) // the week strip: yesterday and today
     expect(await getProgress(db, at('2026-03-12T09:00:00'))).toMatchObject({ streak: 0, xpToday: 0 }) // two idle days broke it
   })
 })

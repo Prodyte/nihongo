@@ -38,6 +38,19 @@ const MORE: [View, string, string][] = [
   ['credits', 'Credits', 'Where the course data comes from'],
 ]
 
+/** Whether a media query matches, kept current (false where matchMedia is missing, as in tests). */
+function useMedia(query: string) {
+  const mq = typeof matchMedia === 'function' ? matchMedia(query) : null
+  const [on, setOn] = useState(!!mq?.matches)
+  useEffect(() => {
+    if (!mq) return
+    const change = () => setOn(mq.matches)
+    mq.addEventListener('change', change)
+    return () => mq.removeEventListener('change', change)
+  }, [mq?.media]) // eslint-disable-line react-hooks/exhaustive-deps
+  return on
+}
+
 export default function App() {
   const [db, setDb] = useState<Db | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +64,11 @@ export default function App() {
   const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
   const [furigana, setFurigana] = useState<Furigana>(() => readStr('nihongo.furigana', FURIGANA, 'auto'))
   const [known, setKnown] = useState<ReadonlySet<string>>(new Set()) // kanji the learner has had a kanji lesson for
-  const [gen, setGen] = useState(0) // bumped when sync or a restore changes local data: screens remount and reload
+  const phone = !useMedia('(min-width: 48rem)') // bottom tabs, and a top bar for the logo and account
+  const sidebar = useMedia('(min-width: 64rem)') // navigation down the left, More's pages listed in it
+  const [gen, setGen] = useState(0) // bumped when a background sync changes local data: screens remount and reload
+  const [, setTick] = useState(0)
+  const rerender = () => setTick((t) => t + 1) // sign-in state changed on Settings or Account: redraw the header, keep the page and its message
   const [session, setSession] = useState<Config>(config) // what the running review studies (Today's doesn't change the Review tab)
 
   useEffect(() => {
@@ -94,6 +111,10 @@ export default function App() {
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
   const focused = !!lesson || !!unit || view === 'study' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
+  const account = maybeSignedIn()
+    ? <button className="icon-btn account-btn" aria-label="Account and sync" aria-current={view === 'account' ? 'page' : undefined} onClick={() => setView('account')}><Icon name="user" /></button>
+    : <button className="account-btn" aria-current={view === 'account' ? 'page' : undefined} onClick={() => setView('account')}>Sign in</button>
+
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
   if (!db) return <main><div className="skeleton" /><div className="skeleton tall" /></main>
   if (welcome) {
@@ -107,14 +128,16 @@ export default function App() {
   }
   return (
     <FuriganaContext.Provider value={{ mode: furigana, known }}>
-      <main key={gen} className={focused ? 'focused' : ''}>
-        {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
-        <header className={focused ? 'visually-hidden' : 'brand'}>
-          <h1><Logo /> Nihongo <small lang="ja">日本語</small></h1>
-          {!focused && (maybeSignedIn()
-            ? <button className="icon-btn account-btn" aria-label="Account and sync" onClick={() => setView('account')}><Icon name="user" /></button>
-            : <button className="account-btn" onClick={() => setView('account')}>Sign in</button>)}
+      {!focused && phone && (
+        <header className="appbar">
+          <span className="brand" aria-hidden="true"><Logo /> Nihongo <small lang="ja">日本語</small></span>
+          {account}
         </header>
+      )}
+      <main key={gen} className={focused ? 'focused' : 'with-nav'}>
+        {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
+        {/* one h1 for screen readers; the logo is drawn in the top bar (phones) or the side/top navigation (wider screens) */}
+        <h1 className="visually-hidden">Nihongo</h1>
         {lesson ? (
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
         ) : unit ? (
@@ -140,9 +163,9 @@ export default function App() {
           <Stats db={db} />
         ) : view === 'settings' ? (
           <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
-            furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} onSynced={() => setGen((g) => g + 1)} />
+            furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} onSynced={rerender} />
         ) : view === 'account' ? (
-          <Account db={db} onSynced={() => setGen((g) => g + 1)} />
+          <Account db={db} onSynced={rerender} />
         ) : view === 'grammar' ? (
           <Grammar db={db} />
         ) : view === 'credits' ? (
@@ -159,12 +182,22 @@ export default function App() {
       </main>
       {!focused && (
         <nav aria-label="Main" className="tabs">
-          {TABS.map(([t, label]) => (
-            <button key={t} aria-current={TAB_OF[view] === t ? 'page' : undefined} onClick={() => setView(t)}>
+          <span className="brand" aria-hidden="true"><Logo /> Nihongo <small lang="ja">日本語</small></span>
+          {TABS.filter(([t]) => !(sidebar && t === 'more')).map(([t, label]) => (
+            <button key={t} className={`tab-${t}`} aria-current={TAB_OF[view] === t ? 'page' : undefined} onClick={() => setView(t)}>
               <Icon name={t} />
               <span>{label}</span>
             </button>
           ))}
+          {/* the sidebar lists the More pages itself */}
+          {sidebar && (
+            <div className="nav-more" role="group" aria-label="More">
+              {MORE.map(([v, label]) => (
+                <button key={v} aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>{label}</button>
+              ))}
+            </div>
+          )}
+          {!phone && account}
         </nav>
       )}
     </FuriganaContext.Provider>

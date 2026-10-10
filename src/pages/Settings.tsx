@@ -62,7 +62,7 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, onSyn
         </label>
       </div>
       <Account db={db} onSynced={onSynced} />
-      <Backup db={db} onRestored={onSynced} />
+      <Backup db={db} onRestored={() => {}} />
     </>
   )
 }

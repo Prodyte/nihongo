@@ -7,7 +7,7 @@ import { coverage, currentLesson, getProgress, type LevelCoverage } from '../pat
 import { nextDue, until } from '../srs/stages'
 import { Levels } from './Levels'
 
-interface State { streak: number; xpToday: number; next: (typeof LESSONS)[number] | null; due: number; fresh: number; level: LevelCoverage; nextReview: string | null; hour: number }
+interface State { streak: number; xpToday: number; week: { day: Date; on: boolean }[]; next: (typeof LESSONS)[number] | null; due: number; fresh: number; level: LevelCoverage; nextReview: string | null; hour: number }
 
 const GREETING = (h: number) => (h < 11 ? ['おはよう', 'Good morning'] : h < 18 ? ['こんにちは', 'Good afternoon'] : ['こんばんは', 'Good evening'])
 
@@ -26,7 +26,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
         // the level you are working on: the next lesson's, or the first not yet complete
         const level = levels.find((l) => next?.id.startsWith(`n${l.level}-`)) ?? levels.find((l) => l.words[0] < l.words[1]) ?? levels[2]
         const nd = nextDue(cards, now)
-        if (live) setS({ streak: p.streak, xpToday: p.xpToday, next, ...c, level, nextReview: nd && until(nd, now), hour: now.getHours() })
+        if (live) setS({ streak: p.streak, xpToday: p.xpToday, week: p.week, next, ...c, level, nextReview: nd && until(nd, now), hour: now.getHours() })
       })
       .catch((e) => live && setError(`Couldn't load your progress (${e}).`))
     return () => {
@@ -44,8 +44,9 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
   const unit = s.next && unitOf(s.next)
 
   const reviewCard = (
-    <section className="card review-card" aria-label="Reviews">
-      <div>
+    <section className={`card review-card${reviewFirst ? ' due' : ''}`} aria-label="Reviews">
+      <span className="review-count" aria-hidden="true">{reviews ? <strong>{reviews}</strong> : <Icon name="check" size={26} />}</span>
+      <div className="review-text">
         <strong>{reviews ? `${s.due ? `${s.due} review${s.due === 1 ? '' : 's'} due` : ''}${s.due && s.fresh ? ' + ' : ''}${s.fresh ? `${s.fresh} new` : ''}` : 'All caught up'}</strong>
         <small>{reviews ? 'Spaced repetition keeps them in memory' : s.nextReview ? `Next review ${s.nextReview}` : 'Finish a lesson to start reviewing'}</small>
       </div>
@@ -61,14 +62,26 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
           <p className="sub">{hi}</p>
         </div>
       </div>
-      <section className="card" aria-label="Streak">
+      <section className="card streak-card" aria-label="Streak">
         <div className="goal">
-          <div className={`streak-badge${s.streak ? '' : ' off'}`} aria-hidden="true"><Icon name="flame" size={30} /></div>
+          <div className={`streak-badge${s.streak ? '' : ' off'}`} aria-hidden="true"><Icon name="flame" size={28} /></div>
           <div>
             <p><strong>{s.streak ? `${s.streak}-day streak` : 'No streak yet'}</strong></p>
-            <p className="hint" style={{ textAlign: 'left' }}>{today ? 'Done for today ✓ See you tomorrow.' : s.streak ? 'Do a lesson or a review today to keep it going.' : 'Do a lesson or a review to start one.'}</p>
+            <p className="hint left">{today ? 'Done for today. See you tomorrow.' : s.streak ? 'Do a lesson or a review today to keep it going.' : 'Do a lesson or a review to start one.'}</p>
           </div>
         </div>
+        <ol className="week" aria-label="The last seven days">
+          {s.week.map((d, i) => {
+            const name = d.day.toLocaleDateString(undefined, { weekday: 'short' })
+            return (
+              <li key={i} className={`${d.on ? 'on' : ''}${i === 6 ? ' today' : ''}`}>
+                <span className="dot" aria-hidden="true">{d.on && <Icon name="check" size={16} />}</span>
+                <small aria-hidden="true">{i === 6 ? 'Today' : name.slice(0, 2)}</small>
+                <span className="visually-hidden">{i === 6 ? 'Today' : name}: {d.on ? 'studied' : 'not studied'}</span>
+              </li>
+            )
+          })}
+        </ol>
       </section>
       {reviewFirst && reviewCard}
       {s.next && kind ? (
@@ -81,7 +94,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
           <button className={reviewFirst ? 'big' : 'primary big'} onClick={() => onLesson(s.next!.id)}>Next lesson: <span lang="ja">{s.next.title}</span></button>
         </section>
       ) : (
-        <section className="card"><p>You finished the whole path. 🎉</p></section>
+        <section className="card"><p>You finished the whole path. Well done!</p></section>
       )}
       {!reviewFirst && reviewCard}
       <section className="card form" aria-label="Level progress">

@@ -104,7 +104,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
             <button className="tile-btn" disabled={!!t.off} onClick={t.go}>
               <span className="tile-icon"><Icon name={t.icon} /></span>
               <strong>{t.title}</strong>
-              <small>{t.off ?? t.blurb}</small>
+              {t.off ? <small className="why"><Icon name="lock" size={14} />{t.off}</small> : <small>{t.blurb}</small>}
             </button>
           </li>
         ))}
