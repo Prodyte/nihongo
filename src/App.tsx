@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { warmUpVoices } from './audio'
 import { openDb, seedKana, type Db } from './db/db'
 import { Icon, Logo } from './icons'
@@ -74,6 +74,29 @@ export default function App() {
   const rerender = () => setTick((t) => t + 1) // sign-in state changed on Settings or Account: redraw the header, keep the page and its message
   const [session, setSession] = useState<Config>(config) // what the running review studies (Today's doesn't change the Review tab)
 
+  // The phone's back button / swipe goes back a screen instead of leaving the app. Opening a screen pushes a history
+  // entry (switching tabs replaces it, so back doesn't replay every tab); leaving one with its own exit button pops it.
+  const popping = useRef(false) // our own history.back(): the view is already set
+  const go = (v: View) => {
+    if (v === view) return
+    if (TABS.some(([t]) => t === v)) history.replaceState({ view: v, pushed: history.state?.pushed }, '')
+    else history.pushState({ view: v, pushed: true }, '')
+    setView(v)
+  }
+  const leave = (v: View) => {
+    if (history.state?.pushed) { popping.current = true; history.back() }
+    setView(v)
+  }
+  useEffect(() => {
+    history.replaceState({ view }, '')
+    const pop = (e: PopStateEvent) => {
+      if (popping.current) { popping.current = false; return }
+      setView((e.state?.view as View | undefined) ?? 'today')
+    }
+    addEventListener('popstate', pop)
+    return () => removeEventListener('popstate', pop)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- once: the first entry is the starting view
+
   useEffect(() => {
     warmUpVoices()
     openDb()
@@ -111,15 +134,15 @@ export default function App() {
     }, () => {})
   }, [db, view])
 
-  const startLesson = (id: string) => { setBack(view); setLessonId(id); setView('lesson') }
-  const study = (from: View, c: Config) => { setSession(c); setBack(from); setView('study') }
+  const startLesson = (id: string) => { setBack(view); setLessonId(id); go('lesson') }
+  const study = (from: View, c: Config) => { setSession(c); setBack(from); go('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
   const focused = !!lesson || !!unit || view === 'study' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
   const account = maybeSignedIn()
-    ? <button className="icon-btn account-btn" aria-label="Account and sync" aria-current={view === 'account' ? 'page' : undefined} onClick={() => setView('account')}><Icon name="user" /></button>
-    : <button className="account-btn" aria-current={view === 'account' ? 'page' : undefined} onClick={() => setView('account')}>Sign in</button>
+    ? <button className="icon-btn account-btn" aria-label="Account and sync" aria-current={view === 'account' ? 'page' : undefined} onClick={() => go('account')}><Icon name="user" /></button>
+    : <button className="account-btn" aria-current={view === 'account' ? 'page' : undefined} onClick={() => go('account')}>Sign in</button>
 
   if (error) return <main><p role="alert">Couldn't open local storage ({error}). Private browsing can block it.</p></main>
   if (!db) return <main><div className="skeleton" /><div className="skeleton tall" /></main>
@@ -128,7 +151,7 @@ export default function App() {
       writeBool('nihongo.onboarded', true)
       setWelcome(false)
       // skipping ahead means passing a test over everything up to there: the last kana unit, or the end of the starter section
-      if (level !== 'new') { setTestUnit(level === 'kana' ? 'kana-combos' : UNITS.filter((u) => u.section === 'Starter').at(-1)!.id); setView('test') }
+      if (level !== 'new') { setTestUnit(level === 'kana' ? 'kana-combos' : UNITS.filter((u) => u.section === 'Starter').at(-1)!.id); go('test') }
     }
     return <main><h1 className="visually-hidden">Nihongo</h1><Welcome onDone={start} /></main>
   }
@@ -145,22 +168,22 @@ export default function App() {
         {/* one h1 for screen readers; the logo is drawn in the top bar (phones) or the side/top navigation (wider screens) */}
         <h1 className="visually-hidden">Nihongo</h1>
         {lesson ? (
-          <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => setView(back)} onStart={setLessonId} />
+          <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => leave(back)} onStart={setLessonId} />
         ) : unit ? (
-          <TestOut key={unit.id} db={db} unit={unit} onExit={() => setView('path')} />
+          <TestOut key={unit.id} db={db} unit={unit} onExit={() => leave('path')} />
         ) : view === 'drill' ? (
-          <Drill key={drill} db={db} kind={drill} onExit={() => setView('review')} />
+          <Drill key={drill} db={db} kind={drill} onExit={() => leave('review')} />
         ) : view === 'reading' ? (
-          <Reading db={db} onExit={() => setView('review')} />
+          <Reading db={db} onExit={() => leave('review')} />
         ) : view === 'kana' ? (
-          <KanaChart db={db} onExit={() => setView('review')} />
+          <KanaChart db={db} onExit={() => leave('review')} />
         ) : view === 'study' ? (
-          <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => setView(back)} />
+          <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => leave(back)} />
         ) : view === 'review' ? (
           <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })}
-            onDrill={(k) => { setDrill(k); setView('drill') }} onRead={() => setView('reading')} onKana={() => setView('kana')} />
+            onDrill={(k) => { setDrill(k); go('drill') }} onRead={() => go('reading')} onKana={() => go('kana')} />
         ) : view === 'path' ? (
-          <Path db={db} onStart={startLesson} onTest={(id) => { setTestUnit(id); setView('test') }} />
+          <Path db={db} onStart={startLesson} onTest={(id) => { setTestUnit(id); go('test') }} />
         ) : view === 'lookup' ? (
           <Lookup db={db} />
         ) : view === 'decks' ? (
@@ -180,7 +203,7 @@ export default function App() {
         ) : view === 'more' ? (
           <ul className="menu">
             {MORE.map(([v, label, blurb]) => (
-              <li key={v}><button onClick={() => setView(v)}><strong>{label}</strong><small>{blurb}</small></button></li>
+              <li key={v}><button onClick={() => go(v)}><strong>{label}</strong><small>{blurb}</small></button></li>
             ))}
           </ul>
         ) : (
@@ -191,7 +214,7 @@ export default function App() {
         <nav aria-label="Main" className="tabs">
           <span className="brand" aria-hidden="true"><Logo /> Nihongo <small lang="ja">日本語</small></span>
           {TABS.filter(([t]) => !(sidebar && t === 'more')).map(([t, label]) => (
-            <button key={t} className={`tab-${t}`} aria-current={TAB_OF[view] === t ? 'page' : undefined} onClick={() => setView(t)}>
+            <button key={t} className={`tab-${t}`} aria-current={TAB_OF[view] === t ? 'page' : undefined} onClick={() => go(t)}>
               <Icon name={t} />
               <span>{label}</span>
             </button>
@@ -200,7 +223,7 @@ export default function App() {
           {sidebar && (
             <div className="nav-more" role="group" aria-label="More">
               {MORE.map(([v, label]) => (
-                <button key={v} aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>{label}</button>
+                <button key={v} aria-current={view === v ? 'page' : undefined} onClick={() => go(v)}>{label}</button>
               ))}
             </div>
           )}

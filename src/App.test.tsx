@@ -70,3 +70,25 @@ it('a lesson started from Path returns to Path; More leads to Decks, Stats and S
     expect(current()).toBe('More')
   }
 })
+
+it("the phone's back button goes back a screen (not out of the app); tabs don't pile up history; an exit button pops its entry", async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  await screen.findByRole('navigation', { name: 'Main' })
+  const depth = history.length
+  await user.click(tab('Path'))
+  await user.click(tab('More'))
+  expect(history.length).toBe(depth) // tabs replace the entry
+  await user.click(screen.getByRole('button', { name: /^Settings/ }))
+  await screen.findByRole('heading', { name: 'Settings' })
+  expect(history.length).toBe(depth + 1)
+  history.back()
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Settings/ })).toBeTruthy()) // back on More
+  expect(current()).toBe('More')
+  await user.click(tab('Review'))
+  await user.click(await screen.findByRole('button', { name: /^Kana chart/ }))
+  await user.click(await screen.findByRole('button', { name: 'Exit' }))
+  await waitFor(() => expect(current()).toBe('Review'))
+  await new Promise((r) => setTimeout(r, 50)) // the exit's own history.back() must not move the view again
+  expect(current()).toBe('Review')
+})

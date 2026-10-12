@@ -51,6 +51,7 @@ main { max-width: 34rem; margin: 0 auto; padding: max(1rem, env(safe-area-inset-
 main.focused { padding-bottom: calc(9rem + env(safe-area-inset-bottom)); } /* room for the feedback bar */
 h1 { font-size: 1.15rem; margin: 0; letter-spacing: .02em; } h1 small { font-weight: 500; color: var(--muted); font-size: .8rem; }
 h2 { margin: 0; font-size: 1.3rem; letter-spacing: -.01em; }
+h1, h2, h3 { text-wrap: balance; } /* no single word left alone on a heading's last line */
 h3 { margin: 0; }
 p[role="status"], p[role="alert"] { margin: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

@@ -13,12 +13,13 @@ export function search(query: string): Item[] {
   const q = query.trim().toLowerCase()
   if (!q) return []
   const kana = /^[a-z' -]+$/.test(q) ? normKana(toKana(q).kana) : normKana(q) // "taberu" finds たべる
+  const word = q.length >= 3 && new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i') // once per search, not per entry
   const hits: [number, Item][] = []
   for (const { it, keys } of ENTRIES) {
     // exact matches first, then prefix matches, then English meanings containing the word
     const rank = keys.some((k) => k && (k === q || k === kana)) ? 0
       : keys.some((k) => k && (k.startsWith(q) || (kana && k.startsWith(kana)))) ? 1
-      : q.length >= 3 && new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(it.gloss.toLowerCase()) ? 2
+      : word && word.test(it.gloss) ? 2
       : -1
     if (rank >= 0) hits.push([rank, it])
   }

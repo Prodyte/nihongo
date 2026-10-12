@@ -57,7 +57,11 @@ export function weakSpots(reviews: { cardId: string; grade: number; at: Date }[]
   const month = now.getTime() - 30 * 86400000
   const week = now.getTime() - 7 * 86400000
   const byCard = new Map<string, { grade: number; at: Date }[]>()
-  for (const r of reviews) byCard.set(r.cardId, [...(byCard.get(r.cardId) ?? []), r])
+  for (const r of reviews) {
+    const list = byCard.get(r.cardId)
+    if (list) list.push(r)
+    else byCard.set(r.cardId, [r])
+  }
   const out: { id: string; why: string; score: number }[] = []
   for (const c of cards) {
     const rs = (byCard.get(c.id) ?? []).sort((a, b) => a.at.getTime() - b.at.getTime())

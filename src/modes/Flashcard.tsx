@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
-import { Html } from '../anki/media'
 import { speak } from '../audio'
 import { BUILTIN_DECKS } from '../db/db'
 import { ITEMS } from '../path/course'
@@ -10,6 +9,9 @@ import { Ruby } from '../path/ui/Ruby'
 import { intervals } from '../srs/scheduler'
 import { SpeakButton } from './SpeakButton'
 import type { ModeProps } from './types'
+
+// imported Anki cards only: their renderer (and its HTML sanitiser) loads when the first one is shown
+const Html = lazy(() => import('../anki/media').then((m) => ({ default: m.Html })))
 
 const GRADES: [Grade, string, string][] = [[Rating.Again, 'Again', 'again'], [Rating.Hard, 'Hard', 'hard'], [Rating.Good, 'Good', 'good-g'], [Rating.Easy, 'Easy', 'easy']]
 
@@ -42,7 +44,7 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
   return (
     <div className="card">
       {card.html ? (
-        <Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} autoplay={autoplay} />
+        <Suspense fallback={<div className="skeleton" />}><Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} autoplay={autoplay} /></Suspense>
       ) : (
         <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
       )}
