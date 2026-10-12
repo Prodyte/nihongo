@@ -51,6 +51,17 @@ describe('xp, goal, unlocking', () => {
     expect(currentLesson(LESSONS, done)).toBe(LESSONS[1])
     expect(currentLesson(LESSONS, new Set(LESSONS.map((l) => l.id)))).toBeNull()
   })
+  it('the kana are optional: the first word lesson is open without them, and Continue follows the learner past them', () => {
+    const first = LESSONS.findIndex((l) => !l.id.startsWith('kana-'))
+    expect(first).toBeGreaterThan(0)
+    expect(isUnlocked(LESSONS, first, new Set(), false)).toBe(true)
+    expect(isUnlocked(LESSONS, first + 1, new Set(), false)).toBe(false)
+    expect(isUnlocked(LESSONS, first - 1, new Set(), false)).toBe(false) // the kana themselves still go in order
+    expect(currentLesson(LESSONS, new Set())).toBe(LESSONS[0])
+    expect(currentLesson(LESSONS, new Set([LESSONS[first].id]))).toBe(LESSONS[first + 1])
+    const allButKana = new Set(LESSONS.slice(first).map((l) => l.id))
+    expect(currentLesson(LESSONS, allButKana)).toBe(LESSONS[0])
+  })
   it('learnedItems is the union of completed lessons', () => {
     expect(learnedItems(LESSONS, new Set([LESSONS[0].id, LESSONS[2].id]))).toEqual(new Set([...LESSONS[0].items, ...LESSONS[2].items]))
   })

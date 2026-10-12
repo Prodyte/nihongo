@@ -24,11 +24,19 @@ export function streak(days: ReadonlySet<string>, today: Date): number {
 export const xpFor = (first: boolean, flawless: boolean) => (first ? 10 + (flawless ? 5 : 0) : 5)
 
 
-/** A lesson is open when the previous one is done (or when the learner chose to skip ahead). */
-export const isUnlocked = (lessons: readonly Lesson[], index: number, done: ReadonlySet<string>, skipAhead: boolean) =>
-  skipAhead || index === 0 || done.has(lessons[index - 1].id)
+/** The kana are optional: the rest of the path doesn't wait for them (romaji shows until they're done). */
+const optional = (l: Lesson) => l.id.startsWith('kana-')
 
-export const currentLesson = (lessons: readonly Lesson[], done: ReadonlySet<string>) => lessons.find((l) => !done.has(l.id)) ?? null
+/** A lesson is open when the previous one is done, or the previous one is optional and this one isn't (or when the learner chose to skip ahead). */
+export const isUnlocked = (lessons: readonly Lesson[], index: number, done: ReadonlySet<string>, skipAhead: boolean) =>
+  skipAhead || index === 0 || done.has(lessons[index - 1].id) || (optional(lessons[index - 1]) && !optional(lessons[index]))
+
+/** The next lesson to do: in order, but once the learner has moved past the kana, the next lesson after them (the kana stay open on the path). */
+export function currentLesson(lessons: readonly Lesson[], done: ReadonlySet<string>) {
+  const next = (ls: readonly Lesson[]) => ls.find((l) => !done.has(l.id))
+  const rest = lessons.filter((l) => !optional(l))
+  return (rest.some((l) => done.has(l.id)) && next(rest)) || next(lessons) || null
+}
 
 export const learnedItems = (lessons: readonly Lesson[], done: ReadonlySet<string>) =>
   new Set(lessons.filter((l) => done.has(l.id)).flatMap((l) => l.items))
