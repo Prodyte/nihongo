@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent, { type UserEvent } from '@testing-library/user-event'
 import { Rating, State } from 'ts-fsrs'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { toHira } from '../data/kana'
 import { openDb, seedKana, type Db } from '../db/db'
 import { ITEMS, lessonById, type Lesson as LessonT } from '../path/course'
 import { displayJp, kanaToRomaji, PARTICLES } from '../path/romaji'
@@ -24,11 +25,13 @@ const mount = (db: Db, lesson: LessonT, extra: Partial<Parameters<typeof Lesson>
   render(<Lesson db={db} lesson={lesson} autoplay={false} onExit={() => {}} onStart={() => {}} {...extra} />)
 
 const KEYS: Record<string, string> = { は: 'ha', を: 'wo', へ: 'he' }
+const shows = (it: { jp: string; kata?: string } | undefined, text: string | null) => !!it && (it.jp === text || it.kata === text) // a kana sound in either script
+const forms = (it: { jp: string; kata?: string }) => [it.jp, ...(it.kata ? [it.kata] : [])]
 const typeable = (it: NonNullable<ReturnType<typeof ITEMS.get>>) => (it.kind === 'sentence' ? it.tokens!.map((t) => KEYS[t] ?? kanaToRomaji(t)).join(' ') : it.romaji)
 
 async function solveMatch(u: UserEvent, items: ReturnType<typeof ITEMS.get>[]) {
   for (const b of [...document.querySelectorAll<HTMLElement>('.match button[lang="ja"]')]) {
-    const item = items.find((it) => it!.jp === b.textContent!.replace(/^✓\s*/, '').trim())!
+    const item = items.find((it) => shows(it, b.textContent!.replace(/^✓\s*/, '').trim()))!
     await u.click(b)
     await u.click([...document.querySelectorAll<HTMLElement>('.match button:not([lang])')].find((x) => x.textContent!.trim() === item.gloss)!)
   }
@@ -58,7 +61,7 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
     if (box) { // typing: the label says what to type, the prompt says what it is about
       const ask = document.querySelector('label.q')!.textContent!
       const shown = document.querySelector('.prompt')!.textContent
-      const text = ask.includes('Japanese') ? typeable(items.find((it) => it!.gloss === shown)!) : items.find((it) => it!.jp === shown)!.gloss // 'Japanese' first: its hint also says "romaji"
+      const text = ask.includes('Japanese') ? typeable(items.find((it) => it!.gloss === shown)!) : items.find((it) => shows(it, shown))!.gloss // 'Japanese' first: its hint also says "romaji"
       await u.type(box, text) // right: it passes as soon as it is typed
       await u.click(await screen.findByRole('button', { name: 'Continue' }))
       continue
@@ -66,11 +69,11 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
     const opts = within(screen.getByRole('group', { name: 'Answers' })).getAllByRole('button')
     const prompt = document.querySelector('.prompt')
     const gapped = prompt?.textContent?.includes('＿') ? items.find((it) => it!.tokens && displayJp(it!.tokens, it!.tokens.findIndex((t) => PARTICLES.has(t))) === prompt.textContent) : undefined
-    const answer = !prompt ? spoken.at(-1)!
-      : gapped ? gapped.tokens!.find((t) => PARTICLES.has(t))!
-      : prompt.classList.contains('kana') ? items.find((it) => it!.jp === prompt.textContent)!.gloss
-      : items.find((it) => it!.gloss === prompt.textContent)!.jp
-    const pick = wrongPending ? opts.find((b) => optionText(b) !== answer)! : opts.find((b) => optionText(b) === answer)!
+    const answers = !prompt ? [spoken.at(-1)!]
+      : gapped ? [gapped.tokens!.find((t) => PARTICLES.has(t))!]
+      : prompt.classList.contains('kana') ? [items.find((it) => shows(it, prompt.textContent))!.gloss]
+      : forms(items.find((it) => it!.gloss === prompt.textContent)!)
+    const pick = wrongPending ? opts.find((b) => !answers.includes(optionText(b)))! : opts.find((b) => answers.includes(optionText(b)))!
     if (wrongPending) { wrongPending = false; await u.click(pick); await screen.findByText(/✗ Correct answer:/) } else await u.click(pick)
     await u.click(await screen.findByRole('button', { name: 'Continue' }))
   }
@@ -79,13 +82,13 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
 
 it('a flawless kana lesson: summary, 15 XP, items graded Good, lesson recorded', async () => {
   const db = await freshDb()
-  const lesson = lessonById('hira-basic-1')! // あ い う え お
+  const lesson = lessonById('kana-basic-1')! // あ い う え お
   const u = user()
   mount(db, lesson)
   await drive(u, lesson)
   expect([tile('Right first time'), tile('Streak')]).toEqual(['100%', '1 day'])
-  expect(screen.getByRole('button', { name: /Next lesson: ア イ ウ エ オ/ })).toBeTruthy()
-  expect(await db.get('lessons', 'hira-basic-1')).toMatchObject({ plays: 1, bestAccuracy: 1 })
+  expect(screen.getByRole('button', { name: /Next lesson: かきくけこ カキクケコ/ })).toBeTruthy()
+  expect(await db.get('lessons', 'kana-basic-1')).toMatchObject({ plays: 1, bestAccuracy: 1 })
   for (const id of lesson.items) expect((await db.get('cards', id))!.fsrs.state).not.toBe(State.New)
   expect((await db.getAll('reviews')).map((r) => r.grade)).toEqual(Array(5).fill(Rating.Good))
   expect(await db.count('decks')).toBe(0) // kana only: no vocabulary deck
@@ -93,7 +96,7 @@ it('a flawless kana lesson: summary, 15 XP, items graded Good, lesson recorded',
 
 it('a wrong answer shows the right one, repeats once, costs accuracy and XP, and grades that item Hard', async () => {
   const db = await freshDb()
-  const lesson = lessonById('hira-basic-1')!
+  const lesson = lessonById('kana-basic-1')!
   const u = user()
   mount(db, lesson)
   await drive(u, lesson, { wrongFirst: true })
@@ -107,7 +110,7 @@ it('listening: the voice speaks on arrival, a replay button is shown, and the le
   vi.stubGlobal('SpeechSynthesisUtterance', class { text: string; lang = ''; voice: unknown = null; constructor(t: string) { this.text = t } })
   vi.stubGlobal('speechSynthesis', { getVoices: () => [{ lang: 'ja-JP' }], speak: (x: { text: string }) => spoken.push(x.text), cancel: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() })
   const db = await freshDb()
-  const lesson = lessonById('hira-basic-1')!
+  const lesson = lessonById('kana-basic-1')!
   const u = user()
   mount(db, lesson)
   let heardListen = false
@@ -122,15 +125,15 @@ it('listening: the voice speaks on arrival, a replay button is shown, and the le
     if (group) {
       const prompt = document.querySelector('.prompt')!
       const items = lesson.items.map((id) => ITEMS.get(id)!)
-      const answer = prompt.classList.contains('kana') ? items.find((it) => it.jp === prompt.textContent)!.gloss : items.find((it) => it.gloss === prompt.textContent)!.jp
-      await u.click(within(group).getAllByRole('button').find((b) => optionText(b) === answer)!)
+      const answers = prompt.classList.contains('kana') ? [items.find((it) => shows(it, prompt.textContent))!.gloss] : forms(items.find((it) => it.gloss === prompt.textContent)!)
+      await u.click(within(group).getAllByRole('button').find((b) => answers.includes(optionText(b)))!)
       await u.click(await screen.findByRole('button', { name: 'Continue' }))
     }
   }
   expect(heardListen).toBe(true)
   const before = spoken.length
   expect(before).toBeGreaterThan(0)
-  expect(lesson.items).toContain(`hira:${spoken.at(-1)}`) // it said one of this lesson's kana
+  expect(lesson.items).toContain(`kana:${toHira(spoken.at(-1)!)}`) // it said one of this lesson's kana
   await u.click(screen.getByRole('button', { name: 'Play sound' }))
   expect(spoken.length).toBe(before + 1) // replay
   await drive(u, lesson, { spoken })
@@ -154,7 +157,7 @@ it('Loading is never a dead end: Exit is there even if the lesson never finishes
   const onExit = vi.fn()
   const db = await freshDb()
   vi.spyOn(db, 'getAll').mockImplementation((() => new Promise(() => {})) as typeof db.getAll) // the progress read hangs
-  mount(db, lessonById('hira-basic-1')!, { onExit })
+  mount(db, lessonById('kana-basic-1')!, { onExit })
   await screen.findByRole('status', { name: 'Loading' })
   await user().click(screen.getByRole('button', { name: 'Exit' }))
   expect(onExit).toHaveBeenCalled()
@@ -164,17 +167,17 @@ it('Next lesson starts the following lesson', async () => {
   const onStart = vi.fn()
   const db = await freshDb()
   const u = user()
-  mount(db, lessonById('hira-basic-1')!, { onStart })
-  await drive(u, lessonById('hira-basic-1')!)
+  mount(db, lessonById('kana-basic-1')!, { onStart })
+  await drive(u, lessonById('kana-basic-1')!)
   await u.click(screen.getByRole('button', { name: /Next lesson/ }))
-  expect(onStart).toHaveBeenCalledWith('kata-basic-1') // the same sounds in katakana come next
+  expect(onStart).toHaveBeenCalledWith('kana-basic-2')
 })
 
 it('leaving mid-lesson saves nothing', async () => {
   const onExit = vi.fn()
   const db = await freshDb()
   const u = user()
-  mount(db, lessonById('hira-basic-1')!, { onExit })
+  mount(db, lessonById('kana-basic-1')!, { onExit })
   await u.click(await screen.findByRole('button', { name: 'Got it' }))
   await u.click(screen.getByRole('button', { name: 'Exit' }))
   expect(onExit).toHaveBeenCalled()
@@ -184,13 +187,13 @@ it('leaving mid-lesson saves nothing', async () => {
 
 it('Continue and Got it ignore a held (auto-repeating) key, so one Enter cannot skip several steps', async () => {
   const db = await freshDb()
-  mount(db, lessonById('hira-basic-1')!)
+  mount(db, lessonById('kana-basic-1')!)
   const got = await screen.findByRole('button', { name: 'Got it' })
   expect(fireEvent.keyDown(got, { key: 'Enter', repeat: true })).toBe(false) // default prevented => no click
   expect(fireEvent.keyDown(got, { key: 'Enter', repeat: false })).toBe(true)
   // ...and the Continue button after answering a question
   const u = user()
-  await drive(u, lessonById('hira-basic-1')!, { stopAfterIntros: true })
+  await drive(u, lessonById('kana-basic-1')!, { stopAfterIntros: true })
   await u.click(within(await screen.findByRole('group', { name: 'Answers' })).getAllByRole('button')[0])
   const cont = await screen.findByRole('button', { name: 'Continue' })
   expect(fireEvent.keyDown(cont, { key: 'Enter', repeat: true })).toBe(false)
@@ -198,7 +201,7 @@ it('Continue and Got it ignore a held (auto-repeating) key, so one Enter cannot 
 
 it('a failed save keeps the finished lesson, explains, and "Try again" saves it', async () => {
   const db = await freshDb()
-  const lesson = lessonById('hira-basic-1')!
+  const lesson = lessonById('kana-basic-1')!
   const u = user()
   mount(db, lesson)
   const real = db.transaction.bind(db)
@@ -214,7 +217,7 @@ it('a failed save keeps the finished lesson, explains, and "Try again" saves it'
 
 it('if only the streak read fails after a successful save, the summary still shows and nothing is awarded twice', async () => {
   const db = await freshDb()
-  const lesson = lessonById('hira-basic-1')!
+  const lesson = lessonById('kana-basic-1')!
   const u = user()
   mount(db, lesson)
   await screen.findByRole('button', { name: 'Got it' }) // the lesson built (its progress read happened)
@@ -230,7 +233,7 @@ it('if only the streak read fails after a successful save, the summary still sho
 
 it('digit shortcuts pick an answer, but not with Cmd/Ctrl/Alt held (those are browser shortcuts)', async () => {
   const db = await freshDb()
-  const lesson = lessonById('hira-basic-1')!
+  const lesson = lessonById('kana-basic-1')!
   mount(db, lesson)
   await drive(user(), lesson, { stopAfterIntros: true })
   const group = await screen.findByRole('group', { name: 'Answers' })
@@ -242,7 +245,7 @@ it('digit shortcuts pick an answer, but not with Cmd/Ctrl/Alt held (those are br
 })
 
 it('Match: wrong pairs are flagged and counted for both items, right pairs lock, finishing reports the misses', async () => {
-  const [a, b] = ['hira:あ', 'hira:い'].map((id) => ITEMS.get(id)!)
+  const [a, b] = ['kana:あ', 'kana:い'].map((id) => ITEMS.get(id)!)
   const onDone = vi.fn()
   const u = user()
   render(<Match pairs={[a, b].map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss }))} onDone={onDone} />)
@@ -261,7 +264,7 @@ it('Match: wrong pairs are flagged and counted for both items, right pairs lock,
   await screen.findByText('✓ All matched')
   expect(fireEvent.keyDown(screen.getByRole('button', { name: 'Continue' }), { key: 'Enter', repeat: true })).toBe(false) // held key
   await u.click(screen.getByRole('button', { name: 'Continue' }))
-  expect(onDone).toHaveBeenCalledWith(['hira:あ', 'hira:い'])
+  expect(onDone).toHaveBeenCalledWith(['kana:あ', 'kana:い'])
 })
 
 it('a grammar lesson, start to finish: explanation, translate, gap, build, say, type; sentences become cards in the grammar deck', async () => {

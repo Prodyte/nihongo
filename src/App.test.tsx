@@ -22,7 +22,7 @@ it('opens on Today; Review studies a flashcard end to end (full-screen), and rev
   await waitFor(() => expect(screen.getByText('0 due · 0 new')).toBeTruthy()) // all decks: kana you haven't met aren't offered
   expect(current()).toBe('Review')
   expect((screen.getByRole('combobox', { name: 'Deck' }) as HTMLSelectElement).value).toBe('all') // every deck by default
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Deck' }), 'hira') // choosing the kana deck does offer them
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Deck' }), 'kana') // choosing the kana deck does offer them
   await waitFor(() => expect(screen.getByText(/20 new/)).toBeTruthy())
   await user.click(screen.getByRole('button', { name: 'Study' }))
 
@@ -30,7 +30,8 @@ it('opens on Today; Review studies a flashcard end to end (full-screen), and rev
   expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull() // focused: no tabs
   const front = document.querySelector('.kana')!.textContent!
   await user.click(screen.getByRole('button', { name: /show answer/i }))
-  const expected = KANA.find((k) => k.id === `hira:${front}`)!.romaji[0]
+  expect(front).toMatch(/^\S+ \S+$/) // a kana card shows both scripts: あ ア
+  const expected = KANA.find((k) => k.kana === front.split(' ')[0])!.romaji[0]
   expect(screen.getByText(expected, { selector: '.answer' })).toBeTruthy()
 
   await user.click(screen.getByRole('button', { name: /^Good/ }))

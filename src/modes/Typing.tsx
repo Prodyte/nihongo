@@ -8,15 +8,15 @@ import { ITEMS } from '../path/course'
 import { Example } from '../path/ui/Example'
 import { Ruby } from '../path/ui/Ruby'
 import { SpeakButton } from './SpeakButton'
+import { cardFront } from '../db/db'
 import type { ModeProps } from './types'
 
-const KANA_DECKS = new Set(['hira', 'kata'])
 
 /** Kana cards: type the romaji (exact). Word cards: type the English meaning (a one-letter slip is forgiven, with a note). */
 export function Typing({ card, autoplay, onGrade }: ModeProps) {
   const [typed, setTyped] = useState('')
   const [result, setResult] = useState<Check | null>(null)
-  const kana = KANA_DECKS.has(card.deck)
+  const kana = card.deck === 'kana'
   const sound = card.reading ?? card.front
   useEffect(() => {
     if (result !== null && autoplay) speak(sound) // only after answering: the sound gives away the romaji
@@ -39,7 +39,7 @@ export function Typing({ card, autoplay, onGrade }: ModeProps) {
   }
   return (
     <form className="card" onSubmit={submit}>
-      <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
+      <div className="kana" lang="ja"><Ruby text={cardFront(card)} reading={card.reading} /></div>
       {ITEMS.get(card.id) && <Example item={ITEMS.get(card.id)!} revealed={result !== null} />}
       <input autoFocus autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} aria-label={kana ? 'romaji answer' : 'English meaning'}
         onKeyDown={(e) => e.key === 'Enter' && e.repeat && e.preventDefault()} lang={kana ? undefined : 'en'}

@@ -3,7 +3,7 @@ import { newFsrsCard } from '../srs/scheduler'
 import type { StoredCard } from '../db/db'
 import { choices } from './choices'
 
-const c = (id: string, ...back: string[]): StoredCard => ({ id, deck: 'hira', front: id, back, fsrs: newFsrsCard() })
+const c = (id: string, ...back: string[]): StoredCard => ({ id, deck: 'kana', front: id, back, fsrs: newFsrsCard() })
 const pool = [c('じ', 'ji', 'zi'), c('ぢ', 'ji', 'di'), c('a', 'a'), c('i', 'i'), c('u', 'u'), c('e', 'e')]
 
 describe('choices', () => {

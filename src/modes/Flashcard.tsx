@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
 import { speak } from '../audio'
-import { BUILTIN_DECKS } from '../db/db'
+import { BUILTIN_DECKS, cardFront } from '../db/db'
 import { ITEMS } from '../path/course'
 import { Example } from '../path/ui/Example'
 import { Mnemonic } from '../path/ui/Mnemonic'
@@ -46,7 +46,7 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
       {card.html ? (
         <Suspense fallback={<div className="skeleton" />}><Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} autoplay={autoplay} /></Suspense>
       ) : (
-        <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
+        <div className="kana" lang="ja"><Ruby text={cardFront(card)} reading={card.reading} /></div>
       )}
       {/* a word is asked in context: its sentence on the front, the sentence's English and sound with the answer */}
       {item && <Example item={item} revealed={shown} />}

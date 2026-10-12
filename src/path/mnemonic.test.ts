@@ -25,8 +25,8 @@ it('kana hints: a picture for each basic kana, a rule for voiced kana and combin
   expect(kanaHint('が')).toBe('か (ka) with two ticks ゛: ka becomes ga.')
   expect(kanaHint('ぱ')).toBe('は (ha) with a circle ゜: ha becomes pa.')
   expect(kanaHint('キャ')).toBe('キ (ki) + small ャ (ya): blend them into one sound, kya.')
-  expect(ITEMS.get('hira:を')!.note).toMatch(/wo-ah.*pronounced "o"/)
-  expect(hintFor(ITEMS.get('hira:き')!)).toMatch(/key/)
+  expect(ITEMS.get('kana:を')!.note).toMatch(/^を: .*wo-ah.*\nヲ: .*\nWritten "wo" but pronounced "o"/) // one line per script, then the note
+  expect(hintFor(ITEMS.get('kana:き')!)).toMatch(/key/)
   expect(hintFor(ITEMS.get('kanji:休')!)).toMatch(/leaning/)
   expect(hintFor(ITEMS.get('w:日本')!)).toBeUndefined()
 })

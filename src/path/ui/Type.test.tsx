@@ -15,7 +15,7 @@ const show = (e: Ex, extra: { autoplay?: boolean } = {}) => { const onDone = vi.
 const box = () => screen.getByRole('textbox') as HTMLInputElement
 
 it('kana -> romaji: any accepted spelling counts (し: shi or si; ぢ: ji or di)', async () => {
-  for (const [id, typed] of [['hira:し', 'shi'], ['hira:し', 'SI'], ['hira:ぢ', 'ji'], ['hira:ぢ', 'di'], ['kata:ツ', 'tu']] as const) {
+  for (const [id, typed] of [['kana:し', 'shi'], ['kana:し', 'SI'], ['kana:ぢ', 'ji'], ['kana:ぢ', 'di'], ['kana:つ', 'tu']] as const) {
     const { onDone, u } = show(ex(id, 'toRomaji'))
     await u.type(box(), typed)
     expect(screen.getByText('✓ Correct'), `${id} ${typed}`).toBeTruthy()
@@ -113,7 +113,7 @@ it('after answering a word, it is spoken when autoplay is on (and not when off, 
   await r.u.type(box(), 'mizu')
   expect(spy).not.toHaveBeenCalled()
   cleanup()
-  r = show(ex('hira:あ', 'toRomaji'), { autoplay: true })
+  r = show(ex('kana:あ', 'toRomaji'), { autoplay: true })
   await r.u.type(box(), 'a')
   expect(spy).not.toHaveBeenCalled() // the sound would only repeat the answer you just typed
 })

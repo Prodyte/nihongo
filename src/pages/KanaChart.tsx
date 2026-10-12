@@ -17,7 +17,7 @@ export function KanaChart({ db, onExit }: { db: Db; onExit: () => void }) {
   const [script, setScript] = useState<'hira' | 'kata'>('hira')
   const [known, setKnown] = useState<Set<string>>(new Set())
   useEffect(() => {
-    void db.getAll('cards').then((cs) => setKnown(new Set(cs.filter((c) => (c.deck === 'hira' || c.deck === 'kata') && c.fsrs.state !== State.New).map((c) => c.front))), () => {})
+    void db.getAll('cards').then((cs) => setKnown(new Set(cs.filter((c) => c.deck === 'kana' && c.fsrs.state !== State.New).map((c) => c.front))), () => {})
   }, [db])
   const conv = (k: string) => (script === 'hira' ? k : toKata(k))
   const table = (rows: string[], cols: number, label: string) => (
@@ -26,7 +26,7 @@ export function KanaChart({ db, onExit }: { db: Db; onExit: () => void }) {
       <div className="kana-grid" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
         {rows.flatMap((r) => cells(r)).map((k, i) =>
           k === '_' ? <span key={i} /> : (
-            <button key={i} className={`kana-cell${known.has(conv(k)) ? ' known' : ''}`} onClick={() => speak(conv(k))} aria-label={`${conv(k)} ${kanaToRomaji(k)}${known.has(conv(k)) ? ', learned' : ''}`}>
+            <button key={i} className={`kana-cell${known.has(k) ? ' known' : ''}`} onClick={() => speak(conv(k))} aria-label={`${conv(k)} ${kanaToRomaji(k)}${known.has(k) ? ', learned' : ''}`}>
               <span lang="ja">{conv(k)}</span><small>{kanaToRomaji(k)}</small>
             </button>
           ))}

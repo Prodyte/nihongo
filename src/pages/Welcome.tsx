@@ -3,7 +3,7 @@ import { Icon, Logo, type IconName } from '../icons'
 
 export type StartLevel = 'new' | 'kana' | 'basics'
 const LEVELS: [StartLevel, string, string][] = [
-  ['new', 'I’m new to Japanese', 'Start with hiragana, the first alphabet.'],
+  ['new', 'I’m new to Japanese', 'Start with kana: hiragana and katakana, side by side.'],
   ['kana', 'I can read hiragana and katakana', 'Take a short test and skip ahead to words.'],
   ['basics', 'I know some basic words and grammar', 'Take a short test and skip to JLPT N5.'],
 ]

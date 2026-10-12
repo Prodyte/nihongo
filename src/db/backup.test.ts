@@ -15,9 +15,9 @@ async function populated() {
   const db = await fresh()
   await seedKana(db)
   await db.put('decks', { id: 'anki:1', name: 'Deck' })
-  await gradeCard(db, 'hira:あ', Rating.Good, new Date('2026-03-01T10:00:00Z'))
-  await gradeCard(db, 'hira:あ', Rating.Again, new Date('2026-03-05T10:00:00Z'))
-  await gradeCard(db, 'kata:ア', Rating.Easy, new Date('2026-03-02T10:00:00Z'))
+  await gradeCard(db, 'kana:あ', Rating.Good, new Date('2026-03-01T10:00:00Z'))
+  await gradeCard(db, 'kana:あ', Rating.Again, new Date('2026-03-05T10:00:00Z'))
+  await gradeCard(db, 'kana:か', Rating.Easy, new Date('2026-03-02T10:00:00Z'))
   return db
 }
 
@@ -26,10 +26,10 @@ describe('backup', () => {
     const src = await populated()
     const text = await exportBackup(src)
     const dst = await fresh()
-    expect(await importBackup(dst, text)).toEqual({ cards: 208, reviews: 3, decks: 1, lessons: 0 })
+    expect(await importBackup(dst, text)).toEqual({ cards: 104, reviews: 3, decks: 1, lessons: 0 })
     expect(await dst.getAll('cards')).toEqual(await src.getAll('cards'))
     expect(await dst.getAll('reviews')).toEqual(await src.getAll('reviews'))
-    const c = (await dst.get('cards', 'hira:あ'))!
+    const c = (await dst.get('cards', 'kana:あ'))!
     expect(c.fsrs.due).toBeInstanceOf(Date)
     expect(c.fsrs.last_review).toBeInstanceOf(Date)
   })
@@ -37,16 +37,16 @@ describe('backup', () => {
     const text = await exportBackup(await populated())
     const dst = await fresh()
     await seedKana(dst)
-    await gradeCard(dst, 'hira:い', Rating.Good) // progress that the backup does not have
+    await gradeCard(dst, 'kana:い', Rating.Good) // progress that the backup does not have
     await importBackup(dst, text)
-    expect((await dst.get('cards', 'hira:い'))!.fsrs.reps).toBe(0)
-    await expect(gradeCard(dst, 'hira:あ', Rating.Good)).resolves.toBeTruthy()
+    expect((await dst.get('cards', 'kana:い'))!.fsrs.reps).toBe(0)
+    await expect(gradeCard(dst, 'kana:あ', Rating.Good)).resolves.toBeTruthy()
   })
   it('re-seeds the built-in kana when the backup lacks them, keeping the backup\'s own cards', async () => {
     const dst = await fresh()
     const text = JSON.stringify({ app: 'nihongo', version: 1, reviews: [], decks: [], cards: [{ id: 'anki:1:1', deck: 'anki:1', front: 'f', back: ['b'], html: true, fsrs: okFsrs }] })
     await importBackup(dst, text)
-    expect(await dst.count('cards')).toBe(209)
+    expect(await dst.count('cards')).toBe(105)
     expect(await dst.get('cards', 'anki:1:1')).toBeTruthy()
   })
   it('v2 round-trips lesson progress and daily activity with Dates', async () => {
@@ -57,7 +57,7 @@ describe('backup', () => {
     expect(await dst.getAll('lessons')).toEqual(await src.getAll('lessons'))
     expect(await dst.getAll('activity')).toEqual(await src.getAll('activity'))
     expect((await dst.get('lessons', 'greetings-1'))!.completedAt).toBeInstanceOf(Date)
-    expect(await dst.count('cards')).toBe(208 + 6) // the six vocabulary cards come back too
+    expect(await dst.count('cards')).toBe(104 + 6) // the six vocabulary cards come back too
   })
   it('a v1 backup still restores, and resets lesson progress (v1 had none)', async () => {
     const dst = await fresh()

@@ -7,6 +7,7 @@ import { ITEMS } from '../path/course'
 import { Example } from '../path/ui/Example'
 import { Ruby } from '../path/ui/Ruby'
 import { SpeakButton } from './SpeakButton'
+import { cardFront } from '../db/db'
 import type { ModeProps } from './types'
 
 export function Quiz({ card, pool, autoplay, onGrade }: ModeProps) {
@@ -18,7 +19,7 @@ export function Quiz({ card, pool, autoplay, onGrade }: ModeProps) {
   }, [picked, autoplay, card.front, card.reading])
   return (
     <div className="card">
-      <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
+      <div className="kana" lang="ja"><Ruby text={cardFront(card)} reading={card.reading} /></div>
       {ITEMS.get(card.id) && <Example item={ITEMS.get(card.id)!} revealed={picked !== null} />}
       <div className="grid">
         {options.map((o) => (

@@ -8,7 +8,7 @@ const seeded = (seed: number) => () => { seed = (seed * 16807) % 2147483647; ret
 describe('drills', () => {
   it('drill only words and sentences', () => {
     expect(learned.length).toBeGreaterThan(100)
-    expect(drillable([ITEMS.get('hira:あ')!, ITEMS.get('kanji:日')!, ITEMS.get('w:時間')!]).map((i) => i.id)).toEqual(['w:時間'])
+    expect(drillable([ITEMS.get('kana:あ')!, ITEMS.get('kanji:日')!, ITEMS.get('w:時間')!]).map((i) => i.id)).toEqual(['w:時間'])
   })
   it('speaking: 10 speak exercises in the asked mode', () => {
     for (const mode of ['read', 'recall', 'shadow'] as const) {

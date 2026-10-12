@@ -2,12 +2,12 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { State, type Card, type Grade, type ReviewLog } from 'ts-fsrs'
 import { mediaRefs } from '../anki/refs'
 import type { Parsed } from '../anki/apkg'
-import { KANA } from '../data/kana'
+import { KANA, toKata } from '../data/kana'
 import { newFsrsCard, schedule } from '../srs/scheduler'
 
 export interface StoredCard {
   id: string
-  deck: string // e.g. 'hira', 'kata'; imported Anki decks get their own name
+  deck: string // 'kana' (one card per sound: あ with ア), the path's decks; imported Anki decks get their own name
   front: string
   back: string[]
   fsrs: Card
@@ -61,15 +61,50 @@ export const openDb = (name = 'nihongo') => {
   return opening
 }
 
-/** Add any kana cards not stored yet; existing cards keep their progress. */
+const SOUNDS = KANA.filter((k) => k.script === 'hira')
+const KANA_UNITS: [string, number][] = [['basic', 9], ['voiced', 5], ['combos', 6]]
+
+/** What a review card shows: a kana card both scripts (あ ア), anything else its front. */
+export const cardFront = (c: StoredCard) => (c.deck === 'kana' ? `${c.front} ${toKata(c.front)}` : c.front)
+
+/**
+ * Add any kana cards not stored yet; existing cards keep their progress. Also folds the old separate hiragana and
+ * katakana cards (hira:あ, kata:ア) into one card per sound (kana:あ): the better-known card's schedule wins, both review
+ * histories move over, and a merged lesson counts as done when both old ones were. Runs at startup and after every
+ * restore or sync, so data from an older version (or another device still on one) is folded in too.
+ */
 export async function seedKana(db: Db, now = new Date()) {
-  const tx = db.transaction('cards', 'readwrite')
-  const have = new Set(await tx.store.getAllKeys())
-  await Promise.all(
-    KANA.filter((k) => !have.has(k.id)).map((k) =>
-      tx.store.add({ id: k.id, deck: k.script, front: k.kana, back: k.romaji, fsrs: newFsrsCard(now) }),
-    ),
-  )
+  const tx = db.transaction(['cards', 'reviews', 'lessons'], 'readwrite')
+  const cards = tx.objectStore('cards')
+  const reviews = tx.objectStore('reviews')
+  const have = new Set(await cards.getAllKeys())
+  for (const k of SOUNDS) {
+    const id = `kana:${k.kana}`
+    const oldIds = [`hira:${k.kana}`, `kata:${toKata(k.kana)}`].filter((o) => have.has(o))
+    if (have.has(id) && !oldIds.length) continue
+    const old = (await Promise.all(oldIds.map((o) => cards.get(o)))).filter((c): c is StoredCard => !!c)
+    if (!have.has(id)) {
+      const best = old.sort((a, b) => b.fsrs.stability - a.fsrs.stability || b.fsrs.reps - a.fsrs.reps)[0]
+      await cards.add({ id, deck: 'kana', front: k.kana, back: k.romaji, fsrs: best?.fsrs ?? newFsrsCard(now) })
+    }
+    const seen = new Set((await reviews.index('by-card').getAll(id)).map((r) => r.at.getTime()))
+    for (const o of oldIds) {
+      for (const r of await reviews.index('by-card').getAll(o)) {
+        await reviews.delete(r.id!)
+        if (!seen.has(r.at.getTime())) { seen.add(r.at.getTime()); await reviews.add({ cardId: id, grade: r.grade, at: r.at, log: r.log }) }
+      }
+      await cards.delete(o)
+    }
+  }
+  const lessons = tx.objectStore('lessons')
+  for (const [unit, n] of KANA_UNITS)
+    for (let i = 1; i <= n; i++) {
+      const [h, k] = await Promise.all([lessons.get(`hira-${unit}-${i}`), lessons.get(`kata-${unit}-${i}`)])
+      if (!h && !k) continue
+      if (h && k && !(await lessons.get(`kana-${unit}-${i}`)))
+        await lessons.put({ id: `kana-${unit}-${i}`, completedAt: h.completedAt > k.completedAt ? h.completedAt : k.completedAt, plays: Math.max(h.plays, k.plays), bestAccuracy: Math.min(h.bestAccuracy, k.bestAccuracy) })
+      await Promise.all([lessons.delete(`hira-${unit}-${i}`), lessons.delete(`kata-${unit}-${i}`)])
+    }
   await tx.done
 }
 
@@ -80,7 +115,7 @@ export const getCards = (db: Db, deck: string) => (deck === 'all' ? db.getAll('c
 export async function studyCards(db: Db, deck: string, mode: string) {
   let cards = await getCards(db, deck)
   // Mixed review never introduces kana you haven't met: the path teaches them. Picking a kana deck still offers them.
-  if (deck === 'all') cards = cards.filter((c) => !(c.fsrs.state === State.New && (c.deck === 'hira' || c.deck === 'kata')))
+  if (deck === 'all') cards = cards.filter((c) => !(c.fsrs.state === State.New && c.deck === 'kana'))
   return mode === 'flashcard' ? cards : cards.filter((c) => !c.html) // grammar cards are reviewed fill-the-gap in every mode
 }
 

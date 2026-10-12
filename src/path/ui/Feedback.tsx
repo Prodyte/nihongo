@@ -1,7 +1,7 @@
 import { toKata } from '../../data/kana'
 import { useEffect } from 'react'
 import { sfx } from '../../sfx'
-import { written, type Item } from '../course'
+import { ITEMS, written, type Item } from '../course'
 import { hintFor } from '../mnemonic'
 import { useRomaji } from './furigana'
 import { Ruby } from './Ruby'
@@ -20,7 +20,7 @@ export function Feedback({ result, item, answer, note, onContinue }: { result: b
             <div>{result ? '✓ Correct' : <>✗ Correct answer: <Ruby text={answer} /></>}</div>
             {note && <div>{note}</div>}
             <small>
-              <span lang="ja"><Ruby text={written(item)} />{item.written && ` ${item.jp}`}</span>{' '}
+              <span lang="ja"><Ruby text={item.kind === 'kana' ? [ITEMS.get(item.id)?.jp, ITEMS.get(item.id)?.kata].join(' ') : written(item)} />{item.written && ` ${item.jp}`}</span>{' '}
               {item.kind === 'kana' ? '= ' : item.kind === 'kanji' ? <span lang="ja">({[...(item.on ?? []).map(toKata), ...(item.kun ?? [])].join('、')}) </span> : romaji ? `(${item.romaji}) ` : ''}
               {item.gloss}
               {item.kanji && <> · <span lang="ja">{item.kanji}</span></>}

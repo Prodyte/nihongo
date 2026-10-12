@@ -33,7 +33,7 @@ it('with cards due, reviewing leads; the streak shows, done for today', async ()
   const db = await freshDb()
   await completeLesson(db, LESSONS[0], ITEMS, {}, 1) // 15 XP today
   await completeLesson(db, LESSONS[1], ITEMS, {}, 1) // 30 XP: goal met
-  const c = (await db.get('cards', 'hira:あ'))!
+  const c = (await db.get('cards', 'kana:あ'))!
   await db.put('cards', { ...c, fsrs: { ...c.fsrs, state: State.Review, due: new Date(0) } })
   const onReview = vi.fn()
   const user = userEvent.setup()

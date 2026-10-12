@@ -28,7 +28,7 @@ describe('grammar unit content', () => {
     expect(starter.at(-1)!.title).toBe('Grammar: simple sentences')
     expect(grammar).toHaveLength(4)
     expect(grammar.map((l) => l.items.length)).toEqual([6, 6, 6, 6])
-    expect(LESSONS.slice(64, 68)).toEqual(grammar)
+    expect(LESSONS.slice(44, 48)).toEqual(grammar)
   })
   it('every sentence: tokens join to its display text, is built from taught words, particles and ます-forms', () => {
     const bad: string[] = []

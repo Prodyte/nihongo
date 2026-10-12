@@ -228,6 +228,9 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .bar .left { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .q { margin: 0; font-size: 1.05rem; text-align: center; font-weight: 600; color: var(--muted); }
 .kana { font-size: 6rem; line-height: 1.1; }
+.kana-pair { display: flex; justify-content: center; gap: 2.5rem; }
+.kana-pair > span { display: flex; flex-direction: column; align-items: center; }
+.kana-pair small { font-size: .8rem; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
 .prompt.gloss { font-size: 2rem; text-align: center; overflow-wrap: anywhere; font-weight: 600; }
 .prompt.sentence { font-size: 1.6rem; line-height: 1.5; }
 .reading { font-size: 1.2rem; color: var(--muted); }
@@ -236,6 +239,7 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .answer { font-size: 1.6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; text-align: center; }
 .note { margin: 0; font-size: .9rem; text-align: center; color: var(--muted); }
 /* memory aid: a kanji's parts or a word's kanji, as a soft chip under the meaning */
+.mnemonic p, .memo-hint { white-space: pre-line; } /* a kana sound's hint: one line per script */
 .mnemonic { margin: 0; padding: .45rem .75rem; border-radius: var(--radius-s); background: var(--accent-soft); color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
 .example { margin: 0; padding: .55rem .8rem; border-left: 3px solid var(--indigo); border-radius: 0 var(--radius-s) var(--radius-s) 0; background: var(--indigo-soft); text-align: left; width: 100%; box-sizing: border-box; }
 .example p { margin: 0; font-size: 1.15rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; }

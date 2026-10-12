@@ -1,4 +1,4 @@
-import { KANA, toKata } from '../data/kana'
+import { KANA, toHira, toKata } from '../data/kana'
 import jlptKanji from '../data/jlpt/kanji.json'
 import jlptWords from '../data/jlpt/words.json'
 import { GRAMMAR_LESSONS, GRAMMAR_UNIT, type GrammarLessonSpec } from './grammar'
@@ -12,10 +12,11 @@ import { VOCAB_UNITS } from './vocab'
 
 /** One thing a lesson teaches. For kana, `gloss` is the romaji; for words it is the English meaning. */
 export interface Item {
-  id: string // 'hira:あ' | 'kata:ア' (the existing card ids) | 'vocab:<romaji-slug>' (starter words) | 'w:<written form>' (JLPT words)
+  id: string // 'kana:あ' (one card for あ and ア) | 'vocab:<romaji-slug>' (starter words) | 'w:<written form>' (JLPT words)
   kind: 'kana' | 'word' | 'sentence' | 'kanji'
-  script?: 'hira' | 'kata'
+  script?: 'hira' | 'kata' // a kana exercise: which script it is asked in (see kanaView)
   jp: string
+  kata?: string // kana: the same sound in katakana (jp is the hiragana)
   gloss: string
   romaji: string
   sound: string // what it sounds like: items with the same sound can't be told apart by ear (お/を are both "o")
@@ -56,22 +57,28 @@ export function registerItem(items: Map<string, Item>, item: Item) {
 }
 
 export const ITEMS = new Map<string, Item>()
-const NOTES: Record<string, string> = { 'hira:を': 'Written "wo" but pronounced "o". Mostly used as a grammar particle.', 'kata:ヲ': 'Written "wo" but pronounced "o". Rare in katakana.' }
-for (const k of KANA)
-  registerItem(ITEMS, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: [kanaHint(k.kana), NOTES[k.id]].filter(Boolean).join(' '), accepts: k.romaji })
+const WO = 'Written "wo" but pronounced "o". Mostly used as a grammar particle (ヲ is rare).'
+// One item per sound, hiragana and katakana together. Basic kana get both picture hints; a voiced or combined kana's rule
+// is the same in both scripts, so it is given once.
+for (const k of KANA.filter((x) => x.script === 'hira')) {
+  const kata = toKata(k.kana)
+  const hint = k.group === 'base' ? [kanaHint(k.kana) && `${k.kana}: ${kanaHint(k.kana)}`, kanaHint(kata) && `${kata}: ${kanaHint(kata)}`] : [kanaHint(k.kana)]
+  registerItem(ITEMS, { id: `kana:${k.kana}`, kind: 'kana', jp: k.kana, kata, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: [...hint, k.kana === 'を' && WO].filter(Boolean).join('\n'), accepts: k.romaji })
+}
 
-/** Hiragana and katakana learned together: each hiragana lesson is followed by the same sounds in katakana.
- * Lesson ids keep their script (hira-basic-1, kata-basic-1) so earlier progress carries over. */
+/** A kana item asked in one script: jp is that script's character. Same id, so a miss counts for the sound. */
+export const kanaView = (it: Item, script: 'hira' | 'kata'): Item => ({ ...it, script, jp: script === 'kata' ? toKata(it.jp) : toHira(it.jp) })
+/** What exercises are built from: a kana item in both scripts, anything else as it is. */
+export const views = (it: Item): Item[] => (it.kind === 'kana' && it.kata ? [kanaView(it, 'hira'), kanaView(it, 'kata')] : [it])
+
+/** Kana lessons teach a row of sounds in hiragana and katakana at once (あいうえお with アイウエオ), one card per sound. */
 function kanaUnits(): Unit[] {
   const unit = (id: string, title: string, blurb: string, groups: string[][]): Unit => ({
     id: `kana-${id}`, section: 'Kana', title: `Kana: ${title}`, blurb,
-    lessons: groups.flatMap((g, i) => (['hira', 'kata'] as const).map((script) => {
-      const items = g.map((c) => `${script}:${script === 'hira' ? c : toKata(c)}`)
-      return { id: `${script}-${id}-${i + 1}`, title: items.map((x) => x.slice(5)).join(' '), items }
-    })),
+    lessons: groups.map((g, i) => ({ id: `kana-${id}-${i + 1}`, title: `${g.join('')} ${toKata(g.join(''))}`, items: g.map((c) => `kana:${c}`) })),
   })
   return [
-    unit('basic', 'the basics', 'The 46 basic sounds, each in hiragana and then katakana.', HIRA_BASE.map(chars)),
+    unit('basic', 'the basics', 'The 46 basic sounds, each in hiragana and katakana.', HIRA_BASE.map(chars)),
     unit('voiced', 'voiced sounds', 'Add two small marks to change the sound.', HIRA_VOICED.map(chars)),
     unit('combos', 'combined sounds', 'Small や ゆ よ blend two sounds into one.', chunk(HIRA_COMBO_ROWS.map(chars), 2).map((rows) => rows.flat())),
   ]
@@ -294,7 +301,7 @@ export const lessonById = (id: string) => LESSONS.find((l) => l.id === id)
 /** What a lesson teaches, for badges: kana, words, kanji or grammar, with a glyph (its first kana or kanji, 語, 文). */
 export function lessonKind(l: Lesson): { kind: 'kana' | 'words' | 'kanji' | 'grammar'; glyph: string; label: string } {
   const first = ITEMS.get(l.items[0])!
-  if (first.kind === 'kana') return { kind: 'kana', glyph: first.jp[0], label: first.script === 'kata' ? 'Katakana' : 'Hiragana' }
+  if (first.kind === 'kana') return { kind: 'kana', glyph: first.jp[0], label: 'Kana' }
   if (first.kind === 'kanji') return { kind: 'kanji', glyph: first.jp, label: 'Kanji' }
   if (first.kind === 'sentence') return { kind: 'grammar', glyph: '文', label: 'Grammar' }
   return { kind: 'words', glyph: '語', label: 'Words' }

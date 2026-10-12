@@ -1,5 +1,5 @@
 import { shuffle } from '../modes/choices'
-import { written, type Item, type Lesson } from './course'
+import { kanaView, views, written, type Item, type Lesson } from './course'
 import { displayJp, PARTICLES, surfaceOf } from './romaji'
 
 export type Exercise = (
@@ -26,7 +26,7 @@ export interface BuildOpts {
 }
 
 const sameBucket = (a: Item, b: Item) => a.kind === b.kind && a.script === b.script
-const key = (it: Item, by: 'gloss' | 'sound') => `${it.kind}|${it.script}|${it[by]}`
+const key = (it: Item, by: 'gloss' | 'sound') => `${it.kind}|${it[by]}` // a kana item covers both scripts
 
 const show = (it: Item, field: 'jp' | 'gloss') => (field === 'jp' ? written(it) : it.gloss)
 
@@ -69,10 +69,12 @@ const fail = (msg: string): never => {
 
 export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, opts: BuildOpts): Exercise[] {
   const { canSpeak, learned, rand = Math.random } = opts
-  const mine = lesson.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${lesson.id}`))
-  if (lesson.explain) return buildGrammar(lesson, lesson.explain, mine, items, opts)
-  if (mine[0]?.kind === 'kanji') return buildKanji(lesson, mine, items, opts)
-  const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? [])
+  const taught = lesson.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${lesson.id}`))
+  if (lesson.explain) return buildGrammar(lesson, lesson.explain, taught, items, opts)
+  if (taught[0]?.kind === 'kanji') return buildKanji(lesson, taught, items, opts)
+  // kana: each sound is introduced once (あ and ア together) and asked in both scripts
+  const mine = taught.flatMap(views)
+  const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? []).flatMap(views)
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)] // lesson items make the likeliest distractors
 
   // Items sharing a gloss with another item of their kind can't be asked in reverse or matched (two right answers);
@@ -85,16 +87,17 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   const toGloss = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...shuffled(it, 'gloss'), answer: it.gloss })
   const toJp = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...shuffled(it, 'jp'), answer: written(it) })
 
-  const out: Exercise[] = mine.filter((it) => !learned.has(it.id)).map((item) => ({ type: 'intro', item }))
+  const out: Exercise[] = taught.filter((it) => !learned.has(it.id)).map((item) => ({ type: 'intro', item }))
   out.push(...shuffle(mine, rand).map(toGloss))
-  if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: written(it), ...(it.written && { reading: it.jp }), gloss: it.gloss })) })
+  const pairable = askable.filter((it, i) => askable.findIndex((x) => x.id === it.id) === i) // one script per sound: a pair's id must be unique
+  if (pairable.length >= 2) out.push({ type: 'match', pairs: pairable.slice(0, 5).map((it) => ({ id: it.id, jp: written(it), ...(it.written && { reading: it.jp }), gloss: it.gloss })) })
   if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, ...shuffled(item, 'jp', 'sound'), answer: written(item) })))
   if (opts.canListen && mine[0]?.kind === 'word') out.push(...shuffle(mine, rand).slice(0, 2).map((item): Exercise => ({ type: 'speak', item })))
-  out.push(...shuffle(askable, rand).slice(0, canSpeak ? 3 : 4).map(toJp))
+  out.push(...shuffle(askable, rand).slice(0, canSpeak ? (taught[0]?.kind === 'kana' ? 2 : 3) : 4).map(toJp)) // kana: each sound is already read in both scripts
   // typing comes last: it is the hardest. Kana: type the romaji. Words: type the English, and type the Japanese from the English.
   const typed = (item: Item, dir: 'toRomaji' | 'toGloss' | 'toJp'): Exercise => ({ type: 'type', item, dir, prompt: dir === 'toJp' ? item.gloss : written(item) })
   if (mine.length === 0) return out
-  if (mine[0].kind === 'kana') out.push(...shuffle(mine, rand).slice(0, 3).map((it) => typed(it, 'toRomaji')))
+  if (mine[0].kind === 'kana') out.push(...shuffle(mine, rand).filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i).slice(0, 3).map((it) => typed(it, 'toRomaji'))) // three different sounds
   else {
     // typing Japanese from English needs a meaning only one word has ("white" is both しろ and しろい)
     const toJpTyped = shuffle(askable, rand).slice(0, 2)
@@ -231,11 +234,12 @@ export const TEST_PASS = 0.8
  * form each kind allows without a voice: kana are typed, words and kanji asked both ways, sentences filled in.
  */
 export function buildTest(lessons: Lesson[], items: ReadonlyMap<string, Item>, rand: () => number = Math.random): Exercise[] {
-  const all = lessons.flatMap((l) => l.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${l.id}`)))
+  // a kana sound is asked in one script, picked at random
+  const all = lessons.flatMap((l) => l.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${l.id}`))).map((it) => (it.kind === 'kana' ? kanaView(it, rand() < 0.5 ? 'hira' : 'kata') : it))
   const picked = shuffle(all, rand).slice(0, TEST_QUESTIONS)
   const unique = uniqueBy(items, 'gloss')
   return picked.map((it, i): Exercise => {
-    const pool = shuffle(all.filter((x) => x.kind === it.kind), rand)
+    const pool = shuffle(all.filter((x) => x.kind === it.kind && x.script === it.script), rand)
     const o = (field: 'jp' | 'gloss') => { const r = options(it, field, pool, 'gloss'); return { ...r, options: shuffle(r.options, rand) } }
     if (it.kind === 'kana') return i % 2 ? { type: 'type', item: it, dir: 'toRomaji', prompt: it.jp } : { type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, ...o('gloss'), answer: it.gloss }
     if (it.kind === 'sentence') return gapFor(it, rand)

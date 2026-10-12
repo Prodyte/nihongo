@@ -29,5 +29,5 @@ it('"I can read kana" starts the kana test-out', async () => {
   await user.click(await screen.findByRole('button', { name: 'Get started' }))
   await user.click(screen.getByRole('radio', { name: /I can read hiragana and katakana/ }))
   await user.click(screen.getByRole('button', { name: 'Start the test' }))
-  expect(await screen.findByText(/^Test: Kana: combined sounds · covers 40 lessons/)).toBeTruthy()
+  expect(await screen.findByText(/^Test: Kana: combined sounds · covers 20 lessons/)).toBeTruthy()
 })

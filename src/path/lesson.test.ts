@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ITEMS, LESSONS, lessonById, written, type Item } from './course'
+import { ITEMS, LESSONS, lessonById, views, written, type Item } from './course'
 import { accuracy, advance, bankFor, buildLesson, startRun, type Exercise } from './lesson'
 import { displayJp, PARTICLES } from './romaji'
 
@@ -18,12 +18,13 @@ const learnedBefore = (i: number) => new Set(prefix[i])
 const learnedFor = (mode: 'none' | 'earlier' | 'repeat', i: number) => (mode === 'none' ? new Set<string>() : learnedBefore(mode === 'earlier' ? i : i + 1))
 // gloss of a Japanese option string within an item's script bucket (for "two right answers" checks)
 const bucket = (it: Item, v: string) => `${it.kind}|${it.script}|${v}`
-const count = (f: (it: Item) => string) => { const m = new Map<string, number>(); for (const x of ITEMS.values()) m.set(bucket(x, f(x)), (m.get(bucket(x, f(x))) ?? 0) + 1); return m }
+const ALL = [...ITEMS.values()].flatMap(views) // a kana sound in each script, as exercises ask it
+const count = (f: (it: Item) => string) => { const m = new Map<string, number>(); for (const x of ALL) m.set(bucket(x, f(x)), (m.get(bucket(x, f(x))) ?? 0) + 1); return m }
 const [bySound, byGloss] = [count((x) => x.sound), count((x) => x.gloss)]
-const glossByShown = new Map([...ITEMS.values()].map((x) => [bucket(x, written(x)), x.gloss]))
+const glossByShown = new Map(ALL.map((x) => [bucket(x, written(x)), x.gloss]))
 const glossOfJp = (jp: string, like: Item) => glossByShown.get(bucket(like, jp))
-const dupSound = (it: Item) => bySound.get(bucket(it, it.sound))! > 1
-const dupGloss = (it: Item) => byGloss.get(bucket(it, it.gloss))! > 1
+const dupSound = (it: Item) => views(it).some((v) => bySound.get(bucket(v, v.sound))! > 1)
+const dupGloss = (it: Item) => views(it).some((v) => byGloss.get(bucket(v, v.gloss))! > 1)
 
 describe('buildLesson invariants, over every lesson', () => {
   for (const canSpeak of [true, false])
@@ -44,7 +45,7 @@ describe('buildLesson invariants, over every lesson', () => {
           if (lesson.explain) expect(exs.filter((e) => e.type === 'explain').length, where).toBe(mode === 'repeat' ? 0 : 1)
 
           if (!canSpeak) expect(exs.some((e) => e.type === 'listen'), where).toBe(false)
-          expect(exs.length, where).toBeLessThanOrEqual(24)
+          expect(exs.length, where).toBeLessThanOrEqual(mine[0]?.kind === 'kana' ? 28 : 24) // a kana lesson covers both scripts (it replaces two lessons)
 
           const touched = new Set<string>()
           for (const e of exs) {
@@ -98,10 +99,10 @@ describe('buildLesson invariants, over every lesson', () => {
 
 describe('speaking', () => {
   it('with recognition on: 2 speaking exercises in word and grammar lessons, none in kana or kanji lessons; none without it', () => {
-    for (const id of ['greetings-1', 'n5-v-3', 'grammar-1-2', 'n5-g-4', 'hira-basic-2', 'n5-k-1']) {
+    for (const id of ['greetings-1', 'n5-v-3', 'grammar-1-2', 'n5-g-4', 'kana-basic-2', 'n5-k-1']) {
       const l = lessonById(id)!
       const kinds = (canListen: boolean) => buildLesson(l, ITEMS, { canSpeak: true, canListen, learned: new Set(), rand: seeded(5) }).filter((e) => e.type === 'speak').length
-      expect(kinds(true), id).toBe(/^(hira|n5-k)/.test(id) ? 0 : 2)
+      expect(kinds(true), id).toBe(/^(kana|n5-k)/.test(id) ? 0 : 2)
       expect(kinds(false), id).toBe(0)
     }
   })
@@ -152,24 +153,24 @@ describe('kanji lessons', () => {
 
 describe('buildLesson specifics', () => {
   it('never offers を as an answer to hearing お (both sound "o"), nor asks を by ear', () => {
-    const o = lessonById('hira-basic-1')!
+    const o = lessonById('kana-basic-1')!
     const rest = new Set(LESSONS.slice(1, 9).flatMap((l) => l.items)) // を is in here
     for (let seed = 1; seed <= 60; seed++) {
       for (const e of buildLesson(o, ITEMS, { canSpeak: true, learned: rest, rand: seeded(seed) })) if (e.type === 'listen') expect(e.options).not.toContain('を')
-      for (const e of buildLesson(lessonById('hira-basic-9')!, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(seed) })) if (e.type === 'listen') expect(e.item.jp).not.toBe('を')
+      for (const e of buildLesson(lessonById('kana-basic-9')!, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(seed) })) if (e.type === 'listen') expect(e.item.jp).not.toBe('を')
     }
-    expect(ITEMS.get('hira:を')).toMatchObject({ gloss: 'wo', sound: 'o' })
-    expect(ITEMS.get('hira:を')!.note).toMatch(/pronounced "o"/)
+    expect(ITEMS.get('kana:を')).toMatchObject({ gloss: 'wo', sound: 'o' })
+    expect(ITEMS.get('kana:を')!.note).toMatch(/pronounced "o"/)
   })
   it('throws a clear error for an unknown item id', () => {
-    expect(() => buildLesson({ id: 'x', title: 'x', items: ['hira:nope'] }, ITEMS, { canSpeak: true, learned: new Set() })).toThrow('Unknown item hira:nope in lesson x')
+    expect(() => buildLesson({ id: 'x', title: 'x', items: ['kana:nope'] }, ITEMS, { canSpeak: true, learned: new Set() })).toThrow('Unknown item kana:nope in lesson x')
   })
   it('never emits a question with fewer than two options (tiny pool)', () => {
     const one = new Map([['w:a', { id: 'w:a', kind: 'word' as const, jp: 'あ', gloss: 'a', romaji: 'a', sound: 'a' }]])
     const exs = buildLesson({ id: 'tiny', title: 'tiny', items: ['w:a'] }, one, { canSpeak: true, learned: new Set() })
     expect(exs.map((e) => e.type)).toEqual(['intro', 'type']) // choices need 2+ options; typing does not
   })
-  const lesson = lessonById('hira-voiced-3')! // だ ぢ づ で ど: ぢ and づ sound like じ and ず
+  const lesson = lessonById('kana-voiced-3')! // だ ぢ づ で ど: ぢ and づ sound like じ and ず
   const exs = buildLesson(lesson, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(7) })
   it('only asks twin-sound kana kana -> romaji, and never in matching', () => {
     for (const e of exs) {
@@ -281,7 +282,7 @@ describe('buildLesson specifics', () => {
     expect(buildLesson({ id: 'empty', title: 'empty', items: [] }, ITEMS, { canSpeak: true, learned: new Set() })).toEqual([])
   })
   it('a lesson of 3 items still builds valid 3-option questions', () => {
-    const l = lessonById('hira-combos-6')!
+    const l = lessonById('kana-combos-6')!
     expect(l.items).toHaveLength(3)
     const e = buildLesson(l, ITEMS, { canSpeak: true, learned: new Set(), rand: seeded(5) }).find((x) => x.type === 'choice')!
     expect(e.type === 'choice' && e.options).toHaveLength(3)

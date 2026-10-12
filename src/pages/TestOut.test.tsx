@@ -39,12 +39,12 @@ async function take(answerRight: (i: number) => boolean) {
     if (box) {
       // typed kana: the item is in the prompt; its first romaji is right
       const kana = document.querySelector('.prompt')!.textContent!
-      const it = [...ITEMS.values()].find((x) => x.kind === 'kana' && x.jp === kana)!
+      const it = [...ITEMS.values()].find((x) => x.kind === 'kana' && (x.jp === kana || x.kata === kana))! // asked in either script
       await user.type(box, answerRight(i) ? it.romaji : 'qqq')
       if (!answerRight(i)) await user.click(screen.getByRole('button', { name: 'Check' })) // a right one passes as it is typed
     } else {
       const kana = document.querySelector('.prompt')!.textContent!
-      const it = [...ITEMS.values()].find((x) => x.kind === 'kana' && x.jp === kana)!
+      const it = [...ITEMS.values()].find((x) => x.kind === 'kana' && (x.jp === kana || x.kata === kana))! // asked in either script
       const buttons = [...screen.getByRole('group', { name: 'Answers' }).querySelectorAll('button')]
       await user.click(buttons.find((b) => (b.textContent!.replace(/\s*\d$/, '').trim() === it.gloss) === answerRight(i))!)
     }
@@ -61,7 +61,7 @@ it('passing (2 wrong of 15) marks the unit done without XP; missed items start a
   for (const l of UNITS[0].lessons) expect(p.done.has(l.id), l.id).toBe(true)
   expect(p.done.has(UNITS[1].lessons[0].id)).toBe(false)
   expect(p.xpToday).toBe(0)
-  const graded = (await db.getAll('cards')).filter((c) => c.deck === 'hira' && c.fsrs.state !== State.New)
+  const graded = (await db.getAll('cards')).filter((c) => c.deck === 'kana' && c.fsrs.state !== State.New)
   expect(graded.length).toBe(46) // every basic hiragana is now scheduled
 })
 

@@ -101,7 +101,7 @@ describe('completeLesson', () => {
     expect(r).toMatchObject({ xp: 15, first: true, graded: 6 })
     const cards = await db.getAllFromIndex('cards', 'by-deck', 'grammar')
     expect(cards).toHaveLength(6)
-    expect(await db.count('cards')).toBe(208 + 6)
+    expect(await db.count('cards')).toBe(104 + 6)
     expect(cards.find((c) => c.id === 'sent:watashi-wa-gakusei-desu')).toMatchObject({ front: 'わたしは がくせいです。', back: ['I am a student.'] })
     expect(await db.get('decks', 'grammar')).toEqual({ id: 'grammar', name: 'Grammar sentences' })
     expect(await db.get('decks', 'vocab')).toBeUndefined()
@@ -109,9 +109,9 @@ describe('completeLesson', () => {
   it('kana lessons grade the seeded cards and do not create a vocab deck', async () => {
     const db = await fresh()
     await completeLesson(db, LESSONS[0], ITEMS, {}, 1, now)
-    expect((await db.get('cards', 'hira:あ'))!.fsrs.state).not.toBe(State.New)
+    expect((await db.get('cards', 'kana:あ'))!.fsrs.state).not.toBe(State.New)
     expect(await db.count('decks')).toBe(0)
-    expect(await db.count('cards')).toBe(208)
+    expect(await db.count('cards')).toBe(104)
   })
   it('replaying a lesson: 5 XP, plays+1, best accuracy kept, completedAt unchanged, no extra reviews while cards are not due', async () => {
     const db = await fresh()
@@ -146,7 +146,7 @@ describe('completeLesson', () => {
     await expect(completeLesson(db, { id: 'bad', title: 'bad', items: [lesson.items[0], 'vocab:nope'] }, ITEMS, {}, 1, now)).rejects.toThrow('Unknown item vocab:nope')
     expect(await db.count('reviews')).toBe(0)
     expect(await db.count('lessons')).toBe(0)
-    expect(await db.count('cards')).toBe(208)
+    expect(await db.count('cards')).toBe(104)
   })
   it('XP accumulates per day and starts fresh on the next day', async () => {
     const db = await fresh()
@@ -187,11 +187,11 @@ describe('database upgrade', () => {
       d.createObjectStore('decks', { keyPath: 'id' })
       d.createObjectStore('media', { keyPath: 'key' })
     } })
-    await old.put('cards', { id: 'hira:あ', deck: 'hira', front: 'あ', back: ['a'], fsrs: newFsrsCard() })
+    await old.put('cards', { id: 'kana:あ', deck: 'kana', front: 'あ', back: ['a'], fsrs: newFsrsCard() })
     old.close()
     const db = await openDb(name)
     expect([...db.objectStoreNames].sort()).toEqual(['activity', 'cards', 'decks', 'lessons', 'media', 'reviews'])
-    expect(await db.get('cards', 'hira:あ')).toBeTruthy()
+    expect(await db.get('cards', 'kana:あ')).toBeTruthy()
     await completeLesson(db, LESSONS[0], ITEMS, {}, 1) // the new stores work
     expect(await db.count('lessons')).toBe(1)
   })

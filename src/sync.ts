@@ -98,7 +98,9 @@ async function run(db: Db) {
   const text = JSON.stringify(merged)
   const changed = text !== JSON.stringify({ ...local, reviews: local.reviews.map(noId) })
   if (changed) await importBackup(db, text)
-  const up = await sb.from('progress').upsert({ user_id: s.user.id, data: merged, updated_at: new Date().toISOString() })
+  // push what this device now holds: importing tidies the data (old separate hiragana/katakana cards are folded into one)
+  const saved = changed ? JSON.parse(await exportBackup(db)) : merged
+  const up = await sb.from('progress').upsert({ user_id: s.user.id, data: saved, updated_at: new Date().toISOString() })
   if (up.error) throw new Error(up.error.message)
   try {
     localStorage.setItem(LAST, new Date().toISOString())

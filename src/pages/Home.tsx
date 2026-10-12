@@ -91,7 +91,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
         {total > 0 && <div className="row2 left"><button className="primary big" onClick={onStart}>Study</button></div>}
         <details className="options">
           <summary>Deck and mode</summary>
-          {pick('deck', 'Deck', [['all', 'All decks'], ['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ...BUILT_IN, ...imported.filter((d) => !BUILT_IN.some(([id]) => id === d.id)).map((d): [string, string] => [d.id, d.name])])}
+          {pick('deck', 'Deck', [['all', 'All decks'], ['kana', 'Kana かな カナ'], ...BUILT_IN, ...imported.filter((d) => !BUILT_IN.some(([id]) => id === d.id)).map((d): [string, string] => [d.id, d.name])])}
           {pick('mode', 'Mode', [['flashcard', 'Flashcards'], ['typing', 'Type the answer'], ['quiz', 'Multiple choice']])}
           {config.deck.startsWith('anki:') && config.mode !== 'flashcard' && <p className="hint left">Imported decks work in flashcard mode.</p>}
         </details>

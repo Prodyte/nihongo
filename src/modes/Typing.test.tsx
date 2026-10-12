@@ -22,7 +22,7 @@ it('a word card asks for the English meaning, forgives a slip, and shows the rea
 it('a kana card asks for the romaji, exactly', async () => {
   const onGrade = vi.fn()
   const user = userEvent.setup()
-  render(<Typing db={{} as Db} card={card({ deck: 'hira', front: 'し', back: ['shi', 'si'] })} pool={[]} autoplay={false} onGrade={onGrade} />)
+  render(<Typing db={{} as Db} card={card({ deck: 'kana', front: 'し', back: ['shi', 'si'] })} pool={[]} autoplay={false} onGrade={onGrade} />)
   await user.type(screen.getByRole('textbox', { name: 'romaji answer' }), 'shu{Enter}')
   expect(screen.getByRole('status').textContent).toBe('✗ Answer: shi / si')
   await user.click(screen.getByRole('button', { name: 'Next' }))
@@ -31,7 +31,7 @@ it('a kana card asks for the romaji, exactly', async () => {
 it('a right answer passes as soon as it is typed; Enter then goes on', async () => {
   const onGrade = vi.fn()
   const user = userEvent.setup()
-  render(<Typing db={{} as Db} card={card({ deck: 'hira', front: 'し', back: ['shi', 'si'] })} pool={[]} autoplay={false} onGrade={onGrade} />)
+  render(<Typing db={{} as Db} card={card({ deck: 'kana', front: 'し', back: ['shi', 'si'] })} pool={[]} autoplay={false} onGrade={onGrade} />)
   await user.type(screen.getByRole('textbox', { name: 'romaji answer' }), 'sh')
   expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy()
   await user.type(screen.getByRole('textbox', { name: 'romaji answer' }), 'i')
