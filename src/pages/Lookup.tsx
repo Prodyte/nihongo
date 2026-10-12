@@ -7,11 +7,13 @@ import { ENTRIES, MAX, search } from '../path/lookup'
 import { stage } from '../srs/stages'
 import { loadStrokes } from '../path/strokes'
 import { Example } from '../path/ui/Example'
+import { useRomaji } from '../path/ui/furigana'
 import { Mnemonic } from '../path/ui/Mnemonic'
 import { Strokes } from '../path/ui/Strokes'
 import { WriteBoard } from '../path/ui/WriteBoard'
 
 export function Lookup({ db }: { db: Db }) {
+  const romaji = useRomaji()
   const [query, setQuery] = useState('')
   const [cards, setCards] = useState<Map<string, Card>>(new Map())
   useEffect(() => {
@@ -44,7 +46,7 @@ export function Lookup({ db }: { db: Db }) {
                     {st && <span className={`tag ${st.toLowerCase()}`}>{st}</span>}
                   </span>
                 </summary>
-                {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <><p className="hint">{it.romaji}</p><Mnemonic item={it} /><Example item={it} /></>}
+                {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <>{romaji && <p className="hint">{it.romaji}</p>}<Mnemonic item={it} /><Example item={it} /></>}
                 <a href={`https://jisho.org/search/${encodeURIComponent((it.written ?? it.kanji ?? written(it)) + (it.kind === 'kanji' ? ' #kanji' : ''))}`} target="_blank" rel="noopener noreferrer">
                   Jisho<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span>
                 </a>

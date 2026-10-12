@@ -22,7 +22,7 @@ import { Today } from './pages/Today'
 import { Welcome, type StartLevel } from './pages/Welcome'
 import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
-import { FURIGANA, FuriganaContext, type Furigana } from './path/ui/furigana'
+import { FURIGANA, FuriganaContext, ROMAJI, type Furigana, type Romaji } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
 import { maybeSignedIn, recovery, sync } from './sync'
 
@@ -30,6 +30,7 @@ type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
 type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
 const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', about: 'more', grammar: 'more', account: 'more' }
+const KANA_LESSONS = UNITS.filter((u) => u.section === 'Kana').flatMap((u) => u.lessons)
 const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
   ['decks', 'Decks', 'Import Anki decks, find good ones'],
@@ -64,6 +65,8 @@ export default function App() {
   const [config, setConfig] = useState<Config>({ deck: 'all', mode: 'flashcard' }) // the Review tab's choice
   const [furigana, setFurigana] = useState<Furigana>(() => readStr('nihongo.furigana', FURIGANA, 'auto'))
   const [known, setKnown] = useState<ReadonlySet<string>>(new Set()) // kanji the learner has had a kanji lesson for
+  const [romaji, setRomaji] = useState<Romaji>(() => readStr('nihongo.romaji', ROMAJI, 'auto'))
+  const [kanaDone, setKanaDone] = useState(false) // every kana lesson done (or tested out): romaji goes, by default
   const phone = !useMedia('(min-width: 48rem)') // bottom tabs, and a top bar for the logo and account
   const sidebar = useMedia('(min-width: 64rem)') // navigation down the left, More's pages listed in it
   const [gen, setGen] = useState(0) // bumped when a background sync changes local data: screens remount and reload
@@ -102,7 +105,10 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0) }, [view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
   useEffect(() => {
     // refreshed on every screen change, so a finished kanji lesson drops its furigana straight away
-    if (db) void getProgress(db).then((p) => setKnown(new Set([...learnedItems(LESSONS, p.done)].filter((id) => id.startsWith('kanji:')).map((id) => id.slice(6)))), () => {})
+    if (db) void getProgress(db).then((p) => {
+      setKnown(new Set([...learnedItems(LESSONS, p.done)].filter((id) => id.startsWith('kanji:')).map((id) => id.slice(6))))
+      setKanaDone(KANA_LESSONS.every((l) => p.done.has(l.id)))
+    }, () => {})
   }, [db, view])
 
   const startLesson = (id: string) => { setBack(view); setLessonId(id); setView('lesson') }
@@ -127,7 +133,7 @@ export default function App() {
     return <main><h1 className="visually-hidden">Nihongo</h1><Welcome onDone={start} /></main>
   }
   return (
-    <FuriganaContext.Provider value={{ mode: furigana, known }}>
+    <FuriganaContext.Provider value={{ mode: furigana, known, romaji: romaji === 'always' || (romaji === 'auto' && !kanaDone) }}>
       {!focused && phone && (
         <header className="appbar">
           <span className="brand" aria-hidden="true"><Logo /> Nihongo <small lang="ja">日本語</small></span>
@@ -163,7 +169,8 @@ export default function App() {
           <Stats db={db} />
         ) : view === 'settings' ? (
           <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
-            furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }} onSynced={rerender} />
+            furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }}
+            romaji={romaji} onRomaji={(r) => { setRomaji(r); writeStr('nihongo.romaji', r) }} onSynced={rerender} />
         ) : view === 'account' ? (
           <Account db={db} onSynced={rerender} />
         ) : view === 'grammar' ? (

@@ -12,9 +12,10 @@ afterEach(cleanup)
 it('speech speed, theme and "choose any lesson" are remembered; theme applies at once; autoplay is reported', async () => {
   const onAutoplay = vi.fn()
   const onFurigana = vi.fn()
+  const onRomaji = vi.fn()
   const user = userEvent.setup()
   const db = await openDb('settings-1')
-  render(<Settings db={db} autoplay={true} onAutoplay={onAutoplay} furigana="auto" onFurigana={onFurigana} />)
+  render(<Settings db={db} autoplay={true} onAutoplay={onAutoplay} furigana="auto" onFurigana={onFurigana} romaji="auto" onRomaji={onRomaji} />)
   expect(screen.queryByRole('combobox', { name: 'Daily goal' })).toBeNull()
   await user.selectOptions(screen.getByRole('combobox', { name: 'Speech speed' }), '60')
   await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), 'dark')
@@ -27,9 +28,11 @@ it('speech speed, theme and "choose any lesson" are remembered; theme applies at
   expect(onAutoplay).toHaveBeenCalledWith(false)
   await user.selectOptions(screen.getByRole('combobox', { name: /Furigana/ }), 'never')
   expect(onFurigana).toHaveBeenCalledWith('never')
+  await user.selectOptions(screen.getByRole('combobox', { name: /Romaji/ }), 'always')
+  expect(onRomaji).toHaveBeenCalledWith('always')
 
   cleanup()
-  render(<Settings db={db} autoplay={true} onAutoplay={() => {}} furigana="auto" onFurigana={() => {}} />)
+  render(<Settings db={db} autoplay={true} onAutoplay={() => {}} furigana="auto" onFurigana={() => {}} romaji="auto" onRomaji={() => {}} />)
   expect((screen.getByRole('combobox', { name: 'Speech speed' }) as HTMLSelectElement).value).toBe('60')
   expect((screen.getByRole('combobox', { name: 'Theme' }) as HTMLSelectElement).value).toBe('dark')
   expect((screen.getByRole('checkbox', { name: /choose any lesson/ }) as HTMLInputElement).checked).toBe(true)
@@ -39,6 +42,6 @@ it('speech speed, theme and "choose any lesson" are remembered; theme applies at
 })
 
 it('backup lives here', async () => {
-  render(<Settings db={await openDb('settings-2')} autoplay={true} onAutoplay={() => {}} furigana="auto" onFurigana={() => {}} />)
+  render(<Settings db={await openDb('settings-2')} autoplay={true} onAutoplay={() => {}} furigana="auto" onFurigana={() => {}} romaji="auto" onRomaji={() => {}} />)
   expect(screen.getByRole('heading', { name: 'Backup' })).toBeTruthy()
 })

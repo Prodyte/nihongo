@@ -6,7 +6,7 @@ import { Ruby } from './Ruby'
 
 afterEach(cleanup)
 const html = (mode: Furigana, known: string[], text: string, reading?: string) => {
-  const { container } = render(<FuriganaContext.Provider value={{ mode, known: new Set(known) }}><Ruby text={text} reading={reading} /></FuriganaContext.Provider>)
+  const { container } = render(<FuriganaContext.Provider value={{ mode, known: new Set(known), romaji: true }}><Ruby text={text} reading={reading} /></FuriganaContext.Provider>)
   const out = container.innerHTML
   cleanup()
   return out

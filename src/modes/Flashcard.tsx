@@ -19,6 +19,7 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
   const slot = useRef<HTMLDivElement>(null)
   const kanji = card.deck === BUILTIN_DECKS.kanji.id ? ITEMS.get(card.id) : undefined // readings and an example word on the back
   const example = kanji?.examples?.[0] && ITEMS.get(kanji.examples[0])
+  const item = ITEMS.get(card.id)
   // Move focus to the revealed answer, not a grade button: a held Enter would auto-repeat onto it and grade by accident.
   useEffect(() => {
     if (shown) slot.current?.focus()
@@ -45,6 +46,8 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
       ) : (
         <div className="kana" lang="ja"><Ruby text={card.front} reading={card.reading} /></div>
       )}
+      {/* a word is asked in context: its sentence on the front, the sentence's English and sound with the answer */}
+      {item && <Example item={item} revealed={shown} />}
       <div className="answer-slot" aria-live="polite" tabIndex={-1} ref={slot}>
         {shown && (
           <>
@@ -56,7 +59,7 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
                 <p className="kanji-readings" lang="ja">{[kanji.on?.length && `音 ${kanji.on.join('・')}`, kanji.kun?.length && `訓 ${kanji.kun.join('・')}`].filter(Boolean).join('　')}</p>
                 {example && <p className="kanji-example"><span lang="ja"><Ruby text={example.written ?? example.kanji ?? example.jp} reading={example.written ?? example.kanji ? example.jp : undefined} /></span> {example.gloss} <SpeakButton text={example.jp} /></p>}
               </>
-            ) : !card.html && <><div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>{ITEMS.get(card.id) && <><Mnemonic item={ITEMS.get(card.id)!} /><Example item={ITEMS.get(card.id)!} /></>}</>}
+            ) : !card.html && <><div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>{item && <Mnemonic item={item} />}</>}
             <div className="grades">
               {GRADES.map(([g, label, cls]) => (
                 <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small aria-label={`next in ${next[g]}`}>{next[g]}</small></button>

@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import type { Db } from '../db/db'
 import { applyTheme, readBool, readSpeed, readStr, SPEEDS, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
-import { FURIGANA, type Furigana } from '../path/ui/furigana'
+import { FURIGANA, ROMAJI, type Furigana, type Romaji } from '../path/ui/furigana'
 import { canRecognise } from '../speech'
 import { Account } from './Account'
 import { Backup } from './Backup'
 
-export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, onSynced = () => {} }: { db: Db; onSynced?: () => void; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void }) {
+export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaji, onRomaji, onSynced = () => {} }: {
+  db: Db; onSynced?: () => void; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void; romaji: Romaji; onRomaji: (r: Romaji) => void
+}) {
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
   const [speed, setSpeed] = useState(readSpeed)
@@ -30,6 +32,12 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, onSyn
           Furigana (readings over kanji)
           <select value={furigana} onChange={(e) => onFurigana(e.target.value as Furigana)}>
             {FURIGANA.map((f) => <option key={f} value={f}>{{ auto: 'Over kanji I haven’t learned yet', always: 'Always', never: 'Never' }[f]}</option>)}
+          </select>
+        </label>
+        <label>
+          Romaji next to Japanese
+          <select value={romaji} onChange={(e) => onRomaji(e.target.value as Romaji)}>
+            {ROMAJI.map((r) => <option key={r} value={r}>{{ auto: 'Until I’ve learned the kana', always: 'Always', never: 'Never' }[r]}</option>)}
           </select>
         </label>
         <label>

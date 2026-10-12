@@ -239,6 +239,7 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .example { margin: 0; padding: .55rem .8rem; border-left: 3px solid var(--indigo); border-radius: 0 var(--radius-s) var(--radius-s) 0; background: var(--indigo-soft); text-align: left; width: 100%; box-sizing: border-box; }
 .example p { margin: 0; font-size: 1.15rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; }
 .example .speak-btns { margin-left: auto; }
+.example mark { background: none; color: var(--accent); font-weight: 700; }
 .example figcaption { color: var(--muted); font-size: .95rem; margin-top: .15rem; }
 .card.weak ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; }
 .card.weak li { text-align: left; display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }

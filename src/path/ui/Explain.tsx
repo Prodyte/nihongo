@@ -1,6 +1,7 @@
 import { SpeakButton } from '../../modes/SpeakButton'
 import type { Exercise } from '../lesson'
 import { written } from '../course'
+import { useRomaji } from './furigana'
 import { JaText } from './JaText'
 import { Ruby } from './Ruby'
 
@@ -8,6 +9,7 @@ type Ex = Extract<Exercise, { type: 'explain' }>
 
 /** A grammar lesson's opening card: the rule in a few sentences, then two example sentences with reading and meaning. */
 export function Explain({ ex, onDone }: { ex: Ex; onDone: (missed: string[]) => void }) {
+  const romaji = useRomaji()
   return (
     <div className="card explain">
       <h2><JaText text={ex.title} /></h2>
@@ -16,7 +18,7 @@ export function Explain({ ex, onDone }: { ex: Ex; onDone: (missed: string[]) => 
         {ex.examples.map((it) => (
           <li key={it.id}>
             <div className="jpline"><span className="jp" lang="ja"><Ruby text={written(it)} /></span><SpeakButton text={it.jp} /></div>
-            <small>{it.romaji}</small>
+            {romaji && <small>{it.romaji}</small>}
             <small>{it.gloss}</small>
           </li>
         ))}

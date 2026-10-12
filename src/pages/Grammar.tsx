@@ -3,6 +3,7 @@ import type { Db } from '../db/db'
 import { SpeakButton } from '../modes/SpeakButton'
 import { ITEMS, LESSONS, written } from '../path/course'
 import { getProgress } from '../path/progress'
+import { useRomaji } from '../path/ui/furigana'
 import { JaText } from '../path/ui/JaText'
 import { Ruby } from '../path/ui/Ruby'
 
@@ -11,6 +12,7 @@ const LEVEL = (id: string) => (id.startsWith('n5-') ? 'N5' : id.startsWith('n4-'
 
 /** Every grammar point in the course: its explanation and all its sentences, to look back at any time (like Bunpro's grammar pages). */
 export function Grammar({ db }: { db: Db }) {
+  const romaji = useRomaji()
   const [done, setDone] = useState<ReadonlySet<string>>(new Set())
   const [q, setQ] = useState('')
   useEffect(() => {
@@ -47,7 +49,7 @@ export function Grammar({ db }: { db: Db }) {
                         {l.items.map((id) => ITEMS.get(id)!).map((it) => (
                           <li key={it.id}>
                             <div className="jpline"><span className="jp" lang="ja"><Ruby text={written(it)} /></span><SpeakButton text={it.jp} /></div>
-                            <small>{it.romaji}</small>
+                            {romaji && <small>{it.romaji}</small>}
                             <small>{it.gloss}</small>
                           </li>
                         ))}
