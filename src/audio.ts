@@ -38,7 +38,7 @@ export function speakAll(texts: string[], onStart: (i: number) => void, onEnd: (
     u.voice = voice
     u.rate = readSpeed() / 100
     u.onstart = () => onStart(i)
-    if (i === texts.length - 1) u.onend = onEnd
+    if (i === texts.length - 1) u.onend = u.onerror = onEnd // cancelled by another speak() (tapping a word): Chrome fires error, not end
     s.speak(u)
   })
   return () => { s.cancel(); onEnd() }

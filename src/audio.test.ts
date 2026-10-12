@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { audiosToPlay, playInOrder, slowly, speak } from './audio'
+import { audiosToPlay, playInOrder, slowly, speak, speakAll } from './audio'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -101,5 +101,17 @@ describe('speak', () => {
     speak('みず')
     speak('みず', 60)
     expect(s.speak.mock.calls.map((c) => (c[0] as Utterance).text)).toEqual(['みず', 'み、ず'])
+  })
+  it('speakAll ends when its last sentence ends, or is cancelled by other speech (Chrome reports an error then)', () => {
+    const s = synth([{ lang: 'ja-JP' }])
+    vi.stubGlobal('speechSynthesis', s)
+    vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
+    const onEnd = vi.fn()
+    speakAll(['あ', 'い'], () => {}, onEnd)
+    const last = s.speak.mock.calls[1][0] as { onend: () => void; onerror: () => void }
+    last.onerror()
+    expect(onEnd).toHaveBeenCalledOnce()
+    last.onend()
+    expect(onEnd).toHaveBeenCalledTimes(2)
   })
 })

@@ -27,6 +27,7 @@ const pairs = (s: string) => {
   return Array.from({ length: t.length / 2 }, (_, i) => [t[2 * i], t[2 * i + 1].split('/')] as const)
 }
 export const toKata = (s: string) => s.replace(/[ぁ-ゖ]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0x60))
+export const toHira = (s: string) => s.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
 
 const hira: Omit<Kana, 'id' | 'script'>[] = [
   ...pairs(BASE).map(([kana, romaji]) => ({ kana, romaji, group: 'base' as const })),

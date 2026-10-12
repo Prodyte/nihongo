@@ -42,7 +42,7 @@ export function KanaChart({ db, onExit }: { db: Db; onExit: () => void }) {
       </div>
       <div className="segmented" role="tablist" aria-label="Script">
         {(['hira', 'kata'] as const).map((s) => (
-          <button key={s} role="tab" aria-selected={script === s} onClick={() => setScript(s)}>{s === 'hira' ? 'Hiragana ひらがな' : 'Katakana カタカナ'}</button>
+          <button key={s} role="tab" aria-selected={script === s} onClick={() => setScript(s)}>{s === 'hira' ? 'Hiragana' : 'Katakana'} <small lang="ja">{s === 'hira' ? 'ひらがな' : 'カタカナ'}</small></button>
         ))}
       </div>
       <div className="card">

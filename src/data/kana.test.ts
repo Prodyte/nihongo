@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KANA, matches } from './kana'
+import { KANA, matches, toHira } from './kana'
 
 const by = (id: string) => KANA.find((k) => k.id === id)!
 
@@ -12,6 +12,9 @@ describe('kana table', () => {
     expect(by('kata:ア').romaji).toEqual(by('hira:あ').romaji)
     expect(by('kata:ガ').romaji).toEqual(['ga'])
     expect(by('kata:キャ').romaji).toEqual(['kya'])
+  })
+  it('every katakana maps back to its hiragana twin (shown on katakana intros)', () => {
+    for (const k of KANA.filter((x) => x.script === 'kata')) expect(by(`hira:${toHira(k.kana)}`).romaji, k.kana).toEqual(k.romaji)
   })
   it('has correct tricky romaji', () => {
     expect(by('hira:し').romaji).toEqual(['shi', 'si'])

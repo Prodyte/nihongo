@@ -88,9 +88,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
             <p className="hint left">{total ? 'Cards come back just before you would forget them.' : counts?.empty ? 'No cards here yet: they arrive as you finish lessons on the path.' : `All caught up.${info.next ? ` Next review ${info.next}.` : ''}`}</p>
           </div>
         </div>
-        <div className="row2 left">
-          {total > 0 && <button className="primary big" onClick={onStart}>Study</button>}
-        </div>
+        {total > 0 && <div className="row2 left"><button className="primary big" onClick={onStart}>Study</button></div>}
         <details className="options">
           <summary>Deck and mode</summary>
           {pick('deck', 'Deck', [['all', 'All decks'], ['hira', 'Hiragana ひらがな'], ['kata', 'Katakana カタカナ'], ...BUILT_IN, ...imported.filter((d) => !BUILT_IN.some(([id]) => id === d.id)).map((d): [string, string] => [d.id, d.name])])}

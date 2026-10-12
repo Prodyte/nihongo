@@ -59,7 +59,7 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
       const ask = document.querySelector('label.q')!.textContent!
       const shown = document.querySelector('.prompt')!.textContent
       const text = ask.includes('Japanese') ? typeable(items.find((it) => it!.gloss === shown)!) : items.find((it) => it!.jp === shown)!.gloss // 'Japanese' first: its hint also says "romaji"
-      await u.type(box, `${text}{Enter}`)
+      await u.type(box, text) // right: it passes as soon as it is typed
       await u.click(await screen.findByRole('button', { name: 'Continue' }))
       continue
     }
@@ -84,7 +84,7 @@ it('a flawless kana lesson: summary, 15 XP, items graded Good, lesson recorded',
   mount(db, lesson)
   await drive(u, lesson)
   expect([tile('Right first time'), tile('Streak')]).toEqual(['100%', '1 day'])
-  expect(screen.getByRole('button', { name: /Next lesson: か き く け こ/ })).toBeTruthy()
+  expect(screen.getByRole('button', { name: /Next lesson: ア イ ウ エ オ/ })).toBeTruthy()
   expect(await db.get('lessons', 'hira-basic-1')).toMatchObject({ plays: 1, bestAccuracy: 1 })
   for (const id of lesson.items) expect((await db.get('cards', id))!.fsrs.state).not.toBe(State.New)
   expect((await db.getAll('reviews')).map((r) => r.grade)).toEqual(Array(5).fill(Rating.Good))
@@ -167,7 +167,7 @@ it('Next lesson starts the following lesson', async () => {
   mount(db, lessonById('hira-basic-1')!, { onStart })
   await drive(u, lessonById('hira-basic-1')!)
   await u.click(screen.getByRole('button', { name: /Next lesson/ }))
-  expect(onStart).toHaveBeenCalledWith('hira-basic-2')
+  expect(onStart).toHaveBeenCalledWith('kata-basic-1') // the same sounds in katakana come next
 })
 
 it('leaving mid-lesson saves nothing', async () => {

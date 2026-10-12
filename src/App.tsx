@@ -122,7 +122,7 @@ export default function App() {
       writeBool('nihongo.onboarded', true)
       setWelcome(false)
       // skipping ahead means passing a test over everything up to there: the last kana unit, or the end of the starter section
-      if (level !== 'new') { setTestUnit(level === 'kana' ? 'kata-combos' : UNITS.filter((u) => u.section === 'Starter').at(-1)!.id); setView('test') }
+      if (level !== 'new') { setTestUnit(level === 'kana' ? 'kana-combos' : UNITS.filter((u) => u.section === 'Starter').at(-1)!.id); setView('test') }
     }
     return <main><h1 className="visually-hidden">Nihongo</h1><Welcome onDone={start} /></main>
   }

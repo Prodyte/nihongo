@@ -41,7 +41,7 @@ async function take(answerRight: (i: number) => boolean) {
       const kana = document.querySelector('.prompt')!.textContent!
       const it = [...ITEMS.values()].find((x) => x.kind === 'kana' && x.jp === kana)!
       await user.type(box, answerRight(i) ? it.romaji : 'qqq')
-      await user.click(screen.getByRole('button', { name: 'Check' }))
+      if (!answerRight(i)) await user.click(screen.getByRole('button', { name: 'Check' })) // a right one passes as it is typed
     } else {
       const kana = document.querySelector('.prompt')!.textContent!
       const it = [...ITEMS.values()].find((x) => x.kind === 'kana' && x.jp === kana)!

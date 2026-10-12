@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
 import { VOCAB_UNITS } from './vocab'
 import { glossAnswers } from './progress'
-import { checkEnglish, checkJapanese, distance, normKana, toKana } from './typing'
+import { checkEnglish, checkJapanese, distance, mayGrow, normKana, toKana } from './typing'
 
 const kana = (s: string) => toKana(s).kana
 
@@ -142,4 +142,12 @@ describe('checkEnglish', () => {
 
 describe('distance', () => {
   it.each([['', '', 0], ['a', '', 1], ['water', 'water', 0], ['water', 'watar', 1], ['kitten', 'sitting', 3], ['abc', 'acb', 2]])('%s / %s = %i', (a, b, d) => expect(distance(a as string, b as string)).toBe(d))
+})
+
+it('mayGrow: an answer that is the start of a longer accepted one (word by word) may still grow', () => {
+  expect(mayGrow('hello', ['hello, good afternoon', 'hello', 'good afternoon'])).toBe(true)
+  expect(mayGrow('Hello ', ['hello, good afternoon'])).toBe(true)
+  expect(mayGrow('hello, good afternoon', ['hello, good afternoon', 'hello'])).toBe(false)
+  expect(mayGrow('eat', ['to eat', 'eat'])).toBe(false)
+  expect(mayGrow('eat', ['eaten'])).toBe(false) // only whole words: "eat" is done
 })

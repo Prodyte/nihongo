@@ -126,6 +126,9 @@ export function distance(a: string, b: string): number {
 
 const normEn = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}' ]/gu, ' ').replace(/\s+/g, ' ').trim()
 
+/** Could `typed` still grow into a longer accepted answer ("hello" of "hello, good afternoon")? Then it must not pass mid-typing. */
+export const mayGrow = (typed: string, answers: string[]) => { const t = `${normEn(typed)} `; return answers.some((a) => normEn(a).startsWith(t)) }
+
 /** Is `typed` one of the accepted English answers? One wrong letter is forgiven when the answer has 6+ letters. */
 export function checkEnglish(typed: string, answers: string[]): Check {
   const t = normEn(typed)

@@ -17,7 +17,7 @@ const box = () => screen.getByRole('textbox') as HTMLInputElement
 it('kana -> romaji: any accepted spelling counts (し: shi or si; ぢ: ji or di)', async () => {
   for (const [id, typed] of [['hira:し', 'shi'], ['hira:し', 'SI'], ['hira:ぢ', 'ji'], ['hira:ぢ', 'di'], ['kata:ツ', 'tu']] as const) {
     const { onDone, u } = show(ex(id, 'toRomaji'))
-    await u.type(box(), `${typed}{Enter}`)
+    await u.type(box(), typed)
     expect(screen.getByText('✓ Correct'), `${id} ${typed}`).toBeTruthy()
     await u.click(screen.getByRole('button', { name: 'Continue' }))
     expect(onDone).toHaveBeenCalledWith([])
@@ -42,7 +42,7 @@ it('English -> Japanese shows the kana as you type, and keeps an unfinished lett
 
 it('a right Japanese answer is accepted; a wrong one reveals the answer and reports the miss', async () => {
   let r = show(ex('vocab:mizu', 'toJp'))
-  await r.u.type(box(), 'mizu{Enter}')
+  await r.u.type(box(), 'mizu')
   await r.u.click(screen.getByRole('button', { name: 'Continue' }))
   expect(r.onDone).toHaveBeenCalledWith([])
   cleanup()
@@ -57,22 +57,30 @@ it('a right Japanese answer is accepted; a wrong one reveals the answer and repo
 
 it('Japanese typing is exact, but こんにちは also takes "konnichiwa" with a note', async () => {
   const { u } = show(ex('vocab:konnichiwa', 'toJp'))
-  await u.type(box(), 'konnichiwa{Enter}')
+  await u.type(box(), 'konnichiwa')
   expect(screen.getByText('✓ Correct')).toBeTruthy()
   expect(screen.getByText(/は is read “wa”/)).toBeTruthy()
 })
 
 it('Japanese -> English forgives one wrong letter in a longer answer, and says how it is spelt', async () => {
   const { u } = show(ex('vocab:ashita', 'toGloss'))
-  await u.type(box(), 'tomorow{Enter}')
+  await u.type(box(), 'tomorow')
+  expect(screen.queryByText('✓ Correct')).toBeNull() // a forgiven slip could be half a word: it waits for Check
+  await u.type(box(), '{Enter}')
   expect(screen.getByText('✓ Correct')).toBeTruthy()
   expect(screen.getByText('Check the spelling: “tomorrow”.')).toBeTruthy()
 })
 
-it('after answering, focus moves to Continue so the keyboard flows on (Enter would not resubmit)', async () => {
-  const { u } = show(ex('vocab:mizu', 'toJp'))
-  await u.type(box(), 'mizu{Enter}')
+it('a right answer passes as soon as it is typed, with no Check; focus moves to Continue', async () => {
+  const { onDone, u } = show(ex('vocab:mizu', 'toJp'))
+  await u.type(box(), 'miz')
+  expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy()
+  await u.type(box(), 'u')
+  expect(screen.getByText('✓ Correct')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Check' })).toBeNull()
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Continue' }))
+  await u.keyboard('{Enter}')
+  expect(onDone).toHaveBeenCalledWith([])
 })
 
 it('"I don\'t know" is a miss that shows the answer; an empty Check is not possible', async () => {
@@ -98,15 +106,15 @@ it('a held Enter does not submit repeatedly or skip the feedback; the input has 
 it('after answering a word, it is spoken when autoplay is on (and not when off, and never for kana)', async () => {
   const spy = vi.spyOn(audio, 'speak').mockReturnValue(true)
   let r = show(ex('vocab:mizu', 'toJp'), { autoplay: true })
-  await r.u.type(box(), 'mizu{Enter}')
+  await r.u.type(box(), 'mizu')
   expect(spy).toHaveBeenCalledWith('みず')
   cleanup(); spy.mockClear()
   r = show(ex('vocab:mizu', 'toJp'), { autoplay: false })
-  await r.u.type(box(), 'mizu{Enter}')
+  await r.u.type(box(), 'mizu')
   expect(spy).not.toHaveBeenCalled()
   cleanup()
   r = show(ex('hira:あ', 'toRomaji'), { autoplay: true })
-  await r.u.type(box(), 'a{Enter}')
+  await r.u.type(box(), 'a')
   expect(spy).not.toHaveBeenCalled() // the sound would only repeat the answer you just typed
 })
 
@@ -115,7 +123,7 @@ it('sentences: type it with the particle as written (ha), spaces optional; the l
   const { onDone, u } = show(ex(SENT, 'toJp'))
   expect(screen.getByLabelText(/particles as written: は = ha, を = wo/)).toBe(box())
   expect(screen.getByText('I am a student.')).toBeTruthy()
-  await u.type(box(), 'watashi ha gakusei desu{Enter}')
+  await u.type(box(), 'watashi ha gakusei desu')
   expect(screen.getByText('✓ Correct')).toBeTruthy()
   await u.click(screen.getByRole('button', { name: 'Continue' }))
   expect(onDone).toHaveBeenCalledWith([])
@@ -135,6 +143,13 @@ it('sentences: the live preview shows kana while typing, and the other valid wor
   expect(document.querySelector('.preview')!.textContent!.trim()).toBe('わたしは')
   cleanup()
   r = show(ex('sent:tomodachi-wa-sakana-o-tabemasu', 'toJp'))
-  await r.u.type(box(), 'sakana wo tomodachi ha tabemasu{Enter}')
+  await r.u.type(box(), 'sakana wo tomodachi ha tabemasu')
+  expect(screen.getByText('✓ Correct')).toBeTruthy()
+})
+it('English that could be the start of a longer answer waits for Check, so the next space types on', async () => {
+  const { u } = show(ex('vocab:konnichiwa', 'toGloss'))
+  await u.type(box(), 'hello')
+  expect(screen.queryByText('✓ Correct')).toBeNull()
+  await u.type(box(), ', good afternoon')
   expect(screen.getByText('✓ Correct')).toBeTruthy()
 })

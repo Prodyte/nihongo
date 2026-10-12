@@ -92,9 +92,10 @@ function StoryView({ db, story, onExit }: { db: Db; story: Story; onExit: () => 
           {story.sentences.map((s, i) => (
             <li key={i} className={playing === i ? 'playing' : ''}>
               <p lang="ja" className="jp-line">
-                {s.tokens.map((t, k) => (
+                {s.tokens.slice(0, -1).map((t, k) => (
                   <button key={k} className="word" onClick={() => lookUp(t)}><Ruby text={t} /></button>
-                ))}。
+                ))}
+                <span className="last"><button className="word" onClick={() => lookUp(s.tokens.at(-1)!)}><Ruby text={s.tokens.at(-1)!} /></button>。</span>
               </p>
               <div className="line-tools">
                 <SpeakButton text={sentenceText(s.tokens)} />

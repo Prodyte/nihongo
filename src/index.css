@@ -82,8 +82,9 @@ input[type="file"] { font-size: 1rem; text-align: left; padding: .5rem; }
 input[type="file"]::file-selector-button { font: inherit; margin-right: .75rem; padding: .45rem .9rem; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); cursor: pointer; }
 button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--indigo); outline-offset: 2px; }
 label { display: flex; flex-direction: column; gap: .3rem; width: 100%; font-size: .9rem; font-weight: 500; }
-label.check { flex-direction: row; align-items: center; min-height: 2.75rem; gap: .6rem; font-weight: 400; }
-label.check input { width: 1.2rem; height: 1.2rem; min-height: 0; accent-color: var(--accent); flex: none; }
+/* the box lines up with the first line of a long label, not the middle of it */
+label.check { flex-direction: row; align-items: flex-start; min-height: 2.75rem; padding-block: .6rem; gap: .6rem; font-weight: 400; }
+label.check input { width: 1.2rem; height: 1.2rem; min-height: 0; margin-top: .125rem; accent-color: var(--accent); flex: none; }
 label.grow { width: 100%; gap: .35rem; }
 progress { -webkit-appearance: none; appearance: none; width: 100%; height: .7rem; border: 0; border-radius: 999px; background: var(--line); overflow: hidden; }
 progress::-webkit-progress-bar { background: var(--line); border-radius: 999px; }
@@ -147,6 +148,7 @@ nav.tabs button[aria-current="page"] .icon { background: var(--accent-soft); bor
 .row, .grid { display: grid; gap: .6rem; width: 100%; } .row { grid-template-columns: repeat(4, 1fr); } .grid { grid-template-columns: 1fr 1fr; }
 @media (max-width: 400px) { .row { grid-template-columns: 1fr 1fr; } }
 .row2 { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; }
+.row2 > label { width: auto; } /* a checkbox beside a button, not pushed onto its own line */
 .good { color: var(--good); } .bad { color: var(--bad); }
 dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; width: 100%; margin: 0; } dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .hint { margin: 0; text-align: center; color: var(--muted); }
@@ -179,7 +181,7 @@ dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; width: 100
 .review-count strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
 .review-card.due .review-count { background: var(--accent-soft); color: var(--accent); }
 .streak-card { align-items: stretch; }
-ol.week { list-style: none; margin: 0; padding: .9rem 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fit, minmax(2.4rem, 1fr)); gap: .5rem .25rem; } /* 7 across; wraps with large text */
+ol.week { list-style: none; margin: 0; padding: .9rem 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fit, minmax(2rem, 1fr)); gap: .5rem .25rem; } /* 7 across down to a 320px phone; wraps with large text */
 ol.week li { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
 ol.week .dot { width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); color: var(--on-accent); }
 ol.week li.on .dot { background: var(--accent); border-color: var(--accent); }
@@ -426,6 +428,7 @@ ul.story-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .75
 ol.story { list-style: none; padding: 0; margin: 0; display: grid; gap: .9rem; }
 ol.story li { padding: .6rem .7rem; border-radius: var(--radius-s); transition: background .2s; }
 ol.story li.playing { background: var(--indigo-soft); }
+.jp-line .last { white-space: nowrap; } /* the full stop stays with the last word */
 .jp-line { margin: 0; font-size: 1.35rem; line-height: 2.1; word-break: keep-all; overflow-wrap: anywhere; }
 button.word { all: unset; cursor: pointer; border-radius: 6px; padding: 0 .05em; }
 button.word:hover { background: var(--accent-soft); }
@@ -440,6 +443,7 @@ fieldset.question legend { font-weight: 650; margin-bottom: .4rem; }
 /* ============ kana chart ============ */
 .segmented { display: grid; grid-auto-flow: column; gap: .25rem; padding: .25rem; border-radius: 14px; background: var(--line); margin-bottom: 1rem; }
 .segmented button { border: 0; box-shadow: none; background: none; border-radius: 11px; font-weight: 600; color: var(--muted); }
+.segmented button small { display: inline-block; font-size: inherit; } /* the kana name wraps whole, never one kana alone */
 .segmented button[aria-selected="true"] { background: var(--card); color: var(--fg); box-shadow: var(--shadow); }
 .kana-block { width: 100%; } .kana-block .section-title { margin-top: .25rem; }
 .kana-grid { display: grid; gap: .4rem; }
@@ -478,6 +482,7 @@ input:-webkit-autofill { -webkit-box-shadow: 0 0 0 100px var(--raised, var(--car
 .welcome-step .logo { border-radius: 18px; box-shadow: var(--shadow); }
 ul.features { list-style: none; padding: 0; margin: 0; display: grid; gap: .9rem; text-align: left; width: 100%; }
 ul.features li { display: flex; gap: .9rem; align-items: flex-start; }
+ul.features .tile-icon { flex: none; } /* a long text must not squeeze the icon (the texts would start at different points) */
 ul.features strong { display: block; } ul.features small { color: var(--muted); }
 .welcome-step > button.big { width: 100%; }
 .choices { display: grid; gap: .6rem; width: 100%; }
@@ -499,10 +504,10 @@ ul.links a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 @media (min-width: 30rem) { .card.weak li { grid-template-columns: auto minmax(0, 1fr) auto; } .card.weak li small { grid-column: auto; white-space: nowrap; } }
 /* icon + text rows: the text takes a rem-sized basis, so with large text it drops below the icon instead of one word per line */
 .goal, .next-card .title, .review-card { flex-wrap: wrap; }
-.goal > div, .goal > p, .next-card .title > div, .review-text { flex: 1 1 9rem; min-width: 0; }
+.goal > div:not(.streak-badge), .goal > p, .next-card .title > div, .review-text { flex: 1 1 9rem; min-width: 0; }
 /* meters: label, bar, count on one line; with large text the bar wraps under */
 label.meter { display: flex; flex-wrap: wrap; align-items: center; }
-label.meter > span { flex: 0 0 4.5rem; } label.meter progress { flex: 1 1 4rem; width: auto; } label.meter small { min-width: 0; margin-left: auto; }
+label.meter > span { flex: 0 0 4.5rem; } label.meter progress { flex: 1 1 4rem; width: auto; } label.meter small { min-width: 15ch; margin-left: auto; } /* room for "2069/2069 · 100%": every bar the same length */
 header.appbar { flex-wrap: wrap; } .brand { min-width: 0; }
 /* tab labels fit their slot whatever the text size; icons carry the meaning (iOS tab bars don't scale either) */
 nav.tabs button:not(.account-btn) > span:not(.icon) { font-size: min(1em, 3.2vw); white-space: nowrap; }

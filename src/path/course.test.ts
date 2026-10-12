@@ -36,16 +36,19 @@ describe('vocabulary content', () => {
 })
 
 describe('course structure', () => {
-  it('sections in order: kana, starter, then N5, N4, N3; the first 68 lessons are unchanged (saved progress depends on their ids)', () => {
+  it('sections in order: kana, starter, then N5, N4, N3; kana lessons interleave the two scripts, ids unchanged (saved progress depends on them)', () => {
     expect(SECTIONS).toEqual(['Kana', 'Starter', 'N5', 'N4', 'N3'])
     const sections = UNITS.map((u) => u.section)
     expect(sections).toEqual([...sections].sort((a, b) => SECTIONS.indexOf(a) - SECTIONS.indexOf(b))) // each section contiguous
-    expect(UNITS.slice(0, 3).map((u) => u.lessons.length)).toEqual([9, 5, 6])
-    expect(UNITS.slice(3, 6).map((u) => u.lessons.length)).toEqual([9, 5, 6])
-    expect(UNITS.slice(6, 14).map((u) => u.lessons.length)).toEqual(Array(8).fill(3))
-    expect(UNITS[14].lessons).toHaveLength(4)
+    // kana: each hiragana lesson, then the same sounds in katakana; the ids are the ones saved progress already uses
+    expect(UNITS.slice(0, 3).map((u) => u.lessons.length)).toEqual([18, 10, 12])
+    expect(LESSONS.slice(0, 4).map((l) => l.id)).toEqual(['hira-basic-1', 'kata-basic-1', 'hira-basic-2', 'kata-basic-2'])
+    const kanaIds = (s: string) => [['basic', 9], ['voiced', 5], ['combos', 6]].flatMap(([u, n]) => Array.from({ length: n as number }, (_, i) => `${s}-${u}-${i + 1}`))
+    expect(new Set(LESSONS.slice(0, 40).map((l) => l.id))).toEqual(new Set([...kanaIds('hira'), ...kanaIds('kata')]))
+    expect(UNITS.slice(3, 11).map((u) => u.lessons.length)).toEqual(Array(8).fill(3))
+    expect(UNITS[11].lessons).toHaveLength(4)
     const firstOf = (p: string) => LESSONS.findIndex((l) => l.items[0].startsWith(p))
-    expect([firstOf('hira:'), firstOf('kata:'), firstOf('vocab:'), firstOf('sent:'), firstOf('kanji:'), firstOf('w:')]).toEqual([0, 20, 40, 64, 68, 69])
+    expect([firstOf('hira:'), firstOf('kata:'), firstOf('vocab:'), firstOf('sent:'), firstOf('kanji:'), firstOf('w:')]).toEqual([0, 1, 40, 64, 68, 69])
   })
   it('JLPT units hold up to 10 lessons at one level: words (6 a lesson) and kanji (5) spread through, ids counting from 1', () => {
     for (const level of [5, 4, 3]) {

@@ -60,18 +60,18 @@ const NOTES: Record<string, string> = { 'hira:を': 'Written "wo" but pronounced
 for (const k of KANA)
   registerItem(ITEMS, { id: k.id, kind: 'kana', script: k.script, jp: k.kana, gloss: k.romaji[0], romaji: k.romaji[0], sound: k.romaji[0] === 'wo' ? 'o' : k.romaji[0], note: [kanaHint(k.kana), NOTES[k.id]].filter(Boolean).join(' '), accepts: k.romaji })
 
-function kanaUnits(script: 'hira' | 'kata'): Unit[] {
-  const name = script === 'hira' ? 'Hiragana' : 'Katakana'
-  const conv = (s: string) => (script === 'hira' ? s : toKata(s))
+/** Hiragana and katakana learned together: each hiragana lesson is followed by the same sounds in katakana.
+ * Lesson ids keep their script (hira-basic-1, kata-basic-1) so earlier progress carries over. */
+function kanaUnits(): Unit[] {
   const unit = (id: string, title: string, blurb: string, groups: string[][]): Unit => ({
-    id: `${script}-${id}`, section: 'Kana', title: `${name}: ${title}`, blurb,
-    lessons: groups.map((g, i) => {
-      const items = g.map((c) => `${script}:${conv(c)}`)
+    id: `kana-${id}`, section: 'Kana', title: `Kana: ${title}`, blurb,
+    lessons: groups.flatMap((g, i) => (['hira', 'kata'] as const).map((script) => {
+      const items = g.map((c) => `${script}:${script === 'hira' ? c : toKata(c)}`)
       return { id: `${script}-${id}-${i + 1}`, title: items.map((x) => x.slice(5)).join(' '), items }
-    }),
+    })),
   })
   return [
-    unit('basic', 'the basics', 'The 46 basic sounds.', HIRA_BASE.map(chars)),
+    unit('basic', 'the basics', 'The 46 basic sounds, each in hiragana and then katakana.', HIRA_BASE.map(chars)),
     unit('voiced', 'voiced sounds', 'Add two small marks to change the sound.', HIRA_VOICED.map(chars)),
     unit('combos', 'combined sounds', 'Small や ゆ よ blend two sounds into one.', chunk(HIRA_COMBO_ROWS.map(chars), 2).map((rows) => rows.flat())),
   ]
@@ -283,7 +283,7 @@ function jlptUnits(): Unit[] {
   })
 }
 
-export const UNITS: Unit[] = [...kanaUnits('hira'), ...kanaUnits('kata'), ...vocabUnits(), ...grammarUnits(), ...jlptUnits()]
+export const UNITS: Unit[] = [...kanaUnits(), ...vocabUnits(), ...grammarUnits(), ...jlptUnits()]
 /** Path sections in order (each unit belongs to one). */
 export const SECTIONS = [...new Set(UNITS.map((u) => u.section))]
 

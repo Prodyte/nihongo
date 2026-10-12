@@ -4,7 +4,7 @@ import { SpeakButton } from '../../modes/SpeakButton'
 import { matches } from '../../data/kana'
 import { glossAnswers } from '../progress'
 import { displayJp, readingOf } from '../romaji'
-import { checkEnglish, checkJapanese, toKana, type Check } from '../typing'
+import { checkEnglish, checkJapanese, mayGrow, toKana, type Check } from '../typing'
 import type { Exercise } from '../lesson'
 import { Feedback } from './Feedback'
 import { Ruby } from './Ruby'
@@ -31,15 +31,23 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
     if (result && autoplay && item.kind === 'word' && dir !== 'dictation') speak(item.jp) // after answering, hear the word
   }, [result, autoplay, item.kind, item.jp, dir])
 
+  const grade = (t: string): Check =>
+    dir === 'toRomaji' ? { ok: matches(item.accepts ?? [item.romaji], t) }
+    : dir === 'toGloss' ? checkEnglish(t, glossAnswers(item.gloss))
+    : item.kind === 'sentence' && dir === 'toJp' ? checkJapanese(t, item.jp, { tokens: item.tokens?.map(readingOf), alts: item.alts?.map((a) => displayJp(a.map(readingOf))) })
+    : checkJapanese(t, item.jp, { word: true })
+
   function check(e: FormEvent) {
     e.preventDefault()
     if (result || !typed.trim()) return
-    setResult(
-      dir === 'toRomaji' ? { ok: matches(item.accepts ?? [item.romaji], typed) }
-      : dir === 'toGloss' ? checkEnglish(typed, glossAnswers(item.gloss))
-      : item.kind === 'sentence' && dir === 'toJp' ? checkJapanese(typed, item.jp, { tokens: item.tokens?.map(readingOf), alts: item.alts?.map((a) => displayJp(a.map(readingOf))) })
-      : checkJapanese(typed, item.jp, { word: true }),
-    )
+    setResult(grade(typed))
+  }
+  // a right answer passes as soon as it is typed; English waits for Check when it could be half of what is meant
+  // (a forgiven typo, or "hello" of "hello, good afternoon": the next space would press Continue)
+  function change(t: string) {
+    setTyped(t)
+    const r = grade(t)
+    if (r.ok && !(dir === 'toGloss' && (r.note || mayGrow(t, glossAnswers(item.gloss))))) setResult(r)
   }
 
   return (
@@ -51,7 +59,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
         : <div className="prompt kana" lang="ja">{dir === 'toReading' ? ex.prompt /* no furigana: the reading is the question */ : <Ruby text={ex.prompt} reading={item.written && item.jp} />}</div>}
       <input id={id} autoFocus autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} enterKeyHint="done"
         lang={dir === 'toGloss' ? 'en' : undefined} readOnly={result !== null} value={typed} aria-describedby={preview ? `${id}-kana` : undefined}
-        onKeyDown={(e) => e.key === 'Enter' && e.repeat && e.preventDefault()} onChange={(e) => setTyped(e.target.value)} />
+        onKeyDown={(e) => e.key === 'Enter' && e.repeat && e.preventDefault()} onChange={(e) => change(e.target.value)} />
       {preview && <div id={`${id}-kana`} className="preview" lang="ja">{preview.kana}<span className="pending">{preview.pending}</span>{' '}</div>}
       {result === null && (
         <div className="row2">

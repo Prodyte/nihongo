@@ -31,7 +31,7 @@ it('a conjugation drill: 10 of your verbs, each in a form; right answers earn 1 
   render(<Drill db={db} kind="conjugate" onExit={() => {}} />)
   for (let i = 0; i < 10; i++) {
     await screen.findByText(/^→ /)
-    if (i < 7) await user.type(screen.getByRole('textbox'), `${answer()}{Enter}`)
+    if (i < 7) await user.type(screen.getByRole('textbox'), answer()) // a right answer passes as it is typed
     else await user.click(screen.getByRole('button', { name: 'I don’t know' }))
     await user.click(await screen.findByRole('button', { name: 'Continue' }))
   }
