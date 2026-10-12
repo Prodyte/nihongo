@@ -52,14 +52,14 @@ export function Drill({ db, kind, onExit }: { db: Db; kind: DrillKind; onExit: (
     setStep((s) => s + 1)
   }
   return (
-    <>
+    <div className="lesson">
       <div className="bar">
         <ExitButton onClick={onExit} />
         <progress max={exs.length} value={step} aria-label={`${DRILL_TITLE[kind]} progress`} />
       </div>
       {(kind === 'listen' || kind === 'shadow') && !voice && <p className="hint">This needs a Japanese voice on your device (Settings → Accessibility → Spoken content on iPad).</p>}
       <ExerciseView ex={exs[step]} step={step} autoplay={false} onDone={done} onSkipSpeaking={onExit} />
-    </>
+    </div>
   )
 }
 

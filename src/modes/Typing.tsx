@@ -7,6 +7,7 @@ import { checkEnglish, mayGrow, type Check } from '../path/typing'
 import { ITEMS } from '../path/course'
 import { Example } from '../path/ui/Example'
 import { Ruby } from '../path/ui/Ruby'
+import { fit } from '../path/ui/furigana'
 import { SpeakButton } from './SpeakButton'
 import { cardFront } from '../db/db'
 import type { ModeProps } from './types'
@@ -39,7 +40,7 @@ export function Typing({ card, autoplay, onGrade }: ModeProps) {
   }
   return (
     <form className="card" onSubmit={submit}>
-      <div className="kana" lang="ja"><Ruby text={cardFront(card)} reading={card.reading} /></div>
+      <div className="kana" lang="ja" style={fit(cardFront(card), card.reading)}><Ruby text={cardFront(card)} reading={card.reading} /></div>
       {ITEMS.get(card.id) && <Example item={ITEMS.get(card.id)!} revealed={result !== null} />}
       <input autoFocus autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} aria-label={kana ? 'romaji answer' : 'English meaning'}
         onKeyDown={(e) => e.key === 'Enter' && e.repeat && e.preventDefault()} lang={kana ? undefined : 'en'}

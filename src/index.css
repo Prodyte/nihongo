@@ -51,7 +51,8 @@ main { max-width: 34rem; margin: 0 auto; padding: max(1rem, env(safe-area-inset-
 main.focused { padding-bottom: calc(9rem + env(safe-area-inset-bottom)); } /* room for the feedback bar */
 h1 { font-size: 1.15rem; margin: 0; letter-spacing: .02em; } h1 small { font-weight: 500; color: var(--muted); font-size: .8rem; }
 h2 { margin: 0; font-size: 1.3rem; letter-spacing: -.01em; }
-h1, h2, h3 { text-wrap: balance; } /* no single word left alone on a heading's last line */
+h1, h2, h3, button.big { text-wrap: balance; } /* no single word left alone on a heading's (or big button's) last line */
+button [lang="ja"] { word-break: keep-all; overflow-wrap: anywhere; } /* a lesson title breaks at its space, not inside a word */
 h3 { margin: 0; }
 p[role="status"], p[role="alert"] { margin: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -124,7 +125,7 @@ nav.tabs button[aria-current="page"] .icon { background: var(--accent-soft); bor
   html { scroll-padding-top: 5rem; } /* scrolling to the current lesson must not hide it under the top bar */
   main { max-width: 42rem; padding-top: 5.25rem; padding-bottom: 2.5rem; }
   main.focused { padding-top: 1.5rem; padding-bottom: 10rem; }
-  .prompt.gloss { font-size: 2.4rem; } .kana { font-size: 7rem; }
+  .prompt.gloss { font-size: 2.4rem; } .kana { --max: 7rem; }
 }
 @media (min-width: 64rem) {
   nav.tabs { inset: 0 auto 0 0; width: var(--sidebar); flex-direction: column; align-items: stretch; gap: .15rem; padding: 1.25rem .85rem; border-bottom: 0; border-right: 1px solid var(--line); background: var(--card); overflow-y: auto; }
@@ -171,7 +172,7 @@ dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; width: 100
 .goal p { margin: 0; text-align: left; }
 .next-card { align-items: stretch; text-align: left; gap: .75rem; }
 .next-card .title { display: flex; align-items: center; gap: .9rem; }
-.next-card .title strong { font-size: 1.25rem; display: block; }
+.next-card .title strong { font-size: 1.25rem; display: block; text-wrap: balance; }
 .next-card .title small { color: var(--muted); }
 .badge { width: 3.25rem; height: 3.25rem; flex: none; border-radius: 16px; display: grid; place-items: center; font-size: 1.6rem; font-weight: 700; background: var(--accent-soft); color: var(--accent); }
 .badge.k-kanji { background: var(--indigo-soft); color: var(--indigo); } .badge.k-grammar { background: color-mix(in srgb, var(--gold) 18%, var(--card)); color: var(--gold); }
@@ -182,9 +183,9 @@ dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; width: 100
 .review-count strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
 .review-card.due .review-count { background: var(--accent-soft); color: var(--accent); }
 .streak-card { align-items: stretch; }
-ol.week { list-style: none; margin: 0; padding: .9rem 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fit, minmax(2rem, 1fr)); gap: .5rem .25rem; } /* 7 across down to a 320px phone; wraps with large text */
+ol.week { list-style: none; margin: 0; padding: .9rem 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fit, minmax(1.75rem, 1fr)); gap: .5rem .25rem; } /* 7 across down to a 320px phone; wraps with large text */
 ol.week li { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
-ol.week .dot { width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); color: var(--on-accent); }
+ol.week .dot { width: min(2rem, 100%); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); color: var(--on-accent); }
 ol.week li.on .dot { background: var(--accent); border-color: var(--accent); }
 ol.week li.today:not(.on) .dot { border-color: var(--accent); border-style: dashed; }
 ol.week small { font-size: .75rem; font-weight: 600; color: var(--muted); }
@@ -200,6 +201,7 @@ details.section[open] > summary h2::before { content: '▾ ' / ''; }
 details.section > summary small { color: var(--muted); font-weight: 600; }
 details.section > .card + .card { margin-top: .75rem; }
 details.unit { align-items: stretch; gap: .75rem; }
+details.card:not([open]) { gap: 0; } /* the folded contents still count as a flex item: no gap under the summary */
 details.unit:not([open]) { padding-block: .9rem; }
 details.unit summary { cursor: pointer; min-height: 2.75rem; display: flex; align-items: center; gap: .6rem; list-style: none; }
 details.unit summary::-webkit-details-marker { display: none; }
@@ -210,7 +212,7 @@ details.unit > p { margin: 0; font-size: .9rem; color: var(--muted); }
 ul.lessons { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
 ul.lessons button { width: 100%; display: flex; align-items: center; gap: .75rem; text-align: left; padding: .5rem .8rem .5rem .5rem; }
 ul.lessons .node { width: 2.4rem; height: 2.4rem; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--bg); border: 2px solid var(--line); color: var(--muted); }
-ul.lessons .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ul.lessons .label { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; word-break: keep-all; overflow-wrap: anywhere; } /* a long title takes two lines (at its space), not "かきくけこ カキク…" */
 ul.lessons small { white-space: nowrap; color: var(--muted); font-size: .8rem; font-weight: 600; }
 ul.lessons button.done .node { background: var(--good-soft); border-color: var(--good); color: var(--good); }
 ul.lessons button.done small { color: var(--good); }
@@ -227,7 +229,9 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .bar progress { flex: 1; height: .9rem; }
 .bar .left { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .q { margin: 0; font-size: 1.05rem; text-align: center; font-weight: 600; color: var(--muted); }
-.kana { font-size: 6rem; line-height: 1.1; }
+/* big Japanese fits on one line: style={fit(text)} gives its width in characters (--n), the card measures the room */
+.card:has(> .kana, > .grid, > .match) { container-type: inline-size; }
+.kana { --max: 6rem; font-size: min(var(--max), 100cqi / var(--n, 1)); line-height: 1.1; text-align: center; }
 .kana-pair { display: flex; justify-content: center; gap: 2.5rem; }
 .kana-pair > span { display: flex; flex-direction: column; align-items: center; }
 .kana-pair small { font-size: .8rem; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
@@ -239,10 +243,11 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .answer { font-size: 1.6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; text-align: center; }
 .note { margin: 0; font-size: .9rem; text-align: center; color: var(--muted); }
 /* memory aid: a kanji's parts or a word's kanji, as a soft chip under the meaning */
-.mnemonic p, .memo-hint { white-space: pre-line; } /* a kana sound's hint: one line per script */
-.mnemonic { margin: 0; padding: .45rem .75rem; border-radius: var(--radius-s); background: var(--accent-soft); color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
+.memo-hint { white-space: pre-line; } /* a kana sound's hint: one line per script */
+.mnemonic { align-self: stretch; margin: 0; padding: .45rem .75rem; border-radius: var(--radius-s); background: var(--accent-soft); color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
 .example { margin: 0; padding: .55rem .8rem; border-left: 3px solid var(--indigo); border-radius: 0 var(--radius-s) var(--radius-s) 0; background: var(--indigo-soft); text-align: left; width: 100%; box-sizing: border-box; }
-.example p { margin: 0; font-size: 1.15rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; }
+.example p { margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
+.example p > [lang="ja"] { flex: 1; min-width: 0; } /* a long sentence wraps beside its audio buttons, which stay on the right */
 .example .speak-btns { margin-left: auto; }
 .example mark { background: none; color: var(--accent); font-weight: 700; }
 .example figcaption { color: var(--muted); font-size: .95rem; margin-top: .15rem; }
@@ -255,18 +260,26 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .mnemonic p { margin: 0; } .mnemonic p + p { margin-top: .25rem; }
 .mnemonic .label { color: var(--muted); }
 .mnemonic [lang="ja"] { font-size: 1.15em; font-weight: 600; }
-.jp-option { font-size: 1.5rem; }
-.grid button, .match button { min-height: 3.5rem; border-width: 2px; }
-.grid.wide { grid-template-columns: 1fr; } .grid.wide button { text-align: left; }
+.grid { grid-auto-rows: 1fr; } /* equal rows */
+.grid button, .match button { min-height: 3.5rem; border-width: 2px; position: relative; padding-inline: .6rem; } /* "good morning" on one line at 360px */
+/* ✓ / ✗ sit in the button's corner, so marking the answers doesn't rewrap them */
+.grid button .mark, .match button .mark { position: absolute; left: .4rem; top: .3rem; font-size: .8rem; line-height: 1; }
+.grid.wide { grid-template-columns: 1fr; } .grid.wide button { text-align: left; padding-right: 2.2rem; } .grid.wide button .mark { left: auto; right: .9rem; top: 50%; translate: 0 -50%; font-size: 1.1rem; }
+/* Japanese answers shrink to fit their button (style={fit(o)}) rather than break inside a word */
+.jp-option { font-size: clamp(1.05rem, (50cqi - 1.9rem) / var(--n, 1), 1.5rem); text-wrap: balance; }
+.match button[lang="ja"] { font-size: clamp(1rem, (50cqi - 1.9rem) / var(--n, 1), 1.5rem); text-wrap: balance; } /* one size for the column (--n is the longest word), おやすみ/なさい rather than おやすみなさ/い */
+.grid.wide .jp-option { font-size: clamp(1.05rem, (100cqi - 4rem) / var(--n, 1), 1.5rem); }
 button.good, .grid button.good, .match button.good { background: var(--good-soft); border-color: var(--good); color: var(--good); opacity: 1; }
 button.bad, .grid button.bad { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); opacity: 1; }
 button.selected, button[aria-pressed="true"] { border-color: var(--indigo); background: var(--indigo-soft); box-shadow: 0 2px 0 var(--indigo); }
 .match { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; width: 100%; }
-.match > div { display: grid; gap: .6rem; align-content: start; }
+.match > div { display: grid; gap: .6rem; grid-auto-rows: 1fr; } /* equal rows, so the two columns line up */
+.match + [role="status"] { min-height: 3.9rem; display: grid; place-items: center; } /* "✓ Match" or "Not a match" appearing doesn't move the pairs */
 /* the result: a bar pinned to the bottom, Continue under the thumb */
 .feedback { position: fixed; z-index: var(--z-feedback); left: 0; right: 0; bottom: 0; padding: 1rem max(1rem, env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   border-top: 2px solid; animation: rise .18s ease-out; display: grid; gap: .25rem; font-weight: 650; font-size: 1.1rem; }
 .feedback > * { max-width: 40rem; margin-inline: auto; width: 100%; }
+.feedback .keep { word-break: keep-all; overflow-wrap: anywhere; } /* おはようございます moves to the next line whole */
 .feedback small { display: block; } .feedback .memo-hint { margin-top: .25rem; font-style: italic; }
 .feedback small { font-weight: 400; font-size: .9rem; color: var(--fg); opacity: .9; }
 .feedback.good { background: var(--good-soft); border-color: var(--good); color: var(--good); }
@@ -307,7 +320,12 @@ button.mic { display: inline-flex; align-items: center; gap: .5rem; }
   .lesson > .card:not(form) > :is(.kana, .prompt, .strokes) { margin-block: auto; }
   /* intros: the character with its meaning centred together, Got it full width at the bottom */
   .lesson > .card > :is(.kana, .strokes):has(+ .answer, + .reading) { margin-block: auto 0; }
-  .lesson > .card > .match { margin-top: auto; } /* pairs in thumb reach too */
+  ul.tiles-grid > li:last-child:nth-child(odd) { grid-column: 1 / -1; } /* no lone tile beside a hole */
+  /* listening: the sound is the question, so its buttons take the prompt's place in the middle, bigger */
+  .lesson > .card > .speak-btns:has(+ .grid) { margin-block: auto; gap: 1rem; }
+  .lesson > .card > .speak-btns:has(+ .grid) button.icon-btn { min-width: 4.5rem; min-height: 4.5rem; }
+  .lesson > .card > .speak-btns:has(+ .grid) .icon { width: 2rem; height: 2rem; }
+  .lesson > .card > .match { margin-block: auto; } /* no prompt above them: centre the pairs */
   .lesson > .card > :has(+ button.primary:last-child) { margin-bottom: auto; }
   .lesson > .card > button.primary:last-child { align-self: stretch; min-height: 3.5rem; font-size: 1.1rem; }
   .lesson > .card > .grid button, .lesson > .card > .match button { min-height: 3.75rem; }
@@ -319,7 +337,7 @@ button.mic { display: inline-flex; align-items: center; gap: .5rem; }
 /* lesson complete */
 .done-card { text-align: center; padding-block: 2rem; position: relative; overflow: hidden; }
 .done-card h2 { font-size: 1.8rem; }
-.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; width: 100%; }
+.tiles { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .6rem; width: 100%; } /* however many tiles, they share the width */
 .tile { border: 2px solid var(--line); border-radius: var(--radius-s); padding: .6rem .25rem; display: grid; gap: .1rem; }
 .tile strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; } .tile small { color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
 .tile.xp strong { color: var(--gold); } .tile.acc strong { color: var(--good); } .tile.streak strong { color: var(--accent); }
@@ -351,9 +369,9 @@ ul.links li { flex-direction: column; align-items: flex-start; gap: .15rem; }
 ul.links a { font-weight: 650; }
 ul.results { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; width: 100%; }
 ul.results details { border: 1px solid var(--line); border-radius: var(--radius-s); padding: .6rem .8rem; background: var(--raised); }
-ul.results summary { cursor: pointer; min-height: 2.75rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .5rem; }
+ul.results summary { cursor: pointer; min-height: 2.75rem; display: flex; flex-wrap: wrap; align-items: baseline; align-content: center; gap: .25rem .5rem; }
 ul.results summary .jp { font-size: 1.4rem; }
-ul.results .gloss { flex: 1 1 10rem; }
+ul.results .gloss { flex: 1 1 10rem; } ul.results .gloss [lang="ja"] { word-break: keep-all; overflow-wrap: anywhere; }
 ul.results .tags { display: flex; gap: .25rem; }
 ul.results a { font-weight: 650; }
 .tag { font-size: .75rem; border: 1px solid var(--line); border-radius: 999px; padding: .05rem .55rem; color: var(--muted); white-space: nowrap; font-weight: 600; }
@@ -385,7 +403,7 @@ ol.forecast small { color: var(--muted); font-size: min(.75rem, max(3vw, 12px));
 
 /* ============ kanji: strokes and writing ============ */
 .kanji-readings { display: grid; grid-template-columns: auto 1fr; gap: .25rem .75rem; margin: 0; width: 100%; }
-.kanji-readings dt { color: var(--muted); } .kanji-readings dd { margin: 0; text-align: left; font-size: 1.15rem; font-weight: 500; }
+.kanji-readings dt { color: var(--muted); text-align: left; } .kanji-readings dd { margin: 0; text-align: left; font-size: 1.15rem; font-weight: 500; }
 .strokes { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
 .strokes svg { width: 9rem; height: 9rem; fill: none; stroke-linecap: round; stroke-linejoin: round; border: 1px dashed var(--line); border-radius: var(--radius-s); background: var(--raised); }
 .strokes .guide { stroke: var(--line); stroke-width: 3.5; }
@@ -501,7 +519,7 @@ button.choice.on { border-color: var(--indigo); background: var(--indigo-soft); 
 .big-number.done { color: var(--good); display: grid; place-items: center; }
 
 /* links in link lists (About, deck sources) are tap targets of their own: 44px tall */
-ul.links a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+ul.links a { display: inline-block; padding-block: .55rem; } /* 44px tall to tap; the ↗ stays with the last word when the link wraps */
 /* large text (200% and up): rows that sat side by side stack instead of squeezing */
 .review-hero .due { flex-wrap: wrap; }
 .review-hero .due > div { flex: 1 1 12rem; min-width: 0; }

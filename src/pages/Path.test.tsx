@@ -59,7 +59,7 @@ it('after a lesson: it shows as done and the next unlocks', async () => {
   await completeLesson(db, LESSONS[0], ITEMS, {}, 1)
   render(<Path db={db} onStart={() => {}} onTest={() => {}} />)
   await screen.findByText(`1 of ${LESSONS.length} lessons done`)
-  expect(lessonButton(LESSONS[0].title).textContent).toContain('Done · practise')
+  expect(lessonButton(LESSONS[0].title).textContent).toContain('Done, Practise')
   expect((lessonButton(LESSONS[1].title) as HTMLButtonElement).disabled).toBe(false)
   expect((lessonButton(LESSONS[2].title) as HTMLButtonElement).disabled).toBe(true)
   expect(screen.getByRole('button', { name: new RegExp(`^Continue: ${LESSONS[1].title}`) })).toBeTruthy()

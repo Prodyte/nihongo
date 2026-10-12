@@ -6,6 +6,7 @@ import { ITEMS } from '../path/course'
 import { Example } from '../path/ui/Example'
 import { Mnemonic } from '../path/ui/Mnemonic'
 import { Ruby } from '../path/ui/Ruby'
+import { fit } from '../path/ui/furigana'
 import { intervals } from '../srs/scheduler'
 import { SpeakButton } from './SpeakButton'
 import type { ModeProps } from './types'
@@ -46,7 +47,7 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
       {card.html ? (
         <Suspense fallback={<div className="skeleton" />}><Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} autoplay={autoplay} /></Suspense>
       ) : (
-        <div className="kana" lang="ja"><Ruby text={cardFront(card)} reading={card.reading} /></div>
+        <div className="kana" lang="ja" style={fit(cardFront(card), card.reading)}><Ruby text={cardFront(card)} reading={card.reading} /></div>
       )}
       {/* a word is asked in context: its sentence on the front, the sentence's English and sound with the answer */}
       {item && <Example item={item} revealed={shown} />}

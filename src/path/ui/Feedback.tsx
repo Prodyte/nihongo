@@ -17,7 +17,7 @@ export function Feedback({ result, item, answer, note, onContinue }: { result: b
       <div role="status">
         {result === null ? '' : (
           <>
-            <div>{result ? '✓ Correct' : <>✗ Correct answer: <Ruby text={answer} /></>}</div>
+            <div className="keep">{result ? '✓ Correct' : <>✗ Correct answer: <Ruby text={answer} /></>}</div>
             {note && <div>{note}</div>}
             <small>
               <span lang="ja"><Ruby text={item.kind === 'kana' ? [ITEMS.get(item.id)?.jp, ITEMS.get(item.id)?.kata].join(' ') : written(item)} />{item.written && ` ${item.jp}`}</span>{' '}

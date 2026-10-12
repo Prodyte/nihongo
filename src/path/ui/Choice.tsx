@@ -5,6 +5,7 @@ import type { Exercise } from '../lesson'
 import { surfaceOf } from '../romaji'
 import { Feedback } from './Feedback'
 import { Ruby } from './Ruby'
+import { fit } from './furigana'
 
 type Ex = Extract<Exercise, { type: 'choice' | 'listen' }>
 
@@ -18,8 +19,8 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
   const answered = picked !== null
   const prompt = ex.type === 'choice' ? ex.prompt : ''
   const fill = ex.type === 'choice' && ex.dir === 'fill'
-  // whole sentences, and verb forms longer than a phone's half width (起きられません), need the full width
-  const wide = ex.item.kind === 'sentence' && (!fill || ex.options.some((o) => surfaceOf(o).length > 4))
+  // whole sentences, and Japanese longer than a phone's half width (おやすみなさい, 起きられません), need the full width
+  const wide = ex.item.kind === 'sentence' ? !fill || ex.options.some((o) => surfaceOf(o).length > 4) : !toGloss && ex.options.some((o) => surfaceOf(o).length > 5)
 
   useEffect(() => {
     if (listening) speak(ex.item.jp) // say it on arrival; the replay button is on screen
@@ -51,9 +52,9 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
       {listening ? (
         <SpeakButton text={ex.item.jp} />
       ) : toReading ? (
-        <div className="prompt kana" lang="ja">{prompt}</div>
+        <div className="prompt kana" lang="ja" style={fit(prompt)}>{prompt}</div>
       ) : toGloss || fill ? (
-        <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja"><Ruby text={prompt} reading={toGloss && ex.item.written ? ex.item.jp : undefined} /></div>
+        <div className={`prompt kana${ex.item.kind === 'sentence' ? ' sentence' : ''}`} lang="ja" style={fit(prompt, ex.item.jp)}><Ruby text={prompt} reading={toGloss && ex.item.written ? ex.item.jp : undefined} /></div>
       ) : (
         <div className="prompt gloss">{prompt}</div>
       )}
@@ -61,8 +62,8 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
       <div className={wide ? 'grid wide' : 'grid'} role="group" aria-label="Answers">
         {ex.options.map((o) => (
           <button key={o} lang={toGloss ? undefined : 'ja'} disabled={answered} onClick={() => setPicked(o)}
-            className={`${toGloss ? '' : 'jp-option'} ${!answered ? '' : o === right ? 'good' : o === picked ? 'bad' : ''}`}>
-            {answered && (o === right ? '✓ ' : o === picked ? '✗ ' : '')}<Ruby text={o} reading={ex.readings?.[o]} />
+            className={`${toGloss ? '' : 'jp-option'} ${!answered ? '' : o === right ? 'good' : o === picked ? 'bad' : ''}`} style={toGloss ? undefined : fit(o)}>
+            {answered && (o === right || o === picked) && <span className="mark">{o === right ? '✓' : '✗'} </span>}<Ruby text={o} reading={ex.readings?.[o]} />
           </button>
         ))}
       </div>

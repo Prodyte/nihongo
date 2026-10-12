@@ -14,7 +14,7 @@ const SOURCES: [name: string, url: string, what: string, licence: string][] = [
 const REPO = 'https://github.com/Prodyte/nihongo'
 
 const External = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer">{children}<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span></a>
+  <a href={href} target="_blank" rel="noopener noreferrer">{children}<span aria-hidden="true">{'\u00a0↗'}</span><span className="visually-hidden"> (opens in a new tab)</span></a>
 )
 
 /** About the app: what it is, its source on GitHub, and where the course data comes from. */

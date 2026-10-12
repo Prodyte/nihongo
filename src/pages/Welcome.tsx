@@ -29,7 +29,7 @@ export function Welcome({ onDone }: { onDone: (level: StartLevel) => void }) {
               <li key={title}><span className="tile-icon"><Icon name={icon} /></span><div><strong>{title}</strong><small>{text}</small></div></li>
             ))}
           </ul>
-          <button className="primary big" autoFocus onClick={() => setStep(1)}>Get started</button>
+          <button className="primary big" onClick={() => setStep(1)}>Get started</button>
           <p className="hint">Free, no account. Your progress stays on this device.</p>
         </section>
       )}

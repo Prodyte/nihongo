@@ -48,7 +48,7 @@ export function Lookup({ db }: { db: Db }) {
                 </summary>
                 {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <>{romaji && <p className="hint">{it.romaji}</p>}<Mnemonic item={it} /><Example item={it} /></>}
                 <a href={`https://jisho.org/search/${encodeURIComponent((it.written ?? it.kanji ?? written(it)) + (it.kind === 'kanji' ? ' #kanji' : ''))}`} target="_blank" rel="noopener noreferrer">
-                  Jisho<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span>
+                  Jisho<span aria-hidden="true">{'\u00a0↗'}</span><span className="visually-hidden"> (opens in a new tab)</span>
                 </a>
               </details>
             </li>

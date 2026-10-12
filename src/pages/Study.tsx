@@ -81,13 +81,13 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
     )
   const Current = queue[0].deck === BUILTIN_DECKS.sentence.id && ITEMS.has(queue[0].id) ? Cloze : MODES[mode] // grammar is always fill-the-gap
   return (
-    <>
+    <div className="lesson">
       <div className="bar">
         <ExitButton onClick={onExit} />
         <span>{queue.length} left</span>
       </div>
       {error && <p role="alert" className="bad">{error}</p>}
       <Current key={`${queue[0].id}:${reviewed}`} db={db} autoplay={autoplay} card={queue[0]} pool={pool} onGrade={onGrade} />
-    </>
+    </div>
   )
 }

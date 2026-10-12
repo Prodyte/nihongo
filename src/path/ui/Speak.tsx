@@ -7,6 +7,7 @@ import { written } from '../course'
 import { spokenForms, type Exercise } from '../lesson'
 import { Feedback } from './Feedback'
 import { Ruby } from './Ruby'
+import { fit } from './furigana'
 
 type Ex = Extract<Exercise, { type: 'speak' }>
 
@@ -43,7 +44,7 @@ export function Speak({ ex, onDone, onSkip }: { ex: Ex; onDone: (missed: string[
         <div className="prompt gloss">{ex.item.gloss}</div> // from memory: the Japanese stays hidden until answered
       ) : (
         <>
-          <div className={`prompt kana${sentence ? ' sentence' : ''}`} lang="ja"><Ruby text={written(ex.item)} reading={ex.item.written && !sentence ? ex.item.jp : undefined} /></div>
+          <div className={`prompt kana${sentence ? ' sentence' : ''}`} lang="ja" style={fit(written(ex.item), ex.item.jp)}><Ruby text={written(ex.item)} reading={ex.item.written && !sentence ? ex.item.jp : undefined} /></div>
           <p className="hint">{ex.item.gloss}</p>
         </>
       )}

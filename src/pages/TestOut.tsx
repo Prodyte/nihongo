@@ -59,13 +59,13 @@ export function TestOut({ db, unit, onExit }: { db: Db; unit: Unit; onExit: () =
     setStep((s) => s + 1)
   }
   return (
-    <>
+    <div className="lesson">
       <div className="bar">
         <ExitButton onClick={onExit} />
         <progress max={exs.length} value={step} aria-label="Test progress" />
       </div>
       <p className="hint test-label">Test: {unit.title} · covers {todo} lesson{todo === 1 ? '' : 's'}</p>
       <ExerciseView ex={ex} step={step} autoplay={false} onDone={done} onSkipSpeaking={() => done([])} />
-    </>
+    </div>
   )
 }

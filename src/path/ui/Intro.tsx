@@ -3,7 +3,7 @@ import { speak } from '../../audio'
 import { SpeakButton } from '../../modes/SpeakButton'
 import { written, type Item } from '../course'
 import { Example } from './Example'
-import { useRomaji } from './furigana'
+import { fit, useRomaji } from './furigana'
 import { Mnemonic } from './Mnemonic'
 
 export function Intro({ item, autoplay, onDone }: { item: Item; autoplay: boolean; onDone: (missed: string[]) => void }) {
@@ -22,7 +22,7 @@ export function Intro({ item, autoplay, onDone }: { item: Item; autoplay: boolea
           <span>{item.jp}<small lang="en">hiragana</small></span>
           <span>{item.kata}<small lang="en">katakana</small></span>
         </div>
-      ) : <div className="kana" lang="ja">{written(item)}</div>}
+      ) : <div className="kana" lang="ja" style={fit(written(item), item.jp)}>{written(item)}</div>}
       {item.kind === 'word' && reading.length > 0 && <div className="reading">{reading.map((r, i) => <span key={i}>{i > 0 && ' · '}{r}</span>)}</div>}
       <div className="answer">{item.gloss} <SpeakButton text={item.jp} /></div>
       <Mnemonic item={item} />

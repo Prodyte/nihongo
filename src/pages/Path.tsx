@@ -78,7 +78,7 @@ export function Path({ db, onStart, onTest }: { db: Db; onStart: (lessonId: stri
                               <button ref={l === current ? hereRef : undefined} disabled={!open} className={l === current ? 'primary' : isDone ? 'done' : ''} onClick={() => onStart(l.id)}>
                                 <span className="node" lang="ja" aria-hidden="true">{isDone ? <Icon name="check" size={20} /> : open ? lessonKind(l).glyph : <Icon name="lock" size={18} />}</span>
                                 <span className="label" lang="ja">{l.title}</span>
-                                <small>{l === current ? 'Start' : isDone ? 'Done · practise' : open ? 'Start' : 'Locked'}</small>
+                                <small>{l === current ? 'Start' : isDone ? <><span className="visually-hidden">Done, </span>Practise</> : open ? 'Start' : 'Locked'}</small>
                               </button>
                             </li>
                           )

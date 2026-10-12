@@ -77,7 +77,7 @@ export function Decks({ db }: { db: Db }) {
       <ul className="decks links">
         {DECK_LINKS.map((d) => (
           <li key={d.url}>
-            <a href={d.url} target="_blank" rel="noopener noreferrer">{d.name}<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span></a>
+            <a href={d.url} target="_blank" rel="noopener noreferrer">{d.name}<span aria-hidden="true">{'\u00a0↗'}</span><span className="visually-hidden"> (opens in a new tab)</span></a>
             <small>{d.blurb}</small>
           </li>
         ))}

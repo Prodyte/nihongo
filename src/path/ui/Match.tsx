@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { shuffle } from '../../modes/choices'
 import { sfx } from '../../sfx'
 import type { Exercise } from '../lesson'
+import { charWidth } from './furigana'
 import { Ruby } from './Ruby'
 
 type Pair = Extract<Exercise, { type: 'match' }>['pairs'][number]
@@ -30,14 +31,14 @@ export function Match({ pairs, onDone }: { pairs: Pair[]; onDone: (missed: strin
     const on = sel?.side === side && sel.id === p.id
     return (
       <button key={`${side}${p.id}`} lang={side === 'jp' ? 'ja' : undefined} disabled={done} aria-pressed={on} className={done ? 'good' : on ? 'selected' : ''} onClick={() => tap(side, p.id)}>
-        {done && '✓ '}{side === 'jp' ? <Ruby text={p.jp} reading={p.reading} /> : p.gloss}
+        {done && <span className="mark">✓ </span>}{side === 'jp' ? <Ruby text={p.jp} reading={p.reading} /> : p.gloss}
       </button>
     )
   }
   return (
     <div className="card">
       <p className="q">Match the pairs</p>
-      <div className="match">
+      <div className="match" style={{ '--n': Math.max(...pairs.map((p) => charWidth(p.jp, p.reading))) } as CSSProperties}> {/* one size for every word */}
         <div>{jp.map((p) => btn('jp', p))}</div>
         <div>{gloss.map((p) => btn('gloss', p))}</div>
       </div>
