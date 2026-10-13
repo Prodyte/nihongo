@@ -1,0 +1,65 @@
+name: Ship with agents
+# Add the `ship` label to an issue: dev, reviewer and qa agents build it, then a PR is opened.
+# Only people with triage access or above can add labels, so strangers can't trigger it.
+on:
+  issues:
+    types: [labeled]
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+concurrency:
+  group: ship-${{ github.event.issue.number }}
+jobs:
+  ship:
+    if: github.event.label.name == 'ship'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BRANCH: ship/issue-${{ github.event.issue.number }}
+      ISSUE: ${{ github.event.issue.number }}
+      TITLE: ${{ github.event.issue.title }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false } # agents can commit but not push
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Prepare branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          echo "BASE=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo ".ship-summary.md" >> .git/info/exclude
+          gh issue comment "$ISSUE" --body "Agents started: $RUN_URL"
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }} # from `claude setup-token`, uses your subscription
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            /ship ${{ github.event.issue.title }}
+
+            ${{ github.event.issue.body }}
+
+            When the loop ends, committed or not, write the rounds table and a short summary
+            to .ship-summary.md. Do not push.
+          claude_args: >-
+            --max-turns 80
+            --allowedTools "Edit,Write,Bash(npm test:*),Bash(npm run lint:*),Bash(npm run build:*),Bash(npx tsc:*),Bash(npx vitest:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git add:*),Bash(git commit:*)"
+      - name: Open PR
+        if: always()
+        run: |
+          [ -f .ship-summary.md ] || echo "No summary was written." > .ship-summary.md
+          if [ "$(git rev-list --count "$BASE"..HEAD)" = 0 ]; then
+            { echo "Agents finished without a commit. Run log: $RUN_URL"; echo; cat .ship-summary.md; } > comment.md
+            gh issue comment "$ISSUE" --body-file comment.md
+            exit 1
+          fi
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/$BRANCH" --force
+          { echo "Closes #$ISSUE"; echo; cat .ship-summary.md; echo; echo "Run log: $RUN_URL"; } > body.md
+          url=$(gh pr create --head "$BRANCH" --title "$TITLE" --body-file body.md)
+          gh issue comment "$ISSUE" --body "Agents opened $url"
