@@ -15,6 +15,11 @@ function media(o: { dark: boolean; tablet: boolean; wide: boolean }) {
 const phone = (dark = false) => media({ dark, tablet: false, wide: false })
 const toggle = () => screen.getByRole('button', { name: /^Switch to (light|dark) theme$/ })
 
+function label(text: string) {
+  expect(toggle().getAttribute('aria-label')).toBe(text)
+  expect(toggle().getAttribute('title')).toBe(text)
+}
+
 const ready = () => screen.findByRole('button', { name: /^Switch to (light|dark) theme$/ })
 
 beforeEach(() => {
@@ -28,11 +33,11 @@ it('System with OS light: toggle offers dark, tapping saves dark and applies it'
   const user = userEvent.setup()
   render(<App />)
   await ready()
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to dark theme')
+  label('Switch to dark theme')
   await user.click(toggle())
   expect(localStorage.getItem('nihongo.theme')).toBe('dark')
   expect(document.documentElement.dataset.theme).toBe('dark')
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to light theme')
+  label('Switch to light theme')
 })
 
 it('System with OS dark: tapping switches to Light', async () => {
@@ -40,9 +45,10 @@ it('System with OS dark: tapping switches to Light', async () => {
   const user = userEvent.setup()
   render(<App />)
   await ready()
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to light theme')
+  label('Switch to light theme')
   await user.click(toggle())
   expect(localStorage.getItem('nihongo.theme')).toBe('light')
+  label('Switch to dark theme')
   expect(document.documentElement.dataset.theme).toBe('light')
 })
 
@@ -52,9 +58,11 @@ it('toggles back and forth; stored light/dark overrides the OS', async () => {
   const user = userEvent.setup()
   render(<App />)
   await ready()
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to dark theme')
+  label('Switch to dark theme')
   await user.click(toggle())
+  label('Switch to light theme')
   await user.click(toggle())
+  label('Switch to dark theme')
   expect(localStorage.getItem('nihongo.theme')).toBe('light')
 })
 
@@ -67,7 +75,7 @@ it('the choice survives a reload', async () => {
   cleanup()
   render(<App />)
   await ready()
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to light theme')
+  label('Switch to light theme')
 })
 
 it('an invalid stored theme is treated as System', async () => {
@@ -75,7 +83,7 @@ it('an invalid stored theme is treated as System', async () => {
   localStorage.setItem('nihongo.theme', 'purple')
   render(<App />)
   await ready()
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to light theme')
+  label('Switch to light theme')
 })
 
 it('is a real button, keyboard operable, and sits beside the account button in the phone top bar', async () => {
@@ -119,9 +127,9 @@ it('Settings and the toggle agree, both ways; only Settings offers System', asyn
   await user.click(toggle())
   expect(sel.value).toBe('dark')
   await user.selectOptions(sel, 'light')
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to dark theme')
+  label('Switch to dark theme')
   await user.selectOptions(sel, 'system')
-  expect(toggle().getAttribute('aria-label')).toBe('Switch to dark theme')
+  label('Switch to dark theme')
   await user.click(toggle())
   expect(sel.value).toBe('dark') // the toggle never returns to System
 })

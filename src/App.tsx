@@ -143,8 +143,9 @@ export default function App() {
   const focused = !!lesson || !!unit || view === 'study' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
   const showingDark = theme === 'dark' || (theme === 'system' && osDark)
+  const themeLabel = showingDark ? 'Switch to light theme' : 'Switch to dark theme'
   const themeToggle = (
-    <button className="icon-btn account-btn" aria-label={showingDark ? 'Switch to light theme' : 'Switch to dark theme'}
+    <button className="icon-btn account-btn" aria-label={themeLabel} title={themeLabel}
       onClick={() => { const t = showingDark ? 'light' : 'dark'; setTheme(t); writeStr('nihongo.theme', t); applyTheme(t) }}>
       <Icon name={showingDark ? 'sun' : 'moon'} />
     </button>
