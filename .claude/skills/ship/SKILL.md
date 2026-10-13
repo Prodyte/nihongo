@@ -2,9 +2,10 @@
 name: ship
 description: Run the dev → review + QA → fix loop for a feature request, then commit.
 ---
-Feature request: $ARGUMENTS
+Feature request: $ARGUMENTS (if empty, use the request given earlier in the conversation)
 
 You are the orchestrator. Do not write code yourself; delegate to subagents.
+Run every subagent in the foreground and wait for its result. Never end your turn while one is still running.
 
 1. **Dev**: run the `dev` subagent with the full feature request.
 2. **Review + QA in parallel**: in ONE message, run the `reviewer` subagent and the `qa` subagent
