@@ -104,6 +104,8 @@ header.appbar { position: sticky; top: 0; z-index: var(--z-nav); display: flex; 
 header.appbar + main { padding-top: .5rem; }
 button.account-btn:not(.icon-btn) { white-space: nowrap; min-height: 2.75rem; padding: .35rem 1rem; font-size: .92rem; font-weight: 650; border-radius: 999px; }
 button.account-btn.icon-btn { color: var(--fg); }
+button.account-btn { flex: none; }
+.appbar-actions { display: flex; align-items: center; gap: .25rem; flex: none; }
 button.account-btn[aria-current="page"] { border-color: var(--accent); color: var(--accent); }
 
 nav.tabs { position: fixed; inset: auto 0 0 0; z-index: var(--z-nav); display: grid; grid-template-columns: repeat(5, 1fr); background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -117,7 +119,7 @@ nav.tabs button[aria-current="page"] .icon { background: var(--accent-soft); bor
   nav.tabs { inset: 0 0 auto 0; display: flex; align-items: center; gap: .25rem; padding: .45rem 1.25rem; border-top: 0; border-bottom: 1px solid var(--line); }
   nav.tabs .brand { display: flex; margin-right: auto; }
   nav.tabs .brand small { display: none; } /* room for five tabs on a tablet */
-  nav.tabs .account-btn { margin-left: auto; }
+  nav.tabs .appbar-actions { margin-left: auto; }
   nav.tabs button:not(.account-btn) { flex-direction: row; justify-content: center; gap: .45rem; font-size: .95rem; min-height: 2.75rem; padding: .5rem .8rem; }
   nav.tabs button:not(.account-btn):hover { background: color-mix(in srgb, var(--fg) 5%, transparent); color: var(--fg); }
   nav.tabs button[aria-current="page"], nav.tabs button[aria-current="page"]:hover { background: var(--accent-soft); color: color-mix(in srgb, var(--accent) 75%, var(--fg)); } /* plain accent on its soft tint is under 4.5:1 */
@@ -135,7 +137,7 @@ nav.tabs button[aria-current="page"] .icon { background: var(--accent-soft); bor
   .nav-more { display: grid; gap: .15rem; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--line); }
   .nav-more button:not(.account-btn) { font-size: .92rem; min-height: 2.5rem; padding-left: 1rem; }
   nav.tabs { backdrop-filter: none; -webkit-backdrop-filter: none; } /* a filter would trap the fixed account button inside the sidebar */
-  nav.tabs .account-btn { position: fixed; top: 1rem; right: 1.5rem; margin: 0; } /* top right, above the content */
+  nav.tabs .appbar-actions { position: fixed; top: 1rem; right: 1.5rem; margin: 0; } /* top right, above the content */
   html { scroll-padding-top: 1.5rem; }
   main.with-nav { max-width: 46rem; padding-top: 4.5rem; margin-left: max(calc(var(--sidebar) + 1rem), calc(var(--sidebar) + (100vw - var(--sidebar) - 46rem) / 2)); }
 }
@@ -535,6 +537,7 @@ ul.links a { display: inline-block; padding-block: .55rem; } /* 44px tall to tap
 label.meter { display: flex; flex-wrap: wrap; align-items: center; }
 label.meter > span { flex: 0 0 4.5rem; } label.meter progress { flex: 1 1 4rem; width: auto; } label.meter small { min-width: 15ch; margin-left: auto; } /* room for "2069/2069 · 100%": every bar the same length */
 header.appbar { flex-wrap: wrap; } .brand { min-width: 0; }
+@media (max-width: 22rem) { header.appbar .brand small { display: none; } } /* 320px: logo, name and Sign in stay on one row */
 /* tab labels fit their slot whatever the text size; icons carry the meaning (iOS tab bars don't scale either) */
 nav.tabs button:not(.account-btn) > span:not(.icon) { font-size: min(1em, 3.2vw); white-space: nowrap; }
 ul.lessons button { flex-wrap: wrap; } ul.lessons small { margin-left: auto; }

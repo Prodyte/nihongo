@@ -23,7 +23,7 @@ import { Welcome, type StartLevel } from './pages/Welcome'
 import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, ROMAJI, type Furigana, type Romaji } from './path/ui/furigana'
-import { readBool, readStr, writeBool, writeStr } from './settings'
+import { applyTheme, readBool, readStr, THEMES, writeBool, writeStr, type Theme } from './settings'
 import { maybeSignedIn, recovery, sync } from './sync'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
@@ -67,6 +67,8 @@ export default function App() {
   const [known, setKnown] = useState<ReadonlySet<string>>(new Set()) // kanji the learner has had a kanji lesson for
   const [romaji, setRomaji] = useState<Romaji>(() => readStr('nihongo.romaji', ROMAJI, 'auto'))
   const [kanaDone, setKanaDone] = useState(false) // every kana lesson done (or tested out): romaji goes, by default
+  const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
+  const osDark = useMedia('(prefers-color-scheme: dark)')
   const phone = !useMedia('(min-width: 48rem)') // bottom tabs, and a top bar for the logo and account
   const sidebar = useMedia('(min-width: 64rem)') // navigation down the left, More's pages listed in it
   const [gen, setGen] = useState(0) // bumped when a background sync changes local data: screens remount and reload
@@ -140,6 +142,13 @@ export default function App() {
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
   const focused = !!lesson || !!unit || view === 'study' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
+  const showingDark = theme === 'dark' || (theme === 'system' && osDark)
+  const themeToggle = (
+    <button className="icon-btn account-btn" aria-label={showingDark ? 'Switch to light theme' : 'Switch to dark theme'}
+      onClick={() => { const t = showingDark ? 'light' : 'dark'; setTheme(t); writeStr('nihongo.theme', t); applyTheme(t) }}>
+      <Icon name={showingDark ? 'sun' : 'moon'} />
+    </button>
+  )
   const account = maybeSignedIn()
     ? <button className="icon-btn account-btn" aria-label="Account and sync" aria-current={view === 'account' ? 'page' : undefined} onClick={() => go('account')}><Icon name="user" /></button>
     : <button className="account-btn" aria-current={view === 'account' ? 'page' : undefined} onClick={() => go('account')}>Sign in</button>
@@ -160,7 +169,7 @@ export default function App() {
       {!focused && phone && (
         <header className="appbar">
           <span className="brand" aria-hidden="true"><Logo /> Nihongo <small lang="ja">日本語</small></span>
-          {account}
+          <div className="appbar-actions">{themeToggle}{account}</div>
         </header>
       )}
       <main key={gen} className={focused ? 'focused' : 'with-nav'}>
@@ -191,7 +200,7 @@ export default function App() {
         ) : view === 'stats' ? (
           <Stats db={db} />
         ) : view === 'settings' ? (
-          <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
+          <Settings db={db} theme={theme} onTheme={setTheme} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
             furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }}
             romaji={romaji} onRomaji={(r) => { setRomaji(r); writeStr('nihongo.romaji', r) }} onSynced={rerender} />
         ) : view === 'account' ? (
@@ -227,7 +236,7 @@ export default function App() {
               ))}
             </div>
           )}
-          {!phone && account}
+          {!phone && <div className="appbar-actions">{themeToggle}{account}</div>}
         </nav>
       )}
     </FuriganaContext.Provider>

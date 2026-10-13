@@ -6,15 +6,17 @@ import { canRecognise } from '../speech'
 import { Account } from './Account'
 import { Backup } from './Backup'
 
-export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaji, onRomaji, onSynced = () => {} }: {
+export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaji, onRomaji, theme: themeProp, onTheme, onSynced = () => {} }: {
   db: Db; onSynced?: () => void; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void; romaji: Romaji; onRomaji: (r: Romaji) => void
+  theme?: Theme; onTheme?: (t: Theme) => void // the app's copy, so the top bar's toggle and this list agree
 }) {
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
   const [speed, setSpeed] = useState(readSpeed)
   const [speaking, setSpeaking] = useState(() => readBool('nihongo.speaking', true))
   const [writing, setWriting] = useState(() => readBool('nihongo.writing', true))
-  const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
+  const [ownTheme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
+  const theme = themeProp ?? ownTheme
 
   return (
     <>
@@ -22,7 +24,7 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaj
         <h2>Settings</h2>
         <label>
           Theme
-          <select value={theme} onChange={(e) => { const t = e.target.value as Theme; setTheme(t); writeStr('nihongo.theme', t); applyTheme(t) }}>
+          <select value={theme} onChange={(e) => { const t = e.target.value as Theme; setTheme(t); onTheme?.(t); writeStr('nihongo.theme', t); applyTheme(t) }}>
             <option value="system">Match my device</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
