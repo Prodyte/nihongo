@@ -248,7 +248,7 @@ it('Match: wrong pairs are flagged and counted for both items, right pairs lock,
   const [a, b] = ['kana:あ', 'kana:い'].map((id) => ITEMS.get(id)!)
   const onDone = vi.fn()
   const u = user()
-  render(<Match pairs={[a, b].map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss }))} onDone={onDone} />)
+  render(<Match autoplay={false} pairs={[a, b].map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss }))} onDone={onDone} />)
   const jp = (t: string) => [...document.querySelectorAll<HTMLElement>('.match button[lang="ja"]')].find((x) => x.textContent!.includes(t))!
   const gloss = (t: string) => [...document.querySelectorAll<HTMLElement>('.match button:not([lang])')].find((x) => x.textContent!.includes(t))!
   await u.click(jp('あ'))

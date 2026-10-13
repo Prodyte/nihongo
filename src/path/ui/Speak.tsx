@@ -59,7 +59,7 @@ export function Speak({ ex, onDone, onSkip }: { ex: Ex; onDone: (missed: string[
           <button onClick={() => { stop.current(); onSkip() }}>Can’t speak now</button>
         </div>
       )}
-      <Feedback result={result} item={ex.item} answer={written(ex.item)} onContinue={() => onDone(result ? [] : [ex.item.id])} />
+      <Feedback result={result} item={ex.item} answer={written(ex.item)} audio={false} onContinue={() => onDone(result ? [] : [ex.item.id])} />
     </div>
   )
 }

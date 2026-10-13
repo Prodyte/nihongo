@@ -14,7 +14,7 @@ export function ExerciseView({ ex, step, autoplay, onDone, onSkipSpeaking }: { e
   return ex.type === 'intro' ? (ex.item.kind === 'kanji' ? <KanjiIntro key={step} item={ex.item} onDone={onDone} /> : <Intro key={step} item={ex.item} autoplay={autoplay} onDone={onDone} />)
     : ex.type === 'explain' ? <Explain key={step} ex={ex} onDone={onDone} />
     : ex.type === 'build' ? <Build key={step} ex={ex} onDone={onDone} />
-    : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} onDone={onDone} />
+    : ex.type === 'match' ? <Match key={step} pairs={ex.pairs} autoplay={autoplay} onDone={onDone} />
     : ex.type === 'type' ? <Type key={step} ex={ex} autoplay={autoplay} onDone={onDone} />
     : ex.type === 'write' ? <Write key={step} ex={ex} onDone={onDone} />
     : ex.type === 'speak' ? <Speak key={step} ex={ex} onDone={onDone} onSkip={onSkipSpeaking} />

@@ -274,11 +274,13 @@ button.bad, .grid button.bad { background: var(--bad-soft); border-color: var(--
 button.selected, button[aria-pressed="true"] { border-color: var(--indigo); background: var(--indigo-soft); box-shadow: 0 2px 0 var(--indigo); }
 .match { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; width: 100%; }
 .match > div { display: grid; gap: .6rem; grid-auto-rows: 1fr; } /* equal rows, so the two columns line up */
-.match + [role="status"] { min-height: 3.9rem; display: grid; place-items: center; } /* "✓ Match" or "Not a match" appearing doesn't move the pairs */
+.match + div { min-height: 3.9rem; display: grid; place-items: center; }
+.match + div .feedback-head { align-items: center; } .match + div .feedback-head > [role=status] { flex: none; } /* "✓ Match" or "Not a match" appearing doesn't move the pairs */
 /* the result: a bar pinned to the bottom, Continue under the thumb */
 .feedback { position: fixed; z-index: var(--z-feedback); left: 0; right: 0; bottom: 0; padding: 1rem max(1rem, env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   border-top: 2px solid; animation: rise .18s ease-out; display: grid; gap: .25rem; font-weight: 650; font-size: 1.1rem; }
 .feedback > * { max-width: 40rem; margin-inline: auto; width: 100%; }
+.feedback-head { display: flex; align-items: flex-start; gap: .5rem; } .feedback-head > [role=status] { flex: 1; min-width: 0; }
 .feedback .keep { word-break: keep-all; overflow-wrap: anywhere; } /* おはようございます moves to the next line whole */
 .feedback small { display: block; } .feedback .memo-hint { margin-top: .25rem; font-style: italic; }
 .feedback small { font-weight: 400; font-size: .9rem; color: var(--fg); opacity: .9; }

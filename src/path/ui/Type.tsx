@@ -68,7 +68,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
           <button type="button" onClick={() => setResult({ ok: false })}>I don’t know</button>
         </div>
       )}
-      <Feedback result={result && result.ok} item={item} answer={answer} note={result?.note} onContinue={() => onDone(result?.ok ? [] : [item.id])} />
+      <Feedback result={result && result.ok} item={item} answer={answer} note={result?.note} audio={dir !== 'dictation'} onContinue={() => onDone(result?.ok ? [] : [item.id])} />
     </form>
   )
 }

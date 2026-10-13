@@ -67,7 +67,7 @@ export function Choice({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; on
           </button>
         ))}
       </div>
-      <Feedback result={answered ? picked === right : null} item={ex.item} answer={right} onContinue={() => onDone(picked === right ? [] : [ex.item.id])} />
+      <Feedback result={answered ? picked === right : null} item={ex.item} answer={right} audio={!listening} onContinue={() => onDone(picked === right ? [] : [ex.item.id])} />
     </div>
   )
 }

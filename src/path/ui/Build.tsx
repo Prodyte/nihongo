@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { SpeakButton } from '../../modes/SpeakButton'
 import type { Exercise } from '../lesson'
 import { surfaceOf } from '../romaji'
 import { Feedback } from './Feedback'
@@ -41,7 +40,6 @@ export function Build({ ex, onDone }: { ex: Ex; onDone: (missed: string[]) => vo
         </div>
       )}
       <Feedback result={result} item={ex.item} answer={ex.item.jp} onContinue={() => onDone(result ? [] : [ex.item.id])} />
-      {locked && <SpeakButton text={ex.item.jp} />}
     </div>
   )
 }
