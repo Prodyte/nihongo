@@ -103,6 +103,8 @@ header.appbar { position: sticky; top: 0; z-index: var(--z-nav); display: flex; 
   background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 header.appbar + main { padding-top: .5rem; }
 button.account-btn:not(.icon-btn) { white-space: nowrap; min-height: 2.75rem; padding: .35rem 1rem; font-size: .92rem; font-weight: 650; border-radius: 999px; }
+span.bar-actions { display: inline-flex; align-items: center; gap: .25rem; flex: none; }
+@media (max-width: 23rem) { header.appbar .brand small { display: none; } } /* 320px: room for the Sign in pill */
 button.account-btn.icon-btn { color: var(--fg); }
 button.account-btn[aria-current="page"] { border-color: var(--accent); color: var(--accent); }
 
@@ -117,7 +119,7 @@ nav.tabs button[aria-current="page"] .icon { background: var(--accent-soft); bor
   nav.tabs { inset: 0 0 auto 0; display: flex; align-items: center; gap: .25rem; padding: .45rem 1.25rem; border-top: 0; border-bottom: 1px solid var(--line); }
   nav.tabs .brand { display: flex; margin-right: auto; }
   nav.tabs .brand small { display: none; } /* room for five tabs on a tablet */
-  nav.tabs .account-btn { margin-left: auto; }
+  nav.tabs .bar-actions { margin-left: auto; }
   nav.tabs button:not(.account-btn) { flex-direction: row; justify-content: center; gap: .45rem; font-size: .95rem; min-height: 2.75rem; padding: .5rem .8rem; }
   nav.tabs button:not(.account-btn):hover { background: color-mix(in srgb, var(--fg) 5%, transparent); color: var(--fg); }
   nav.tabs button[aria-current="page"], nav.tabs button[aria-current="page"]:hover { background: var(--accent-soft); color: color-mix(in srgb, var(--accent) 75%, var(--fg)); } /* plain accent on its soft tint is under 4.5:1 */
@@ -135,7 +137,7 @@ nav.tabs button[aria-current="page"] .icon { background: var(--accent-soft); bor
   .nav-more { display: grid; gap: .15rem; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--line); }
   .nav-more button:not(.account-btn) { font-size: .92rem; min-height: 2.5rem; padding-left: 1rem; }
   nav.tabs { backdrop-filter: none; -webkit-backdrop-filter: none; } /* a filter would trap the fixed account button inside the sidebar */
-  nav.tabs .account-btn { position: fixed; top: 1rem; right: 1.5rem; margin: 0; } /* top right, above the content */
+  nav.tabs .bar-actions { position: fixed; top: 1rem; right: 1.5rem; margin: 0; } /* top right, above the content */
   html { scroll-padding-top: 1.5rem; }
   main.with-nav { max-width: 46rem; padding-top: 4.5rem; margin-left: max(calc(var(--sidebar) + 1rem), calc(var(--sidebar) + (100vw - var(--sidebar) - 46rem) / 2)); }
 }
