@@ -13,6 +13,7 @@ export interface StoredCard {
   fsrs: Card
   html?: boolean // imported Anki card: front/back[0] are HTML, not kana/romaji
   reading?: string // path words written with kanji: the kana reading (furigana, and what is spoken)
+  saved?: number // Lookup's "Study this": saved at this time (ms); negative = unsaved at -saved, so sync keeps the latest choice
 }
 export interface DeckRecord { id: string; name: string }
 /** Built-in decks the path creates when a lesson first teaches words or sentences (kana cards are seeded at startup). */
@@ -116,6 +117,7 @@ export async function studyCards(db: Db, deck: string, mode: string) {
   let cards = await getCards(db, deck)
   // Mixed review never introduces kana you haven't met: the path teaches them. Picking a kana deck still offers them.
   if (deck === 'all') cards = cards.filter((c) => !(c.fsrs.state === State.New && c.deck === 'kana'))
+  cards = cards.filter((c) => !(c.fsrs.state === State.New && (c.saved ?? 0) < 0)) // saved in Lookup, then unsaved before studying
   return mode === 'flashcard' ? cards : cards.filter((c) => !c.html) // grammar cards are reviewed fill-the-gap in every mode
 }
 

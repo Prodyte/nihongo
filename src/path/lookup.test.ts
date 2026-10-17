@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ITEMS, LESSONS } from './course'
-import { search } from './lookup'
+import { byParts, PARTS, search } from './lookup'
 import { coverage } from './progress'
 
 const ids = (q: string) => search(q).map((i) => i.id)
@@ -21,6 +21,22 @@ describe('search', () => {
   })
   it('a regex character in the query is searched literally', () => {
     expect(() => search('(e.g')).not.toThrow()
+  })
+})
+
+describe('byParts', () => {
+  it('lists the kanji containing every selected part, and the parts that could still narrow them', () => {
+    expect(byParts(['亻', '木']).kanji.map((k) => k.jp)).toEqual(['休'])
+    const sun = byParts(['日', '寸'])
+    expect(sun.kanji.map((k) => k.jp)).toContain('時')
+    expect(sun.kanji.every((k) => byParts(['日']).kanji.includes(k) && byParts(['寸']).kanji.includes(k))).toBe(true)
+    expect(sun.open.has('土')).toBe(true)
+    expect(byParts([]).kanji).toEqual([])
+    expect(PARTS[0][0]).toBe('口') // most common first
+  })
+  it('searching a part lists the kanji containing it after direct matches', () => {
+    expect(ids('木').indexOf('kanji:木')).toBeLessThan(ids('木').indexOf('kanji:休'))
+    expect(ids('亻')).toContain('kanji:休')
   })
 })
 

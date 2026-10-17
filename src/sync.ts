@@ -64,7 +64,7 @@ const byKey = <T>(a: T[], b: T[], key: (x: T) => string, pick: (x: T, y: T) => T
 export function merge(a: Snap, b: Snap): Snap {
   const t = (d: unknown) => (d ? new Date(d as string).getTime() : 0)
   const gone = new Set([...(a.deletedDecks ?? []), ...(b.deletedDecks ?? [])]) // ponytail: kept forever; a few ids per deleted deck
-  const cards = byKey(a.cards, b.cards, (c) => c.id, (x, y) => (y.fsrs.reps > x.fsrs.reps || (y.fsrs.reps === x.fsrs.reps && t(y.fsrs.last_review) > t(x.fsrs.last_review)) ? y : x))
+  const cards = byKey(a.cards, b.cards, (c) => c.id, (x, y) => ({ ...(y.fsrs.reps > x.fsrs.reps || (y.fsrs.reps === x.fsrs.reps && t(y.fsrs.last_review) > t(x.fsrs.last_review)) ? y : x), ...(Math.abs(y.saved ?? 0) > Math.abs(x.saved ?? 0) ? { saved: y.saved } : x.saved !== undefined && { saved: x.saved }) })) // the latest Study this / unsave wins
   const dead = new Set(cards.filter((c) => gone.has(c.deck)).map((c) => c.id))
   return {
     ...a,

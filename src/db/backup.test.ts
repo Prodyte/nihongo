@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { BackupError, exportBackup, importBackup } from './backup'
 import { gradeCard, openDb, seedKana } from './db'
 import { ITEMS, lessonById } from '../path/course'
-import { completeLesson } from '../path/progress'
+import { completeLesson, setSaved } from '../path/progress'
 
 let n = 0
 const fresh = () => openDb(`backup-${n++}`)
@@ -58,6 +58,13 @@ describe('backup', () => {
     expect(await dst.getAll('activity')).toEqual(await src.getAll('activity'))
     expect((await dst.get('lessons', 'greetings-1'))!.completedAt).toBeInstanceOf(Date)
     expect(await dst.count('cards')).toBe(104 + 6) // the six vocabulary cards come back too
+  })
+  it('keeps Lookup\'s saved mark', async () => {
+    const src = await fresh()
+    await setSaved(src, ITEMS.get('w:時間')!, true, new Date(5))
+    const dst = await fresh()
+    await importBackup(dst, await exportBackup(src))
+    expect((await dst.get('cards', 'w:時間'))!.saved).toBe(5)
   })
   it('a v1 backup still restores, and resets lesson progress (v1 had none)', async () => {
     const dst = await fresh()

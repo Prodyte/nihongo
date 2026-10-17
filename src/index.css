@@ -67,7 +67,7 @@ button { cursor: pointer; touch-action: manipulation; padding: .6rem 1.1rem; bor
   box-shadow: 0 2px 0 var(--line); transition: transform .06s, box-shadow .06s, background .15s, border-color .15s; font-weight: 500; }
 button:hover:not(:disabled) { border-color: var(--ctl); }
 button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--line); }
-button:disabled { opacity: .5; cursor: default; }
+button:disabled, button[aria-disabled="true"] { opacity: .5; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 3px 0 var(--accent-press); font-weight: 650; }
 button.primary:hover:not(:disabled) { border-color: var(--accent); filter: brightness(1.04); }
 button.primary:active:not(:disabled) { box-shadow: 0 0 0 var(--accent-press); transform: translateY(3px); }
@@ -544,3 +544,23 @@ details.options summary { list-style: none; } details.options summary::-webkit-d
 details.options summary::before { content: '▸' / ''; } details.options[open] summary::before { content: '▾' / ''; } /* flex hides the native marker */
 .card.weak { align-items: stretch; text-align: left; }
 .card.weak > button { align-self: flex-start; }
+
+/* Lookup: saved words, parts */
+.chips.parts { justify-content: flex-start; }
+.chips.parts button { min-width: 2.75rem; padding: .3rem .5rem; }
+.chips.parts button:disabled { opacity: .3; }
+
+/* Mock test */
+.mock-timer { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3.2em; text-align: right; }
+.card.mock { align-items: stretch; text-align: left; }
+.card.mock > button { align-self: flex-start; }
+dl.mock-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: .5rem; margin: 0; }
+dl.mock-sections > div { border: 1px solid var(--line); border-radius: var(--radius-s); padding: .5rem .75rem; }
+dl.mock-sections dt { font-size: .85rem; color: var(--muted); }
+dl.mock-sections dd { margin: 0; font-weight: 600; font-size: 1.2rem; }
+ul.mock-missed { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+ul.mock-missed li { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; min-width: 0; overflow-wrap: anywhere; }
+ul.mock-missed small { color: var(--muted); flex-basis: 100%; }
+.mock-entry .row2 button { display: grid; gap: .1rem; min-width: 5rem; }
+.mock-entry .row2 small { color: var(--muted); font-weight: 400; }
+.card.mock-entry { align-items: stretch; text-align: left; margin-top: 1rem; }

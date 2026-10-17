@@ -29,7 +29,7 @@ function reviveCard(c: unknown): StoredCard {
       !Array.isArray(c.back) || !c.back.every((b) => typeof b === 'string') || !isObj(c.fsrs))
     throw new BackupError('Backup is corrupt: a card is malformed.')
   const f = c.fsrs
-  if (!FSRS_NUMS.every((k) => fin(f[k])) || ![0, 1, 2, 3].includes(f.state as number)) throw new BackupError('Backup is corrupt: a card has invalid scheduling data.')
+  if (!FSRS_NUMS.every((k) => fin(f[k])) || ![0, 1, 2, 3].includes(f.state as number) || (c.saved !== undefined && !fin(c.saved))) throw new BackupError('Backup is corrupt: a card has invalid scheduling data.')
   return { ...(c as unknown as StoredCard), fsrs: { ...(f as unknown as StoredCard['fsrs']), due: date(f.due, 'card.due')!, last_review: date(f.last_review, 'card.last_review', true) } }
 }
 

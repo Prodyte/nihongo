@@ -2,10 +2,10 @@ import 'fake-indexeddb/auto'
 import { openDB } from 'idb'
 import { Rating, State } from 'ts-fsrs'
 import { describe, expect, it } from 'vitest'
-import { openDb, seedKana } from '../db/db'
+import { gradeCard, openDb, seedKana, studyCards } from '../db/db'
 import { newFsrsCard } from '../srs/scheduler'
 import { ITEMS, LESSONS, lessonById } from './course'
-import { addReviewXp, completeLesson, currentLesson, dayKey, getProgress, glossAnswers, isUnlocked, learnedItems, streak, xpFor } from './progress'
+import { addReviewXp, completeLesson, currentLesson, dayKey, getProgress, glossAnswers, isUnlocked, learnedItems, setSaved, streak, xpFor } from './progress'
 
 let n = 0
 const fresh = async () => { const db = await openDb(`progress-${n++}`); await seedKana(db); return db }
@@ -206,5 +206,32 @@ describe('database upgrade', () => {
     expect(await db.get('cards', 'kana:あ')).toBeTruthy()
     await completeLesson(db, LESSONS[0], ITEMS, {}, 1) // the new stores work
     expect(await db.count('lessons')).toBe(1)
+  })
+})
+
+describe('setSaved (Lookup\'s Study this)', () => {
+  const now = at('2026-03-04T09:00:00')
+  const lesson = LESSONS.find((x) => x.items.includes('w:時間'))!
+  it('makes the lesson\'s card now, as a new card; the lesson grades it once and keeps the mark; unsaving a new card removes it', async () => {
+    const db = await fresh()
+    const it = ITEMS.get('w:時間')!
+    const card = (await setSaved(db, it, true, now))!
+    expect(card).toMatchObject({ id: 'w:時間', deck: 'vocab', front: '時間', reading: 'じかん', back: ['time'], saved: now.getTime(), fsrs: { state: State.New } })
+    expect(await db.get('decks', 'vocab')).toBeTruthy()
+    await completeLesson(db, lesson, ITEMS, {}, 1, now)
+    expect(await db.getAllFromIndex('reviews', 'by-card', 'w:時間')).toHaveLength(1)
+    expect((await db.get('cards', 'w:時間'))!).toMatchObject({ saved: now.getTime(), fsrs: { reps: 1 } })
+    await setSaved(db, ITEMS.get('kanji:日')!, true, now)
+    expect(await setSaved(db, ITEMS.get('kanji:日')!, false, now)).toMatchObject({ saved: -now.getTime(), fsrs: { reps: 0 } }) // kept as the unsave, for sync
+    expect((await studyCards(db, 'all', 'flashcard')).some((c) => c.id === 'kanji:日')).toBe(false) // but Review skips it
+  })
+  it('a lesson after reviewing a saved card does not reset its schedule; unsaving a reviewed card keeps it', async () => {
+    const db = await fresh()
+    await setSaved(db, ITEMS.get('w:時間')!, true, now)
+    const reviewed = await gradeCard(db, 'w:時間', Rating.Easy, now)
+    await completeLesson(db, lesson, ITEMS, {}, 1, at('2026-03-04T10:00:00'))
+    expect((await db.get('cards', 'w:時間'))!.fsrs).toEqual(reviewed.fsrs)
+    const later = at('2026-03-05T09:00:00')
+    expect(await setSaved(db, ITEMS.get('w:時間')!, false, later)).toMatchObject({ saved: -later.getTime(), fsrs: reviewed.fsrs })
   })
 })

@@ -50,6 +50,14 @@ export function glossAnswers(gloss: string): string[] {
 
 // ---- database --------------------------------------------------------------------------------
 
+/** The card a lesson creates for a word, kanji or sentence (kana cards are seeded at startup), with its built-in deck. */
+function pathCard(item: Item, now: Date) {
+  if (item.kind === 'kana') return null
+  const deck = BUILTIN_DECKS[item.kind]
+  const card: StoredCard = { id: item.id, deck: deck.id, front: written(item), back: item.kind === 'sentence' ? [item.gloss] : glossAnswers(item.gloss), fsrs: newFsrsCard(now), ...(item.written && { reading: item.jp }) }
+  return { card, deck }
+}
+
 const rateByMisses = (misses: number): Grade => (misses === 0 ? Rating.Good : misses === 1 ? Rating.Hard : Rating.Again)
 
 /**
@@ -66,11 +74,11 @@ export async function completeLesson(
   const cards = tx.objectStore('cards')
   let graded = 0
   for (const item of lessonItems) {
-    let card: StoredCard | undefined = await cards.get(item.id)
-    if (!card && item.kind !== 'kana') {
-      const deck = BUILTIN_DECKS[item.kind]
-      card = { id: item.id, deck: deck.id, front: written(item), back: item.kind === 'sentence' ? [item.gloss] : glossAnswers(item.gloss), fsrs: newFsrsCard(now), ...(item.written && { reading: item.jp }) }
-      await tx.objectStore('decks').put(deck)
+    let card: StoredCard | undefined = await cards.get(item.id) // a card saved from Lookup is graded like any new one, never recreated
+    const made = !card && pathCard(item, now)
+    if (made) {
+      card = made.card
+      await tx.objectStore('decks').put(made.deck)
     }
     if (!card) continue // kana cards are seeded at startup; nothing to grade if one is somehow missing
     if (card.fsrs.state === State.New || card.fsrs.due <= now) {
@@ -96,6 +104,30 @@ export async function completeLesson(
   }
   await tx.done
   return { xp, first: !old, flawless, graded }
+}
+
+/**
+ * Lookup's "Study this". On: the item's card is created now as a new card, as its lesson would create it (so it comes up
+ * in Review), and marked saved. Off: the card stays, marked unsaved (so sync carries the choice to other devices); Review
+ * skips it until it has been studied, and a reviewed one keeps its schedule.
+ * Returns the card now stored, if any.
+ */
+export async function setSaved(db: Db, item: Item, on: boolean, now = new Date()) {
+  const tx = db.transaction(['cards', 'decks'], 'readwrite')
+  tx.done.catch(() => {})
+  const cards = tx.objectStore('cards')
+  let card = await cards.get(item.id)
+  const made = on && !card && pathCard(item, now)
+  if (made) {
+    card = made.card
+    await tx.objectStore('decks').put(made.deck)
+  }
+  if (card && on !== (card.saved ?? 0) > 0) {
+    card = { ...card, saved: on ? now.getTime() : -now.getTime() }
+    await cards.put(card)
+  }
+  await tx.done
+  return card
 }
 
 /** +1 XP (or `amount`) for practice outside lessons, so a streak rewards reviewing and practising as well as lessons. */
