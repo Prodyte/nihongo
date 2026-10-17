@@ -15,7 +15,7 @@ export function Feedback({ result, item, answer, note, audio = true, onContinue 
     if (result !== null) sfx(result ? 'right' : 'wrong')
   }, [result])
   return (
-    <div className={result === null ? '' : result ? 'feedback good' : 'feedback bad'}>
+    <div className={result === null ? 'feedback-idle' : result ? 'feedback good' : 'feedback bad'}>
       <div className="feedback-head">
         <div role="status">
           {result === null ? '' : (

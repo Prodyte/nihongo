@@ -3,7 +3,7 @@ import { State } from 'ts-fsrs'
 import { speak } from '../audio'
 import { toKata } from '../data/kana'
 import type { Db } from '../db/db'
-import { ExitButton } from '../icons'
+import { ExitButton, Icon } from '../icons'
 import { kanaToRomaji } from '../path/romaji'
 import { WritePractice } from '../path/ui/WritePractice'
 
@@ -35,7 +35,12 @@ export function KanaChart({ db, onExit }: { db: Db; onExit: () => void }) {
                   <span lang="ja">{conv(k)}</span><small>{kanaToRomaji(k)}</small>
                 </button>
               ))}
-            {open && cells(r).includes(open) && <div className="detail" style={{ gridColumn: '1 / -1' }}><WritePractice key={conv(open)} char={conv(open)} /></div>}
+            {open && cells(r).includes(open) && (
+              <div className="detail" style={{ gridColumn: '1 / -1' }}>
+                <WritePractice key={conv(open)} char={conv(open)} />
+                <button className="icon-btn ghost close" aria-label="Close" onClick={() => { document.querySelector<HTMLElement>('.kana-cell[aria-expanded="true"]')?.focus(); setOpen(null) }}><Icon name="close" size={18} /></button>
+              </div>
+            )}
           </Fragment>
         ))}
       </div>
@@ -50,10 +55,10 @@ export function KanaChart({ db, onExit }: { db: Db; onExit: () => void }) {
       </div>
       <div className="segmented" role="tablist" aria-label="Script">
         {(['hira', 'kata'] as const).map((s) => (
-          <button key={s} role="tab" aria-selected={script === s} onClick={() => setScript(s)}>{s === 'hira' ? 'Hiragana' : 'Katakana'} <small lang="ja">{s === 'hira' ? 'ひらがな' : 'カタカナ'}</small></button>
+          <button key={s} id={`kana-tab-${s}`} role="tab" aria-selected={script === s} aria-controls="kana-panel" onClick={() => setScript(s)}>{s === 'hira' ? 'Hiragana' : 'Katakana'} <small lang="ja">{s === 'hira' ? 'ひらがな' : 'カタカナ'}</small></button>
         ))}
       </div>
-      <div className="card">
+      <div className="card" id="kana-panel" role="tabpanel" aria-labelledby={`kana-tab-${script}`}>
         {table(BASE, 5, 'Basic sounds')}
         {table(VOICED, 5, 'Voiced sounds')}
         {table(COMBO, 3, 'Combined sounds')}

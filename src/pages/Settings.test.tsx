@@ -41,7 +41,11 @@ it('speech speed, theme and "choose any lesson" are remembered; theme applies at
   expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
 })
 
-it('backup lives here', async () => {
-  render(<Settings db={await openDb('settings-2')} autoplay={true} onAutoplay={() => {}} furigana="auto" onFurigana={() => {}} romaji="auto" onRomaji={() => {}} />)
+it('backup lives here; signing in is on the Account page', async () => {
+  const onAccount = vi.fn()
+  render(<Settings db={await openDb('settings-2')} autoplay={true} onAutoplay={() => {}} furigana="auto" onFurigana={() => {}} romaji="auto" onRomaji={() => {}} onAccount={onAccount} />)
   expect(screen.getByRole('heading', { name: 'Backup' })).toBeTruthy()
+  expect(screen.queryByLabelText(/password/i)).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  expect(onAccount).toHaveBeenCalled()
 })

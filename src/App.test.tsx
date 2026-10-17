@@ -143,7 +143,7 @@ it('the Review tab opens Listening full-screen when there is a Japanese voice; E
     await screen.findByRole('navigation', { name: 'Main' })
     await user.click(tab('Review'))
     await user.click(await screen.findByRole('button', { name: /^Listening comprehension/ }))
-    await screen.findByRole('heading', { name: 'Listening' })
+    await screen.findByRole('heading', { name: 'Listening comprehension' })
     expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Exit' }))
     await waitFor(() => expect(current()).toBe('Review'))

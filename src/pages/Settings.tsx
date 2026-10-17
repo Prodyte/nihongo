@@ -1,13 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Db } from '../db/db'
 import { applyTheme, readBool, readSpeed, readStr, SPEEDS, THEMES, writeBool, writeInt, writeStr, type Theme } from '../settings'
 import { FURIGANA, ROMAJI, type Furigana, type Romaji } from '../path/ui/furigana'
 import { canRecognise } from '../speech'
-import { Account } from './Account'
+import { session } from '../sync'
 import { Backup } from './Backup'
 
-export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaji, onRomaji, onSynced = () => {} }: {
-  db: Db; onSynced?: () => void; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void; romaji: Romaji; onRomaji: (r: Romaji) => void
+export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaji, onRomaji, onAccount = () => {} }: {
+  db: Db; onAccount?: () => void; autoplay: boolean; onAutoplay: (v: boolean) => void; furigana: Furigana; onFurigana: (f: Furigana) => void; romaji: Romaji; onRomaji: (r: Romaji) => void
 }) {
   const [skipAhead, setSkipAhead] = useState(() => readBool('nihongo.skipAhead', false))
   const [sounds, setSounds] = useState(() => readBool('nihongo.sfx', true))
@@ -15,6 +15,8 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaj
   const [speaking, setSpeaking] = useState(() => readBool('nihongo.speaking', true))
   const [writing, setWriting] = useState(() => readBool('nihongo.writing', true))
   const [theme, setTheme] = useState<Theme>(() => readStr('nihongo.theme', THEMES, 'system'))
+  const [email, setEmail] = useState<string | null>(null)
+  useEffect(() => { void session().then((s) => setEmail(s?.user.email ?? null), () => {}) }, [])
 
   return (
     <>
@@ -69,7 +71,10 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaj
           Let me choose any lesson on the path
         </label>
       </div>
-      <Account db={db} onSynced={onSynced} />
+      <div className="card form sync-row">
+        <p>{email ? <>Syncing as <strong>{email}</strong></> : 'Sync across devices'}</p>
+        <button onClick={onAccount}>{email ? 'Account' : 'Sign in'}</button>
+      </div>
       <Backup db={db} onRestored={() => {}} />
     </>
   )

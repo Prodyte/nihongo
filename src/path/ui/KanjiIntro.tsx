@@ -7,7 +7,7 @@ import { Strokes } from './Strokes'
 export function KanjiIntro({ item, onDone }: { item: Item; onDone: (missed: string[]) => void }) {
   const examples = (item.examples ?? []).flatMap((id) => ITEMS.get(id) ?? [])
   return (
-    <div className="card">
+    <div className="card intro">
       <p className="q">New kanji</p>
       <Strokes char={item.jp} />
       <div className="answer">{item.gloss}</div>

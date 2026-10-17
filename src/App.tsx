@@ -99,7 +99,7 @@ export default function App() {
   const onTab = TAB_OF[view] === view
   if (onTab && shown !== gen) setShown(gen)
   const [, setTick] = useState(0)
-  const rerender = () => setTick((t) => t + 1) // sign-in state changed on Settings or Account: redraw the header, keep the page and its message
+  const rerender = () => setTick((t) => t + 1) // sign-in state changed on Account: redraw the header, keep the page and its message
   const [session, setSession] = useState<Config>(config) // what the running review studies (Today's doesn't change the Review tab)
 
   // The phone's back button / swipe goes back a screen instead of leaving the app. Opening a screen pushes a history
@@ -237,7 +237,7 @@ export default function App() {
         ) : view === 'settings' ? (
           <Settings db={db} autoplay={autoplay} onAutoplay={(v) => { setAutoplay(v); writeBool('nihongo.autoplay', v) }}
             furigana={furigana} onFurigana={(f) => { setFurigana(f); writeStr('nihongo.furigana', f) }}
-            romaji={romaji} onRomaji={(r) => { setRomaji(r); writeStr('nihongo.romaji', r) }} onSynced={rerender} />
+            romaji={romaji} onRomaji={(r) => { setRomaji(r); writeStr('nihongo.romaji', r) }} onAccount={() => go('account')} />
         ) : view === 'account' ? (
           <Account db={db} onSynced={rerender} />
         ) : view === 'grammar' ? (

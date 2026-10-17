@@ -47,6 +47,7 @@ export function Stats({ db }: { db: Db }) {
   const peak = Math.max(1, ...s.ahead.map((d) => d.count))
   return (
     <>
+      <div className="page-head"><h2>Stats</h2></div>
       <div className="card form">
         <h2>JLPT progress</h2>
         <Levels levels={s.levels} />

@@ -15,7 +15,7 @@ export function Intro({ item, autoplay, onDone }: { item: Item; autoplay: boolea
     if (autoplay) speak(item.jp)
   }, [autoplay, item.jp])
   return (
-    <div className="card">
+    <div className="card intro">
       <p className="q">New {item.kind === 'kana' ? 'sound' : 'word'}</p>
       {item.kata ? (
         // a kana sound is learned in both scripts at once

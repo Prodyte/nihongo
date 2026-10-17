@@ -35,7 +35,7 @@ export function Listening({ db, onExit }: { db: Db; onExit: () => void }) {
     <>
       <div className="bar"><ExitButton onClick={onExit} /></div>
       <div className="page-head">
-        <h2>Listening</h2>
+        <h2>Listening comprehension</h2>
         <p>Dialogues and stories, heard without the text, like the JLPT listening section. Answer the questions, then read along.</p>
       </div>
       {!voice && <p className="hint">{NO_VOICE}</p>}
@@ -149,7 +149,7 @@ function ListenView({ db, track, onExit }: { db: Db; track: Track; onExit: () =>
         {done && (
           <div className="row2 left">
             <button aria-expanded={text} aria-controls="listen-text" onClick={() => setText(!text)}>{text ? 'Hide text' : 'Show text'}</button>
-            <button className="primary" onClick={onExit}>Back to listening</button>
+            <button className="primary" onClick={onExit}>Back to the list</button>
           </div>
         )}
       </section>

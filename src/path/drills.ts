@@ -44,7 +44,7 @@ export function conjugationDrill(verbs: Item[], rand: () => number = Math.random
 
 export type DrillKind = 'speak-read' | 'speak-recall' | 'shadow' | 'listen' | 'conjugate'
 export const DRILL_TITLE: Record<DrillKind, string> = {
-  'speak-read': 'Read aloud', 'speak-recall': 'Say it in Japanese', shadow: 'Shadowing', listen: 'Listening', conjugate: 'Verb conjugation',
+  'speak-read': 'Read aloud', 'speak-recall': 'Say it in Japanese', shadow: 'Shadowing', listen: 'Listen and type', conjugate: 'Verb conjugation',
 }
 
 /** What the learner has met on the path, as items. */
