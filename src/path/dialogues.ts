@@ -17,7 +17,7 @@ export const DIALOGUES: Dialogue[] = [
     id: 'umbrella', title: 'Buying an umbrella', scene: 'In a shop. A customer (A) talks to a shop assistant (B).', level: 5,
     lines: [
       { who: 'A', tokens: ['すみません', '、', 'もう', '少[すこ]し', '大[おお]きい', '傘[かさ]', 'は', 'あります', 'か'], en: 'Excuse me, do you have a slightly bigger umbrella?' },
-      { who: 'B', tokens: ['はい', '、', 'この', '黒[くろ]い', '傘[かさ]', 'と', '青[あお]い', '傘[かさ]', 'は', 'どう', 'です', 'か'], en: 'Yes. How about this black umbrella, or this blue one?' },
+      { who: 'B', tokens: ['はい', '、', 'こちら', 'の', '黒[くろ]い', '傘[かさ]', 'と', '青[あお]い', '傘[かさ]', 'は', 'いかが', 'です', 'か'], en: 'Yes. How about this black umbrella, or this blue one?' },
       { who: 'A', tokens: ['黒[くろ]い', 'の', 'は', 'ちょっと', '高[たか]い', 'です', 'ね'], en: 'The black one is a bit expensive.' },
       { who: 'B', tokens: ['青[あお]い', 'の', 'は', '黒[くろ]い', 'の', 'より', '安[やす]い', 'です', 'よ'], en: 'The blue one is cheaper than the black one.' },
       { who: 'A', tokens: ['じゃ', '、', '青[あお]い', 'の', 'を', 'ください'], en: 'I’ll take the blue one, then.' },
@@ -144,10 +144,10 @@ export const DIALOGUES: Dialogue[] = [
     id: 'return-shirt', title: 'Returning a shirt', scene: 'In a clothes shop. A customer (A) talks to a shop assistant (B).', level: 3,
     lines: [
       { who: 'A', tokens: ['すみません', '、', '昨日[きのう]', 'ここ', 'で', 'この', 'シャツ', 'を', '買[か]った', 'の', 'です', 'が', '、', '着[き]てみたら', '小[ちい]さすぎました'], en: 'Excuse me, I bought this shirt here yesterday, but when I tried it on it was too small.' },
-      { who: 'B', tokens: ['申[もう]し訳[わけ]ありません', '。', '大[おお]きい', 'の', 'と', '取[と]り替[か]えましょう', 'か', '、', 'それとも', 'お金[かね]', 'を', '返[かえ]しましょう', 'か'], en: 'I’m very sorry. Shall I exchange it for a bigger one, or give you your money back?' },
-      { who: 'A', tokens: ['同[おな]じ', '色[いろ]', 'の', '大[おお]きい', 'の', 'が', 'あれば', '、', '取[と]り替[か]えてほしい', 'です'], en: 'If you have a bigger one in the same colour, I’d like to exchange it.' },
+      { who: 'B', tokens: ['申[もう]し訳[わけ]ありません', '。', '大[おお]きい', 'の', 'と', 'お', '取[と]り替[か]え', 'しましょう', 'か', '、', 'それとも', 'お', '返[かえ]し', 'しましょう', 'か'], en: 'I’m very sorry. Shall I exchange it for a bigger one, or give you your money back?' },
+      { who: 'A', tokens: ['同[おな]じ', '色[いろ]', 'の', '大[おお]きい', 'の', 'が', 'あれば', '、', '取[と]り替[か]えていただきたい', 'です'], en: 'If you have a bigger one in the same colour, I’d like to exchange it.' },
       { who: 'B', tokens: ['申[もう]し訳[わけ]ありません', '。', 'その', '色[いろ]', 'は', 'もう', '売[う]り切[き]れてしまいました'], en: 'I’m very sorry. That colour has already sold out.' },
-      { who: 'A', tokens: ['そう', 'です', 'か', '。', 'じゃ', '、', 'お金[かね]', 'を', '返[かえ]していただけます', 'か'], en: 'I see. Then could I have my money back?' },
+      { who: 'A', tokens: ['そう', 'です', 'か', '。', 'では', '、', 'お金[かね]', 'を', '返[かえ]していただけます', 'か'], en: 'I see. Then could I have my money back?' },
       { who: 'B', tokens: ['承知[しょうち]しました'], en: 'Certainly.' },
     ],
     questions: [
@@ -159,13 +159,13 @@ export const DIALOGUES: Dialogue[] = [
   {
     id: 'message', title: 'A message for the manager', scene: 'A phone call to an office. B works there; A is calling from another company.', level: 3,
     lines: [
-      { who: 'A', tokens: ['もしもし', '、', '部長[ぶちょう]', 'は', 'いらっしゃいます', 'か'], en: 'Hello, is the manager there?' },
+      { who: 'A', tokens: ['もしもし', '、', 'さくら', '銀行[ぎんこう]', 'の', '林[はやし]', 'と', '申[もう]します', '。', '部長[ぶちょう]', 'は', 'いらっしゃいます', 'か'], en: 'Hello, this is Hayashi from Sakura Bank. Is the manager there?' },
       { who: 'B', tokens: ['申[もう]し訳[わけ]ありません', '。', '部長[ぶちょう]', 'は', '今[いま]', '会議[かいぎ]', 'に', '出[で]ています'], en: 'I’m very sorry. The manager is in a meeting right now.' },
-      { who: 'B', tokens: ['三時[さんじ]', 'に', '終[お]わる', '予定[よてい]', 'です', 'が', '、', '何[なに]', 'か', '伝[つた]えましょう', 'か'], en: 'It’s due to finish at three. Shall I pass on a message?' },
+      { who: 'B', tokens: ['三時[さんじ]', 'に', '終[お]わる', '予定[よてい]', 'です', 'が', '、', '何[なに]', 'か', 'お', '伝[つた]え', 'しましょう', 'か'], en: 'It’s due to finish at three. Shall I pass on a message?' },
       { who: 'A', tokens: ['では', '、', '明日[あした]', 'の', '約束[やくそく]', 'を', '金曜日[きんようび]', 'に', '変[か]えていただきたい', 'と', '伝[つた]えていただけます', 'か'], en: 'Then could you tell the manager I’d like to move tomorrow’s appointment to Friday?' },
       { who: 'B', tokens: ['金曜日[きんようび]', 'です', 'ね', '。', '時間[じかん]', 'は', '同[おな]じ', 'で', 'よろしい', 'です', 'か'], en: 'Friday. Is the same time all right?' },
       { who: 'A', tokens: ['はい', '、', '午前[ごぜん]', '十時[じゅうじ]', 'で', 'おねがいします', '。', '会議[かいぎ]', 'が', '終[お]わったら', '、', '電話[でんわ]', 'を', 'いただけます', 'か'], en: 'Yes, ten in the morning, please. Could the manager call me when the meeting is over?' },
-      { who: 'B', tokens: ['承知[しょうち]しました', '。', 'そう', '伝[つた]えておきます'], en: 'Certainly. I’ll pass that on.' },
+      { who: 'B', tokens: ['承知[しょうち]しました', '。', 'そう', 'お', '伝[つた]え', 'しておきます'], en: 'Certainly. I’ll pass that on.' },
     ],
     questions: [
       { q: 'Why can’t the manager come to the phone?', options: ['The manager is in a meeting', 'The manager has gone home', 'The manager is on another call'], answer: 0 },
