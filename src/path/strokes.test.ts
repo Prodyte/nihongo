@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { KANA } from '../data/kana'
+import { ITEMS } from './course'
 import { checkStroke, resample, type Pt } from './strokes'
 
 const line = (a: Pt, b: Pt, n = 10): Pt[] => Array.from({ length: n }, (_, i) => [a[0] + ((b[0] - a[0]) * i) / (n - 1), a[1] + ((b[1] - a[1]) * i) / (n - 1)])
@@ -33,5 +36,14 @@ describe('checkStroke', () => {
     expect(checkStroke(line([20, 50], [30, 50]), horizontal)).toEqual({ ok: false, why: 'short' })
     const dot = line([50, 20], [56, 28])
     expect(checkStroke(line([49, 19], [57, 29]), dot)).toEqual({ ok: true })
+  })
+})
+
+describe('strokes.json', () => {
+  it('has every course kanji and every single kana, in both scripts', () => {
+    const all = JSON.parse(readFileSync(new URL('../../public/strokes.json', import.meta.url), 'utf-8')) as Record<string, string[]>
+    const chars = [...KANA.filter((k) => k.kana.length === 1).map((k) => k.kana), ...[...ITEMS.values()].filter((it) => it.kind === 'kanji').map((it) => it.jp), 'ゃ', 'ャ']
+    expect(chars.filter((c) => !all[c]?.length)).toEqual([])
+    expect(all['あ']).toHaveLength(3)
   })
 })

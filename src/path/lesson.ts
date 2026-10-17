@@ -20,7 +20,7 @@ export type Readings = Record<string, string>
 export interface BuildOpts {
   canSpeak: boolean // a Japanese voice exists; otherwise there are no listening exercises
   canListen?: boolean // speech recognition is available and switched on: add speaking exercises
-  canWrite?: boolean // writing exercises are switched on: kanji lessons add tracing and writing
+  canWrite?: boolean // writing exercises are switched on: kanji and kana lessons add tracing and writing
   learned: ReadonlySet<string> // item ids from lessons already completed (no intro; used as distractors)
   rand?: () => number
 }
@@ -94,6 +94,13 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, ...shuffled(item, 'jp', 'sound'), answer: written(item) })))
   if (opts.canListen && mine[0]?.kind === 'word') out.push(...shuffle(mine, rand).slice(0, 2).map((item): Exercise => ({ type: 'speak', item })))
   out.push(...shuffle(askable, rand).slice(0, canSpeak ? (taught[0]?.kind === 'kana' ? 2 : 3) : 4).map(toJp)) // kana: each sound is already read in both scripts
+  if (opts.canWrite && taught[0]?.kind === 'kana') {
+    // trace each new kana, then write two from their romaji. Hiragana only, to keep the lesson short (katakana: the kana
+    // chart); a combined sound is a kana already written plus a small ゃゅょ, so its lessons don't write
+    const single = taught.filter((it) => [...it.jp].length === 1).map((it) => kanaView(it, 'hira'))
+    out.push(...single.filter((it) => !learned.has(it.id)).map((item): Exercise => ({ type: 'write', item, guide: true })),
+      ...shuffle(single.filter(uniqueGloss), rand).slice(0, 2).map((item): Exercise => ({ type: 'write', item, guide: false }))) // じ/ぢ: "ji" names two
+  }
   // typing comes last: it is the hardest. Kana: type the romaji. Words: type the English, and type the Japanese from the English.
   const typed = (item: Item, dir: 'toRomaji' | 'toGloss' | 'toJp'): Exercise => ({ type: 'type', item, dir, prompt: dir === 'toJp' ? item.gloss : written(item) })
   if (mine.length === 0) return out

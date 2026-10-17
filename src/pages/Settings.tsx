@@ -56,7 +56,7 @@ export function Settings({ db, autoplay, onAutoplay, furigana, onFurigana, romaj
         </label>
         <label className="check">
           <input type="checkbox" checked={writing} onChange={(e) => { setWriting(e.target.checked); writeBool('nihongo.writing', e.target.checked) }} />
-          Kanji writing exercises (finger, pencil or mouse)
+          Writing exercises for kana and kanji (finger, pencil or mouse)
         </label>
         {canRecognise() && (
           <label className="check">

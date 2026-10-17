@@ -42,11 +42,13 @@ async function drive(u: UserEvent, lesson: LessonT, { spoken = [] as string[], w
   const items = lesson.items.map((id) => ITEMS.get(id))
   let wrongPending = wrongFirst
   for (let i = 0; i < 150; i++) {
-    await waitFor(() => expect(screen.queryByText('Lesson complete') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByText('Build the sentence') ?? screen.queryByRole('textbox') ?? screen.queryByRole('group', { name: 'Answers' })).toBeTruthy())
+    await waitFor(() => expect(screen.queryByText('Lesson complete') ?? screen.queryByRole('button', { name: 'Got it' }) ?? screen.queryByText('Match the pairs') ?? screen.queryByText('Build the sentence') ?? screen.queryByRole('textbox') ?? screen.queryByRole('group', { name: 'Answers' }) ?? screen.queryByRole('button', { name: 'Skip' })).toBeTruthy())
     if (screen.queryByText('Lesson complete')) return
     const got = screen.queryByRole('button', { name: 'Got it' })
     if (got) { await u.click(got); continue }
     if (stopAfterIntros) return
+    const skip = screen.queryByRole('button', { name: 'Skip' }) // writing: strokes.json can't be fetched in jsdom, so it offers Skip
+    if (skip) { await u.click(skip); continue }
     if (screen.queryByText('Match the pairs')) { await solveMatch(u, items); await u.click(await screen.findByRole('button', { name: 'Continue' })); continue }
     if (screen.queryByText('Build the sentence')) {
       const shown = document.querySelector('.prompt.gloss')!.textContent

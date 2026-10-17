@@ -47,7 +47,8 @@ export function checkStroke(drawn: Pt[], expected: Pt[]): StrokeCheck {
 }
 
 let strokes: Promise<Record<string, string[]>> | null = null
-/** Stroke paths for the course's kanji (KanjiVG, CC BY-SA 3.0), fetched once on first use and cached offline by the PWA. */
+/** Stroke paths for the course's kanji and single kana, keyed by the character (KanjiVG, CC BY-SA 3.0), fetched once on
+ * first use and cached offline by the PWA. */
 export const loadStrokes = () => {
   strokes ??= fetch(`${import.meta.env.BASE_URL}strokes.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
   strokes.catch(() => { strokes = null }) // let a later card try again (e.g. back online)
