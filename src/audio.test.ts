@@ -122,6 +122,21 @@ describe('speak', () => {
     stop()
     expect(onEnd).toHaveBeenCalledOnce()
   })
+  it('speakAll voices a dialogue: a second Japanese voice (a different person) for speaker 1, else one voice at two pitches; at the speed asked for', () => {
+    vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
+    const kyoko = { lang: 'ja-JP', name: 'Kyoko' }
+    const otoya = { lang: 'ja-JP', name: 'Otoya' }
+    const two = synth([kyoko, { lang: 'ja-JP', name: 'Kyoko (Enhanced)' }, { lang: 'en-US', name: 'Alex' }, otoya])
+    vi.stubGlobal('speechSynthesis', two)
+    speakAll(['あ', 'い', 'う'], () => {}, () => {}, { speakers: [0, 1, 0], speed: 60 })
+    const said = (x: typeof two) => x.speak.mock.calls.map((c) => c[0] as Utterance & { pitch?: number; rate: number })
+    expect(said(two).map((u) => [u.voice, u.pitch])).toEqual([[kyoko, undefined], [otoya, undefined], [kyoko, undefined]])
+    expect(said(two)[0].rate).toBe(0.6)
+    const one = synth([kyoko])
+    vi.stubGlobal('speechSynthesis', one)
+    speakAll(['あ', 'い'], () => {}, () => {}, { speakers: [0, 1] })
+    expect(said(one).map((u) => [u.voice, u.pitch])).toEqual([[kyoko, 0.8], [kyoko, 1.4]])
+  })
   it('the first tap or key speaks an empty utterance (iOS then plays later speech), only once', () => {
     const s = { ...synth([]), speaking: false }
     vi.stubGlobal('speechSynthesis', s)

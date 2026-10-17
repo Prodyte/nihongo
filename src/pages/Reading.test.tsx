@@ -33,3 +33,19 @@ it('lists stories under their level, N5 then N4 then N3', async () => {
   expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['N5', 'N4', 'N3'])
   for (const s of STORIES) expect(within(screen.getByRole('region', { name: `N${s.level}` })).getByRole('button', { name: new RegExp(s.en) })).toBeTruthy()
 })
+
+it('a looked-up word can be saved for Review with Study this (a particle has no button)', async () => {
+  const db = await openDb('reading-3')
+  const user = userEvent.setup()
+  render(<Reading db={db} onExit={() => {}} />)
+  await user.click(screen.getByRole('button', { name: /My day/ }))
+  const words = [...document.querySelectorAll<HTMLButtonElement>('button.word')]
+  await user.click(words.find((w) => w.textContent === 'は')!)
+  expect(document.querySelector('.lookup-pop')!.textContent).toMatch(/particle/)
+  expect(screen.queryByRole('button', { name: 'Study this' })).toBeNull()
+  await user.click(words.find((w) => w.textContent!.startsWith('起'))!)
+  await user.click(await screen.findByRole('button', { name: 'Study this' }))
+  expect((await screen.findByRole('button', { name: 'Studying' })).getAttribute('aria-pressed')).toBe('true')
+  const card = (await db.getAll('cards')).find((c) => (c.saved ?? 0) > 0)
+  expect(card?.back.join()).toMatch(/to wake up/)
+})

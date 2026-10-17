@@ -18,8 +18,8 @@ const BUILT_IN = [BUILTIN_DECKS.word, BUILTIN_DECKS.kanji, BUILTIN_DECKS.sentenc
 interface Tile { key: string; icon: IconName; title: string; blurb: string; go: () => void; off?: string; count?: string }
 
 /** Review: the spaced-repetition queue first, then practice modes for what you've learned. */
-export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRead, onKana, onMock }: {
-  db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void; onPractice: () => void; onDrill: (k: DrillKind) => void; onRead: () => void; onKana: () => void; onMock?: (level: MockLevel) => void
+export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRead, onKana, onMock, onListen }: {
+  db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void; onPractice: () => void; onDrill: (k: DrillKind) => void; onRead: () => void; onKana: () => void; onMock?: (level: MockLevel) => void; onListen?: () => void
 }) {
   const voice = useJaVoice()
   const [loaded, setLoaded] = useState<{ key: string; due: number; fresh: number; empty?: boolean } | null>(null)
@@ -72,6 +72,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
     drill('shadow', 'repeat', 'Hear it, then repeat it the same way. Great for accent.', !listen ? 'Needs speech recognition (Chrome or Safari)' : !voice ? 'Needs a Japanese voice on this device' : undefined),
     drill('listen', 'speaker', 'Type the word you hear; pick what a sentence means.', voice ? undefined : 'Needs a Japanese voice on this device'),
     drill('conjugate', 'shuffle', 'ます, ません, ました, て, た and ない forms of your verbs.', info.verbs < 3 ? 'Learn a few verbs on the path first' : undefined),
+    ...(onListen ? [{ key: 'listening', icon: 'speaker', title: 'Listening comprehension', blurb: 'JLPT-style dialogues and stories: hear them, answer, then read along.', go: onListen, off: voice ? undefined : 'Needs a Japanese voice on this device' } satisfies Tile] : []),
     { key: 'read', icon: 'book', title: 'Reading', blurb: 'Short stories with audio, furigana and tap-to-look-up.', go: onRead },
     { key: 'kana', icon: 'grid', title: 'Kana chart', blurb: 'Every hiragana and katakana, with sound.', go: onKana },
   ]

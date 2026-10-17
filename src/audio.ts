@@ -3,7 +3,11 @@ import { readSpeed, SLOW } from './settings'
 import { unlockSfx } from './sfx'
 
 const synth = () => (typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null)
-const jaVoice = () => synth()?.getVoices().find((v) => v.lang.toLowerCase().replace('_', '-').startsWith('ja'))
+const isJa = (v: SpeechSynthesisVoice) => v.lang.toLowerCase().replace('_', '-').startsWith('ja')
+const jaVoice = () => synth()?.getVoices().find(isJa)
+const person = (v: SpeechSynthesisVoice) => v.name.replace(/\s*\(.*\)\s*$/, '') // "Kyoko (Enhanced)" is still Kyoko
+/** A second Japanese voice that is a different person, when the device has one (a dialogue's second speaker). */
+const otherJaVoice = (first?: SpeechSynthesisVoice) => (first ? synth()?.getVoices().find((v) => isJa(v) && person(v) !== person(first)) : undefined)
 /** Speech can be tried: a Japanese voice exists, or the voice list isn't loaded yet (Chrome and Android fill it in later;
  * `lang` alone then picks a Japanese voice). Only a loaded list without one means there is no voice. */
 const canSpeak = () => !!synth() && (!synth()!.getVoices().length || !!jaVoice())
@@ -33,19 +37,25 @@ export function speak(text: string, speed = readSpeed()): boolean {
 const queued: SpeechSynthesisUtterance[] = [] // Chrome garbage-collects an utterance nothing references, and its onend never fires
 
 /** Speak several texts one after another; `onStart(i)` fires as each begins (to highlight it). Returns a stop function.
- * `onEnd` runs once: when the last ends, is cancelled by other speech (Chrome fires error, not end), or stop() is called. */
-export function speakAll(texts: string[], onStart: (i: number) => void, onEnd: () => void): () => void {
+ * `onEnd` runs once: when the last ends, is cancelled by other speech (Chrome fires error, not end), or stop() is called.
+ * `speed` is in percent (else the Settings speed). `speakers[i]` 1 voices text i as a second person: another Japanese voice
+ * if the device has two, else the same voice pitched higher than speaker 0's (a dialogue). */
+export function speakAll(texts: string[], onStart: (i: number) => void, onEnd: () => void, { speed = readSpeed(), speakers }: { speed?: number; speakers?: (0 | 1)[] } = {}): () => void {
   const s = synth()
   const voice = jaVoice()
+  const other = speakers && otherJaVoice(voice)
   if (!s || !canSpeak()) { onEnd(); return () => {} }
   let ended = false
   const end = () => { if (!ended) { ended = true; onEnd() } }
   s.cancel()
   queued.splice(0, queued.length, ...texts.map((text, i) => {
-    const u = new SpeechSynthesisUtterance(readSpeed() <= SLOW ? slowly(text) : text)
+    const u = new SpeechSynthesisUtterance(speed <= SLOW ? slowly(text) : text)
     u.lang = 'ja-JP'
-    if (voice) u.voice = voice
-    u.rate = readSpeed() / 100
+    const second = speakers?.[i] === 1
+    const v = second && other ? other : voice
+    if (v) u.voice = v
+    if (speakers && !other) u.pitch = second ? 1.4 : 0.8
+    u.rate = speed / 100
     u.onstart = () => onStart(i)
     if (i === texts.length - 1) u.onend = u.onerror = end
     s.speak(u)

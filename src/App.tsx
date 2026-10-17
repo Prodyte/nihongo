@@ -36,6 +36,7 @@ const Account = lazy(() => reloadOnFail(import('./pages/Account')).then((m) => (
 const Decks = lazy(() => reloadOnFail(import('./pages/Decks')).then((m) => ({ default: m.Decks })))
 const Drill = lazy(() => reloadOnFail(import('./pages/Drill')).then((m) => ({ default: m.Drill })))
 const KanaChart = lazy(() => reloadOnFail(import('./pages/KanaChart')).then((m) => ({ default: m.KanaChart })))
+const Listening = lazy(() => reloadOnFail(import('./pages/Listening')).then((m) => ({ default: m.Listening })))
 const Reading = lazy(() => reloadOnFail(import('./pages/Reading')).then((m) => ({ default: m.Reading })))
 const Grammar = lazy(() => reloadOnFail(import('./pages/Grammar')).then((m) => ({ default: m.Grammar })))
 const MockTest = lazy(() => reloadOnFail(import('./pages/MockTest')).then((m) => ({ default: m.MockTest })))
@@ -44,9 +45,9 @@ const Stats = lazy(() => reloadOnFail(import('./pages/Stats')).then((m) => ({ de
 const TestOut = lazy(() => reloadOnFail(import('./pages/TestOut')).then((m) => ({ default: m.TestOut })))
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
-type View = Tab | 'lesson' | 'test' | 'mock' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
+type View = Tab | 'lesson' | 'test' | 'mock' | 'study' | 'drill' | 'reading' | 'listening' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', mock: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', about: 'more', grammar: 'more', account: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', mock: 'review', reading: 'review', listening: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', about: 'more', grammar: 'more', account: 'more' }
 const KANA_LESSONS = UNITS.filter((u) => u.section === 'Kana').flatMap((u) => u.lessons)
 const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
@@ -174,7 +175,7 @@ export default function App() {
   const study = (from: View, c: Config) => { setSession(c); setBack(from); go('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
-  const focused = !!lesson || !!unit || view === 'study' || view === 'mock' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
+  const focused = !!lesson || !!unit || view === 'study' || view === 'mock' || view === 'drill' || view === 'reading' || view === 'listening' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
   const account = maybeSignedIn()
     ? <button className="icon-btn account-btn" aria-label="Account and sync" aria-current={view === 'account' ? 'page' : undefined} onClick={() => go('account')}><Icon name="user" /></button>
@@ -215,13 +216,15 @@ export default function App() {
           <Drill key={drill} db={db} kind={drill} onExit={() => leave('review')} />
         ) : view === 'reading' ? (
           <Reading db={db} onExit={() => leave('review')} />
+        ) : view === 'listening' ? (
+          <Listening db={db} onExit={() => leave('review')} />
         ) : view === 'kana' ? (
           <KanaChart db={db} onExit={() => leave('review')} />
         ) : view === 'study' ? (
           <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => leave(back)} />
         ) : view === 'review' ? (
           <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })}
-            onDrill={(k) => { setDrill(k); go('drill') }} onRead={() => go('reading')} onKana={() => go('kana')}
+            onDrill={(k) => { setDrill(k); go('drill') }} onRead={() => go('reading')} onListen={() => go('listening')} onKana={() => go('kana')}
             onMock={(l) => { setMockLevel(l); go('mock') }} />
         ) : view === 'path' ? (
           <Path db={db} onStart={startLesson} onTest={(id) => { setTestUnit(id); go('test') }} />

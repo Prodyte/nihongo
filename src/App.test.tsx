@@ -134,3 +134,20 @@ it('the Review tab opens a mock JLPT test full-screen; Exit returns to Review', 
   await user.click(screen.getByRole('button', { name: 'Exit' }))
   await waitFor(() => expect(current()).toBe('Review'))
 })
+
+it('the Review tab opens Listening full-screen when there is a Japanese voice; Exit returns to Review', async () => {
+  vi.stubGlobal('speechSynthesis', { getVoices: () => [{ lang: 'ja-JP', name: 'Kyoko' }], speak: vi.fn(), cancel: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() })
+  try {
+    const user = userEvent.setup()
+    render(<App />)
+    await screen.findByRole('navigation', { name: 'Main' })
+    await user.click(tab('Review'))
+    await user.click(await screen.findByRole('button', { name: /^Listening comprehension/ }))
+    await screen.findByRole('heading', { name: 'Listening' })
+    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Exit' }))
+    await waitFor(() => expect(current()).toBe('Review'))
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})

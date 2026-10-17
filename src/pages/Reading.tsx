@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { speak, speakAll, useJaVoice } from '../audio'
-import type { Db } from '../db/db'
+import type { Db, StoredCard } from '../db/db'
 import { ExitButton, Icon } from '../icons'
 import { SpeakButton } from '../modes/SpeakButton'
 import { ITEMS, wordFor, written, type Item } from '../path/course'
@@ -10,6 +10,7 @@ import { STORIES, type Story } from '../path/stories'
 import { Ruby } from '../path/ui/Ruby'
 import { readBool, writeBool } from '../settings'
 import { sfx } from '../sfx'
+import { Study } from './Lookup'
 
 const WORDS = [...ITEMS.values()].filter((w) => w.kind === 'word')
 const READ_KEY = 'nihongo.read'
@@ -18,7 +19,7 @@ const readSet = () => { try { return new Set<string>(JSON.parse(localStorage.get
 const markRead = (id: string) => { try { localStorage.setItem(READ_KEY, JSON.stringify([...readSet(), id])) } catch { /* per device only */ } }
 const sentenceText = (tokens: string[]) => displayJp(tokens.map(readingOf))
 
-/** Graded stories: read with furigana, listen sentence by sentence, tap any word to look it up, then answer questions. */
+/** Graded stories: read with furigana, listen sentence by sentence, tap any word to look it up (and save it for Review), then answer questions. */
 export function Reading({ db, onExit }: { db: Db; onExit: () => void }) {
   const [open, setOpen] = useState<Story | null>(null)
   const [read] = useState(readSet)
@@ -56,6 +57,7 @@ function StoryView({ db, story, onExit }: { db: Db; story: Story; onExit: () => 
   const [shown, setShown] = useState<Set<number>>(new Set()) // sentences whose English is revealed
   const [playing, setPlaying] = useState<number | null>(null)
   const [word, setWord] = useState<{ item?: Item; chunk: string } | null>(null)
+  const [card, setCard] = useState<{ id: string; card?: StoredCard } | null>(null) // the looked-up word's card, for Study this
   const [answers, setAnswers] = useState<(number | null)[]>(() => story.questions.map(() => null))
   const stop = useRef<() => void>(() => {})
   useEffect(() => () => stop.current(), [])
@@ -73,7 +75,12 @@ function StoryView({ db, story, onExit }: { db: Db; story: Story; onExit: () => 
     if (playing !== null) { stop.current(); return }
     stop.current = speakAll(story.sentences.map((s) => sentenceText(s.tokens)), setPlaying, () => setPlaying(null))
   }
-  const lookUp = (chunk: string) => { setWord({ chunk, item: wordFor(chunk, WORDS) }); speak(readingOf(chunk)) }
+  const lookUp = (chunk: string) => {
+    const item = PARTICLES.has(chunk) ? undefined : wordFor(chunk, WORDS) // は is the particle, not 歯 (tooth)
+    setWord({ chunk, item })
+    speak(readingOf(chunk))
+    if (item) void db.get('cards', item.id).then((c) => setCard({ id: item.id, card: c }), () => {})
+  }
 
   return (
     <>
@@ -92,6 +99,7 @@ function StoryView({ db, story, onExit }: { db: Db; story: Story; onExit: () => 
             <span lang="ja" className="jp">{word.item ? <Ruby text={written(word.item)} reading={word.item.written && word.item.jp} /> : surfaceOf(word.chunk)}</span>
             <span>{word.item ? `${word.item.jp !== surfaceOf(word.chunk) ? `${readingOf(word.chunk)} · ` : ''}${word.item.gloss}` : PARTICLES.has(word.chunk) ? 'a particle (see the grammar lessons)' : readingOf(word.chunk)}</span>
             <button className="icon-btn ghost" aria-label="Close" onClick={() => setWord(null)}><Icon name="close" size={18} /></button>
+            {word.item && card?.id === word.item.id && <Study db={db} it={word.item} card={card.card} onCard={(id, c) => setCard({ id, card: c })} />}
           </div>
         )}
         <ol className="story">
