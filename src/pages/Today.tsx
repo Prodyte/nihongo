@@ -24,7 +24,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
         const next = currentLesson(LESSONS, p.done)
         const levels = coverage(LESSONS, ITEMS, p.done)
         // the level you are working on: the next lesson's, or the first not yet complete
-        const level = levels.find((l) => next?.id.startsWith(`n${l.level}-`)) ?? levels.find((l) => l.words[0] < l.words[1]) ?? levels[2]
+        const level = levels.find((l) => next?.id.startsWith(`n${l.level}-`)) ?? levels.find((l) => l.words[0] < l.words[1]) ?? levels.at(-1)!
         const nd = nextDue(cards, now)
         if (live) setS({ streak: p.streak, xpToday: p.xpToday, week: p.week, next, ...c, level, nextReview: nd && until(nd, now), hour: now.getHours() })
       })

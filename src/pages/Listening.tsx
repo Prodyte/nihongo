@@ -29,7 +29,7 @@ const NO_VOICE = 'Needs a Japanese voice on this device (on iPhone and iPad: Set
 export function Listening({ db, onExit }: { db: Db; onExit: () => void }) {
   const voice = useJaVoice()
   const [open, setOpen] = useState<Track | null>(null)
-  const [heard] = useState(heardSet)
+  const heard = heardSet() // read each render: a track finished just now shows as done on return
   if (open) return <ListenView db={db} track={open} onExit={() => setOpen(null)} />
   return (
     <>
@@ -67,6 +67,7 @@ function ListenView({ db, track, onExit }: { db: Db; track: Track; onExit: () =>
   const [text, setText] = useState(false)
   const [answers, setAnswers] = useState<(number | null)[]>(() => track.questions.map(() => null))
   const stop = useRef<() => void>(() => {})
+  const end = useRef(track.lines.length) // where the current playback stops: Slow restarts the same range
   useEffect(() => () => stop.current(), [])
   const done = answers.every((a) => a !== null)
   const score = answers.filter((a, i) => a === track.questions[i].answer).length
@@ -81,6 +82,7 @@ function ListenView({ db, track, onExit }: { db: Db; track: Track; onExit: () =>
   /** Play lines from..to, each in its speaker's voice. */
   const play = (from: number, to = track.lines.length, slowly = slow) => {
     stop.current()
+    end.current = to
     const lines = track.lines.slice(from, to)
     setPlayed(true)
     stop.current = speakAll(lines.map((l) => spoken(l.tokens)), (i) => setPlaying(from + i), () => setPlaying(null), {
@@ -90,7 +92,7 @@ function ListenView({ db, track, onExit }: { db: Db; track: Track; onExit: () =>
   }
   const toggleSlow = () => {
     setSlow(!slow)
-    if (playing !== null) play(playing, undefined, !slow) // carry on from this line at the new speed
+    if (playing !== null) play(playing, end.current, !slow) // carry on from this line at the new speed
   }
 
   return (

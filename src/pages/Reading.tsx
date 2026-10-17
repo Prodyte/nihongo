@@ -22,7 +22,7 @@ const sentenceText = (tokens: string[]) => displayJp(tokens.map(readingOf))
 /** Graded stories: read with furigana, listen sentence by sentence, tap any word to look it up (and save it for Review), then answer questions. */
 export function Reading({ db, onExit }: { db: Db; onExit: () => void }) {
   const [open, setOpen] = useState<Story | null>(null)
-  const [read] = useState(readSet)
+  const read = readSet() // read each render: a story finished just now shows as read on return
   if (open) return <StoryView db={db} story={open} onExit={() => setOpen(null)} />
   return (
     <>
