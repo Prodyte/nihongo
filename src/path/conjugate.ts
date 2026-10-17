@@ -20,18 +20,19 @@ export type VerbClass = 'ichidan' | 'godan' | 'suru' | 'kuru'
 
 /** The class of a dictionary-form verb, from its reading and (to tell 着る from 切る) its written form. */
 export function verbClass(reading: string, written = reading): VerbClass | null {
-  if (reading === 'する' || reading.endsWith('する')) return 'suru'
+  if (written.endsWith('する') || (reading.endsWith('する') && !written.endsWith('る'))) return 'suru' // 擦る, 刷る are read する but godan; 生活 (せいかつする) is suru
   if (reading === 'くる') return 'kuru'
   if (!/[うくぐすつぬぶむる]$/.test(reading)) return null
   if ([...GODAN_RU].some((g) => written.endsWith(g))) return 'godan' // also compounds: 裏切る, 横切る, 気に入る
   return E_I.test(reading) ? 'ichidan' : 'godan'
 }
 
-/** A verb in `form`, as kana. 行く has the irregular て/た (行って), ある the irregular negative (ない). */
+/** A verb in `form`, as kana. 行く has the irregular て/た (行って), 問う/請う too (問うて), ある the irregular negative (ない), 愛する あいさない. */
 export function conjugate(reading: string, form: Form, cls: VerbClass): string {
   if (cls === 'suru' || cls === 'kuru') {
     const stem = cls === 'suru' ? reading.slice(0, -2) : ''
     const [masu, te, ta, nai] = cls === 'suru' ? ['し', 'して', 'した', 'しない'] : ['き', 'きて', 'きた', 'こない']
+    if (reading === 'あいする' && form === 'nai') return 'あいさない'
     return stem + { masu: `${masu}ます`, masen: `${masu}ません`, mashita: `${masu}ました`, te, ta, nai }[form]
   }
   const stem = reading.slice(0, -1)
@@ -40,7 +41,7 @@ export function conjugate(reading: string, form: Form, cls: VerbClass): string {
   const i = stem + I_ROW[last]
   if (form === 'masu' || form === 'masen' || form === 'mashita') return i + { masu: 'ます', masen: 'ません', mashita: 'ました' }[form]
   if (form === 'nai') return reading === 'ある' ? 'ない' : stem + A_ROW[last] + 'ない'
-  const [te, ta] = reading === 'いく' ? ['って', 'った'] : TE[last] // 行く: いって, not いいて
+  const [te, ta] = reading === 'いく' ? ['って', 'った'] : reading === 'とう' || reading === 'こう' ? ['うて', 'うた'] : TE[last] // 行く: いって, not いいて; 問う: とうて
   return stem + (form === 'te' ? te : ta)
 }
 

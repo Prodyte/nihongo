@@ -3,6 +3,7 @@ import { speak } from '../../audio'
 import { SpeakButton } from '../../modes/SpeakButton'
 import { matches } from '../../data/kana'
 import { glossAnswers } from '../progress'
+import { written } from '../course'
 import { displayJp, readingOf } from '../romaji'
 import { checkEnglish, checkJapanese, mayGrow, toKana, type Check } from '../typing'
 import type { Exercise } from '../lesson'
@@ -36,7 +37,7 @@ export function Type({ ex, autoplay, onDone }: { ex: Ex; autoplay: boolean; onDo
     dir === 'toRomaji' ? { ok: matches(item.accepts ?? [item.romaji], t) }
     : dir === 'toGloss' ? checkEnglish(t, glossAnswers(item.gloss))
     : item.kind === 'sentence' && dir === 'toJp' ? checkJapanese(t, item.jp, { tokens: item.tokens?.map(readingOf), alts: item.alts?.map((a) => displayJp(a.map(readingOf))) })
-    : checkJapanese(t, item.jp, { word: true })
+    : checkJapanese(t, item.jp, { word: true, written: written(item) })
 
   function check(e: FormEvent) {
     e.preventDefault()

@@ -81,7 +81,7 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   // items sharing a sound can't be asked by ear either.
   const [uniqueGloss, uniqueSound] = [uniqueBy(items, 'gloss'), uniqueBy(items, 'sound')]
   const askable = shuffle(mine.filter(uniqueGloss), rand)
-  const audible = shuffle(askable.filter(uniqueSound), rand)
+  const audible = shuffle(askable.filter(uniqueSound), rand).filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i) // あ and ア sound the same: play one
 
   const shuffled = (it: Item, field: 'jp' | 'gloss', same: 'gloss' | 'sound' = 'gloss') => { const o = options(it, field, pool, same); return { ...o, options: shuffle(o.options, rand) } }
   const toGloss = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...shuffled(it, 'gloss'), answer: it.gloss })

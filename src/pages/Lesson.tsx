@@ -85,9 +85,9 @@ export function Lesson({ db, lesson, autoplay, onExit, onStart }: { db: Db; less
 
   const ex = run.queue[0]
   const done = (missed: string[]) => { setRun((r) => advance(r!, missed)); setStep((s) => s + 1) }
-  // "Can't speak now": drop every speaking exercise left in this lesson, unscored (like Duolingo)
+  // "Can't speak now": drop every speaking exercise left in this lesson, unscored (like Duolingo); a retry copy was never counted
   const skipSpeaking = () => {
-    setRun((r) => { const queue = r!.queue.filter((e) => e.type !== 'speak'); const gone = r!.queue.length - queue.length; return { ...r!, queue, total: r!.total - gone, initial: r!.initial - gone } })
+    setRun((r) => { const queue = r!.queue.filter((e) => e.type !== 'speak'); const gone = r!.queue.filter((e) => e.type === 'speak' && !e.retry).length; return { ...r!, queue, total: r!.total - gone, initial: r!.initial - gone } })
     setStep((s) => s + 1)
   }
   return (

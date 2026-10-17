@@ -22,7 +22,7 @@ describe('drills', () => {
     expect(exs.length).toBe(DRILL_SIZE)
     for (const e of exs) {
       if (e.type === 'type') { expect(e.dir).toBe('dictation'); expect(e.item.kind).toBe('word') }
-      else if (e.type === 'choice') { expect(e.dir).toBe('hearMeaning'); expect(e.options.filter((o) => o === e.answer)).toHaveLength(1) }
+      else if (e.type === 'choice') { expect(e.dir).toBe('hearMeaning'); expect(e.options.filter((o) => o === e.answer)).toHaveLength(1); expect(new Set(e.options).size).toBe(e.options.length) }
       else throw new Error(`unexpected ${e.type}`)
     }
   })

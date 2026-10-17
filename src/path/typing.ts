@@ -18,7 +18,7 @@ const isVowel = (c: string | undefined) => !!c && VOWELS.includes(c)
  * `final: true` (checking an answer) turns a trailing "n" into ん. Kana already typed by an IME passes through.
  */
 export function toKana(input: string, final = true): { kana: string; pending: string } {
-  const s = input.toLowerCase()
+  const s = input.toLowerCase().replace(/[’‘`]/g, "'") // iOS smart punctuation types ’ for '
   let out = ''
   let i = 0
   while (i < s.length) {
@@ -93,15 +93,15 @@ const PARTICLES: Record<string, { sounds: string; typed: string; reads: string }
 
 /**
  * Is `typed` (romaji, or kana from an IME) the Japanese `expected`? Exact: no typo forgiveness.
- * `word`: a word ending in は also accepts わ (こんにちは is taught as "konnichiwa").
+ * `word`: a word written ending in は also accepts わ (こんにちは is taught as "konnichiwa"); pass `written` so 母 (はは) does not.
  * For sentences, typing "wa" for the particle は fails with a hint; pass `tokens` so only real particle tokens (not は inside はな) get one.
  */
-export function checkJapanese(typed: string, expected: string, o: { alts?: string[]; word?: boolean; tokens?: string[] } = {}): Check {
+export function checkJapanese(typed: string, expected: string, o: { alts?: string[]; word?: boolean; written?: string; tokens?: string[] } = {}): Check {
   const got = normKana(toKana(typed).kana)
   const forms = [expected, ...(o.alts ?? [])].map(normKana)
   if (forms.includes(got)) return { ok: true }
   if (o.word) {
-    return forms[0].length > 1 && forms[0].endsWith('は') && got === `${forms[0].slice(0, -1)}わ` ? { ok: true, note: `It is written ${expected}: は is read “wa” here.` } : { ok: false }
+    return forms[0].length > 1 && (o.written ?? expected).endsWith('は') && got === `${forms[0].slice(0, -1)}わ` ? { ok: true, note: `It is written ${expected}: は is read “wa” here.` } : { ok: false }
   }
   // positions (in the normalised first form) that really are particles; without tokens, assume any は/を/へ could be
   const at = o.tokens && new Set(o.tokens.flatMap((t, i) => (t in PARTICLES ? [normKana(o.tokens!.slice(0, i).join('')).length] : [])))
@@ -124,7 +124,7 @@ export function distance(a: string, b: string): number {
   return prev[b.length]
 }
 
-const normEn = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}' ]/gu, ' ').replace(/\s+/g, ' ').trim()
+const normEn = (s: string) => s.toLowerCase().replace(/[’‘`]/g, "'").replace(/[^\p{L}\p{N}' ]/gu, ' ').replace(/\s+/g, ' ').trim()
 
 /** Could `typed` still grow into a longer accepted answer ("hello" of "hello, good afternoon")? Then it must not pass mid-typing. */
 export const mayGrow = (typed: string, answers: string[]) => { const t = `${normEn(typed)} `; return answers.some((a) => normEn(a).startsWith(t)) }

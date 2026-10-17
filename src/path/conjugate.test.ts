@@ -18,6 +18,8 @@ describe('verbClass', () => {
     expect(verbClass('かえる', '変える')).toBe('ichidan') // same reading as 帰る
     expect(verbClass('する')).toBe('suru')
     expect(verbClass('べんきょうする')).toBe('suru')
+    expect(verbClass('する', '擦る')).toBe('godan') // read する, but not する
+    expect(verbClass('せいかつする', '生活')).toBe('suru') // a する noun stored without its する
     expect(verbClass('くる', '来る')).toBe('kuru')
     expect(verbClass('おおきい')).toBeNull() // not a verb
   })
@@ -39,6 +41,8 @@ describe('conjugate', () => {
     expect(all('ある')).toEqual(['あります', 'ありません', 'ありました', 'あって', 'あった', 'ない'])
     expect(all('する')).toEqual(['します', 'しません', 'しました', 'して', 'した', 'しない'])
     expect(all('くる', '来る')).toEqual(['きます', 'きません', 'きました', 'きて', 'きた', 'こない'])
+    expect(all('とう', '問う').slice(3, 5)).toEqual(['とうて', 'とうた'])
+    expect(all('あいする', '愛する')[5]).toBe('あいさない')
   })
 })
 

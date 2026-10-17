@@ -326,8 +326,8 @@ it('a wrong word-bank answer shows the right sentence, repeats once, and costs a
   expect((await db.getAllFromIndex('reviews', 'by-card', target.id))[0].grade).toBe(Rating.Hard)
 })
 
-it('"Can’t speak now" drops every speaking exercise left in the lesson, unscored', async () => {
-  class Rec { lang = ''; maxAlternatives = 1; interimResults = true; onresult = null; onerror = null; onend = null; start() {} abort() {} }
+it.each([false, true])('"Can’t speak now" drops every speaking exercise left in the lesson, unscored (after a miss: %s)', async (miss) => {
+  class Rec { lang = ''; maxAlternatives = 1; interimResults = true; onresult: ((e: unknown) => void) | null = null; onerror = null; onend: (() => void) | null = null; start() { setTimeout(() => { this.onresult?.({ results: [[{ transcript: 'x' }]] }); this.onend?.() }) } abort() {} }
   vi.stubGlobal('webkitSpeechRecognition', Rec)
   const u = user()
   mount(await freshDb(), lessonById('greetings-1')!)
@@ -340,9 +340,15 @@ it('"Can’t speak now" drops every speaking exercise left in the lesson, unscor
     await u.click(within(screen.getByRole('group', { name: 'Answers' })).getAllByRole('button')[0])
     await u.click(await screen.findByRole('button', { name: 'Continue' }))
   }
+  if (miss) { // the first one is missed (its retry copy is queued), then the second is skipped
+    await u.click(screen.getByRole('button', { name: /Tap and speak/ }))
+    await u.click(await screen.findByRole('button', { name: 'Show me' }))
+    await u.click(await screen.findByRole('button', { name: 'Continue' }))
+    await screen.findByText('Say it in Japanese')
+  }
   const bar = screen.getByRole('progressbar', { name: 'Lesson progress' }) as HTMLProgressElement
   const max = bar.max
   await u.click(screen.getByRole('button', { name: 'Can’t speak now' }))
   await waitFor(() => expect(screen.queryByText('Say it in Japanese')).toBeNull())
-  expect(bar.max).toBe(max - 2) // both speaking exercises are gone from the lesson
+  expect(bar.max).toBe(max - (miss ? 1 : 2)) // both speaking exercises are gone from the lesson; a retry copy was never counted
 })

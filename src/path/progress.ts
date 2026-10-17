@@ -43,7 +43,7 @@ export const learnedItems = (lessons: readonly Lesson[], done: ReadonlySet<strin
 
 /** Accepted typed answers for a vocabulary card: the full gloss, each comma part, each without "(…)", and verbs without "to ". */
 export function glossAnswers(gloss: string): string[] {
-  const parts = gloss.split(', ').flatMap((p) => [p, p.replace(/\s*\([^)]*\)/g, '').trim()])
+  const parts = gloss.split(/,\s*(?![^()]*\))/).flatMap((p) => [p, p.replace(/\s*\([^)]*\)/g, '').trim()])
   const all = parts.flatMap((p) => [p, p.replace(/^to /, '')]) // "to eat" is also accepted as "eat"
   return [...new Set([gloss, ...all].filter(Boolean))]
 }

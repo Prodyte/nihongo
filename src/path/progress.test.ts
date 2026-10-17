@@ -69,6 +69,7 @@ describe('xp, goal, unlocking', () => {
     expect(glossAnswers('hello, good afternoon')).toEqual(['hello, good afternoon', 'hello', 'good afternoon'])
     expect(glossAnswers('good morning (casual)')).toEqual(['good morning (casual)', 'good morning'])
     expect(glossAnswers('water')).toEqual(['water'])
+    expect(glossAnswers('to exist (people, animals)')).toEqual(['to exist (people, animals)', 'exist (people, animals)', 'to exist', 'exist']) // a comma inside brackets is no split
   })
 })
 

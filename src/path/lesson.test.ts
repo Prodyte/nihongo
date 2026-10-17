@@ -93,6 +93,8 @@ describe('buildLesson invariants, over every lesson', () => {
           }
           for (const it of mine) expect(touched.has(it.id), `${where}: ${it.jp} is never practised`).toBe(true)
           for (const e of exs) if (e.type === 'match') for (const p of e.pairs) expect(dupGloss(ITEMS.get(p.id)!), where).toBe(false)
+          const heard = exs.flatMap((e) => (e.type === 'listen' ? [e.item.id] : []))
+          expect(new Set(heard).size, `${where}: the same sound is played twice`).toBe(heard.length)
         })
       })
 })

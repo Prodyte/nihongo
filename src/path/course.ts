@@ -125,6 +125,8 @@ const NOT_TWINS = new Set(['暑い', '熱い'])
 
 const STOP = new Set(['to', 'the', 'and', 'for', 'of', 'an', 'in', 'on', 'at', 'be'])
 const contentWords = (gloss: string) => new Set(gloss.toLowerCase().match(/[a-z]{2,}/g)?.filter((w) => !STOP.has(w))) // "no" and "do" count
+/** Words whose written form was corrected keep their old id: saved progress and cards refer to it. */
+export const LEGACY_ID: Record<string, string> = { 落ちる: '落る' }
 /** The starter item a JLPT word duplicates, if any: same reading, and the same kanji or (lacking one) an overlapping meaning. */
 export function starterTwin(written: string, reading: string, gloss: string, starter: Item[]): Item | undefined {
   if (STARTER_ALIASES[written]) return starter.find((s) => s.id === STARTER_ALIASES[written])
@@ -254,7 +256,7 @@ function jlptUnits(): Unit[] {
     const twin = starterTwin(written || reading, reading, gloss, starter)
     if (twin) { twin.level ??= level; continue } // already taught (and carded) by the starter units, which now count toward this level
     const romaji = kanaToRomaji(reading)
-    const id = `w:${written || reading}`
+    const id = `w:${LEGACY_ID[written] ?? (written || reading)}`
     registerItem(ITEMS, { id, kind: 'word', jp: reading, written: written || undefined, gloss, romaji, sound: romaji, level })
     words.get(level)!.push(id)
   }

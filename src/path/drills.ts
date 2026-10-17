@@ -22,7 +22,7 @@ export function listeningDrill(items: Item[], rand: () => number = Math.random):
   const sentences = items.filter((i) => i.kind === 'sentence')
   return shuffle(items, rand).slice(0, DRILL_SIZE).map((item): Exercise => {
     if (item.kind === 'word') return { type: 'type', item, dir: 'dictation', prompt: '' }
-    const wrong = shuffle(sentences.filter((s) => s.gloss !== item.gloss), rand).slice(0, 3).map((s) => s.gloss)
+    const wrong = shuffle([...new Set(sentences.map((s) => s.gloss))].filter((g) => g !== item.gloss), rand).slice(0, 3)
     return { type: 'choice', item, dir: 'hearMeaning', prompt: '', options: shuffle([item.gloss, ...wrong], rand), answer: item.gloss }
   }).filter((e) => !('options' in e) || e.options.length >= 2)
 }

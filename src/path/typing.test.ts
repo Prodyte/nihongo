@@ -28,6 +28,7 @@ describe('toKana', () => {
     expect(kana('mizuを')).toBe('みずを')
     expect(kana('ko-hi-')).toBe('こーひー')
     expect(kana('a b')).toBe('あ b') // a lone unknown letter stays visible
+    expect(kana('kin’yuu')).toBe('きんゆう') // iOS smart punctuation
   })
   it('keeps junk visible so the answer fails', () => {
     expect(kana('xqa')).toBe('xqあ')
@@ -85,6 +86,8 @@ describe('checkJapanese', () => {
     expect(checkJapanese('konnichiwa', 'こんにちは', { word: true }).note).toMatch(/read “wa”/)
     expect(checkJapanese('wasi', 'はし', { word: true }).ok).toBe(false)
     expect(checkJapanese('wa', 'は', { word: true }).ok).toBe(false) // a lone は is not a greeting
+    expect(checkJapanese('hawa', 'はは', { word: true, written: '母' }).ok).toBe(false)
+    expect(checkJapanese('jitsuwa', 'じつは', { word: true, written: '実は' }).ok).toBe(true)
   })
   it('sentences: particles are typed as written, and the hint says so', () => {
     const s = 'わたしは がくせいです。'
@@ -118,6 +121,7 @@ describe('checkEnglish', () => {
     expect(checkEnglish('eat', glossAnswers('to eat')).ok).toBe(true)
     expect(checkEnglish('to eat', glossAnswers('to eat')).ok).toBe(true)
     expect(checkEnglish('good morning', glossAnswers('good morning (casual)')).ok).toBe(true)
+    expect(checkEnglish('it’s ok', ["it's ok"]).ok).toBe(true) // iOS smart punctuation
     expect(checkEnglish('exist', glossAnswers('to exist (things)')).ok).toBe(true)
   })
   it('forgives one wrong letter only in answers of 6+ letters, with a spelling note', () => {

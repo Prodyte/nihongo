@@ -22,4 +22,8 @@ describe('choices', () => {
   it('returns fewer options when the pool is small', () => {
     expect(choices(pool[2], [pool[2], pool[3]])).toHaveLength(2)
   })
+  it('draws distractors from the asked card\'s own deck', () => {
+    const words = ['water', 'tree', 'book', 'dog'].map((g): StoredCard => ({ ...c(g, g), deck: 'words' }))
+    for (let k = 0; k < 20; k++) expect(choices(words[0], [...pool, ...words]).sort()).toEqual(['book', 'dog', 'tree', 'water'])
+  })
 })

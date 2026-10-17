@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
 import { kanaToRomaji } from './romaji'
 import jlptWords from '../data/jlpt/words.json'
-import { interleave, ITEMS, LESSONS, registerItem, SECTIONS, starterTwin, UNITS } from './course'
+import { interleave, ITEMS, LEGACY_ID, LESSONS, registerItem, SECTIONS, starterTwin, UNITS } from './course'
 import { VOCAB_UNITS } from './vocab'
 
 // the vocabulary's romaji is checked against the production kana -> romaji converter (こんにちは/こんばんは: は is read "wa")
@@ -116,7 +116,7 @@ describe('JLPT words', () => {
   it('every JLPT word is taught once (or by its starter twin): none lost', () => {
     const taught = new Set(LESSONS.flatMap((l) => l.items))
     for (const [, w, r, g] of jlptWords as [number, string, string, string][]) {
-      const id = `w:${w || r}`
+      const id = `w:${LEGACY_ID[w] ?? (w || r)}`
       expect(taught.has(id) || !!starterTwin(w || r, r, g, starter), id).toBe(true)
     }
   })
@@ -128,6 +128,7 @@ describe('JLPT words', () => {
     expect(ITEMS.get('w:ない')).toMatchObject({ jp: 'ない', romaji: 'nai' })
     expect(ITEMS.get('w:ない')!.written).toBeUndefined()
     expect(ITEMS.get('w:時間')).toMatchObject({ jp: 'じかん', written: '時間', romaji: 'jikan', sound: 'jikan', level: 5 })
+    expect(ITEMS.get('w:落る')).toMatchObject({ jp: 'おちる', written: '落ちる' }) // corrected spelling, old id kept
   })
 })
 
