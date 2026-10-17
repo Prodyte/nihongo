@@ -160,6 +160,21 @@ const MIME: Record<string, string> = {
   mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac',
 }
 
+const TOMBS = 'nihongo.deletedDecks'
+/** Decks deleted (true) or imported again (false) on this device since its last sync, so sync drops them everywhere or brings them back. */
+export const deckTombs = (): Record<string, boolean> => {
+  try {
+    return JSON.parse(localStorage.getItem(TOMBS) ?? '{}')
+  } catch {
+    return {}
+  }
+}
+export const setDeckTombs = (t: Record<string, boolean>) => {
+  try {
+    localStorage.setItem(TOMBS, JSON.stringify(t))
+  } catch { /* private mode: a deleted deck may come back from another device */ }
+}
+
 /** Store a parsed deck. Re-importing refreshes content but keeps each card's review progress. */
 export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs'] => newFsrsCard()) {
   const tx = db.transaction(['cards', 'decks', 'media'], 'readwrite')
@@ -187,6 +202,7 @@ export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs
       if (data) await tx.objectStore('media').put({ key: mediaKey(`anki:${deckId}`, name), data, type: MIME[name.split('.').pop()!.toLowerCase()] ?? 'application/octet-stream' })
     }
   await tx.done
+  setDeckTombs({ ...deckTombs(), ...Object.fromEntries(p.decks.map((d) => [`anki:${d.id}`, false])) })
   return { added, updated, skipped: p.skipped }
 }
 
@@ -199,4 +215,5 @@ export async function deleteDeck(db: Db, id: string) {
   await tx.objectStore('media').delete(IDBKeyRange.bound(mediaKey(id, ''), mediaKey(id, '\uffff')))
   await tx.objectStore('decks').delete(id)
   await tx.done
+  setDeckTombs({ ...deckTombs(), [id]: true })
 }

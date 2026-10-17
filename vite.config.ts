@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // a new version waits for a tab screen (see App's update), never reloading mid-lesson
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,wasm,svg,png,webmanifest,json}'], // wasm: deck import must work offline; json: kanji stroke order

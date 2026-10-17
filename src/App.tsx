@@ -24,7 +24,7 @@ import { lessonById, LESSONS, UNITS } from './path/course'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, ROMAJI, type Furigana, type Romaji } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
-import { maybeSignedIn, recovery, sync } from './sync'
+import { maybeSignedIn, recovery, sync, update } from './sync'
 
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
 type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
@@ -70,6 +70,9 @@ export default function App() {
   const phone = !useMedia('(min-width: 48rem)') // bottom tabs, and a top bar for the logo and account
   const sidebar = useMedia('(min-width: 64rem)') // navigation down the left, More's pages listed in it
   const [gen, setGen] = useState(0) // bumped when a background sync changes local data: screens remount and reload
+  const [shown, setShown] = useState(0) // the gen on screen: it catches up on a tab, so a lesson or test isn't restarted
+  const onTab = TAB_OF[view] === view
+  if (onTab && shown !== gen) setShown(gen)
   const [, setTick] = useState(0)
   const rerender = () => setTick((t) => t + 1) // sign-in state changed on Settings or Account: redraw the header, keep the page and its message
   const [session, setSession] = useState<Config>(config) // what the running review studies (Today's doesn't change the Review tab)
@@ -110,7 +113,7 @@ export default function App() {
         }
         void navigator.storage?.persist?.()?.catch(() => {}) // best effort: stops the browser evicting progress under storage pressure
         // signed in: pull other devices' progress before the first screen, so nobody starts a lesson on stale data
-        // ponytail: past 5 s it finishes in the background and remounts the screens; fine unless the network is very slow
+        // ponytail: past 5 s it finishes in the background and remounts the screens (on the next tab); fine unless the network is very slow
         if (maybeSignedIn()) {
           const pulled = sync(d).then((c) => { if (c) setGen((g) => g + 1) }, () => {})
           await Promise.race([pulled, new Promise((r) => setTimeout(r, 5000))])
@@ -125,6 +128,10 @@ export default function App() {
     document.addEventListener('visibilitychange', away)
     return () => document.removeEventListener('visibilitychange', away)
   }, [db])
+  useEffect(() => {
+    update.ready = () => { const f = onTab && update.apply; if (f) { update.apply = null; f() } }
+    update.ready()
+  }, [onTab])
   useEffect(() => { window.scrollTo(0, 0) }, [view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
   useEffect(() => {
     // refreshed on every screen change, so a finished kanji lesson drops its furigana straight away
@@ -163,7 +170,7 @@ export default function App() {
           {account}
         </header>
       )}
-      <main key={gen} className={focused ? 'focused' : 'with-nav'}>
+      <main key={shown} className={focused ? 'focused' : 'with-nav'}>
         {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
         {/* one h1 for screen readers; the logo is drawn in the top bar (phones) or the side/top navigation (wider screens) */}
         <h1 className="visually-hidden">Nihongo</h1>

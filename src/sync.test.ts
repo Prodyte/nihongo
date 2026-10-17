@@ -1,8 +1,23 @@
+// @vitest-environment jsdom
 import 'fake-indexeddb/auto'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { exportBackup } from './db/backup'
-import { openDb, seedKana } from './db/db'
-import { merge } from './sync'
+import { deckTombs, deleteDeck, openDb, seedKana, setDeckTombs } from './db/db'
+import { newFsrsCard } from './srs/scheduler'
+import { exclusive, merge, switchAccount, sync, syncedUser } from './sync'
+
+// a fake Supabase holding one progress row
+const cloud = vi.hoisted(() => ({ row: null as unknown, user: 'u1' }))
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    auth: { getSession: async () => ({ data: { session: { user: { id: cloud.user, email: 'a@b.c' } } } }) },
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: cloud.row && { data: cloud.row }, error: null }) }) }),
+      upsert: async ({ data }: { data: unknown }) => { cloud.row = data; return { error: null } },
+    }),
+  }),
+}))
+beforeEach(() => { localStorage.clear(); localStorage.setItem('sb-mlvhkclvuporivwznhcq-auth-token', '1'); cloud.row = null; cloud.user = 'u1' })
 
 const card = (id: string, reps: number, last?: string) => ({ id, deck: 'vocab', front: id, back: [id], fsrs: { reps, last_review: last } })
 
@@ -22,6 +37,67 @@ describe('merge', () => {
     const db = await openDb('sync-test')
     await seedKana(db)
     const s = JSON.parse(await exportBackup(db))
-    expect(merge(s, s)).toEqual(s)
+    expect(merge(s, s)).toEqual({ ...s, deletedDecks: [] })
+  })
+  it("a deck deleted on either side is dropped with its cards and their reviews; other decks' stay", () => {
+    const side = (deletedDecks: string[]) => ({ cards: [{ ...card('a1', 1), deck: 'anki:1' }, card('v', 1)], reviews: [{ cardId: 'a1', at: '2026-01-01T00:00:00Z' }, { cardId: 'v', at: '2026-01-01T00:00:00Z' }], decks: [{ id: 'anki:1', name: 'A' }, { id: 'vocab', name: 'V' }], lessons: [], activity: [], deletedDecks })
+    for (const m of [merge(side(['anki:1']), side([])), merge(side([]), side(['anki:1']))]) {
+      expect(m.cards.map((c) => c.id)).toEqual(['v'])
+      expect(m.reviews.map((r) => r.cardId)).toEqual(['v'])
+      expect(m.decks.map((d) => d.id)).toEqual(['vocab'])
+      expect(m.deletedDecks).toEqual(['anki:1'])
+    }
+  })
+})
+
+describe('sync', () => {
+  it("no account row yet: pushes this device's data and reports no change", async () => {
+    const db = await openDb('sync-first')
+    await seedKana(db)
+    expect(await sync(db)).toBe(false)
+    expect((cloud.row as { cards: unknown[] }).cards).toHaveLength(JSON.parse(await exportBackup(db)).cards.length)
+    expect(syncedUser()).toBe('u1')
+  })
+  it("a deck deleted here is deleted from the account's copy and stays deleted", async () => {
+    const db = await openDb('sync-tombstone')
+    await db.put('decks', { id: 'anki:1', name: 'A' })
+    await db.put('cards', { id: 'a1', deck: 'anki:1', front: 'a', back: ['a'], fsrs: newFsrsCard() })
+    await sync(db)
+    expect((cloud.row as { decks: unknown[] }).decks).toHaveLength(1)
+    await deleteDeck(db, 'anki:1')
+    expect(deckTombs()).toEqual({ 'anki:1': true })
+    await sync(db)
+    expect(await db.getAll('decks')).toEqual([])
+    expect(cloud.row).toMatchObject({ decks: [], deletedDecks: ['anki:1'] })
+    expect(deckTombs()).toEqual({}) // the account remembers it now
+    await db.put('decks', { id: 'anki:1', name: 'A' }) // imported again (saveImport marks it so)
+    setDeckTombs({ 'anki:1': false })
+    await sync(db)
+    expect(cloud.row).toMatchObject({ decks: [{ id: 'anki:1' }], deletedDecks: [] })
+  })
+  it('another account signing in must choose: replace swaps in its progress (none: a fresh start), then syncs', async () => {
+    const db = await openDb('sync-switch')
+    await seedKana(db)
+    await db.put('lessons', { id: 'l1', completedAt: new Date(), plays: 1, bestAccuracy: 1 })
+    await sync(db)
+    cloud.user = 'u2'
+    cloud.row = null
+    await expect(sync(db)).rejects.toThrow(/another account/)
+    await switchAccount(db, true)
+    expect(await sync(db)).toBe(false)
+    expect(await db.count('lessons')).toBe(0)
+    expect(await db.count('cards')).toBeGreaterThan(0) // kana seeded again
+    expect(syncedUser()).toBe('u2')
+  })
+  it('a sync asked for during an exclusive step (a restore) is skipped, and syncs run again after it', async () => {
+    const db = await openDb('sync-exclusive')
+    let done = () => {}
+    const step = exclusive(() => new Promise<void>((r) => { done = r }))
+    expect(await Promise.race([sync(db), new Promise((r) => setTimeout(() => r('blocked'), 50))])).toBe('blocked')
+    done()
+    await step
+    cloud.row = null
+    expect(await sync(db)).toBe(false)
+    expect(cloud.row).not.toBeNull() // this one really ran
   })
 })

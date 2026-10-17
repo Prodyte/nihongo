@@ -5,15 +5,18 @@ import { afterEach, expect, it, vi } from 'vitest'
 import type { Db } from '../db/db'
 
 const auth = { resetPasswordForEmail: vi.fn(async () => ({ error: null })), updateUser: vi.fn(async () => ({ error: null })) }
-const state = vi.hoisted(() => ({ email: null as string | null, recovery: { pending: false, error: null as string | null } }))
+const state = vi.hoisted(() => ({ email: null as string | null, synced: null as string | null, recovery: { pending: false, error: null as string | null } }))
+const switchAccount = vi.fn(async () => {})
 vi.mock('../sync', () => ({
   recovery: state.recovery,
   endRecovery: () => { state.recovery.pending = false },
   takeLinkError: () => { const e = state.recovery.error; state.recovery.error = null; return e },
-  session: async () => (state.email ? { user: { email: state.email } } : null),
+  session: async () => (state.email ? { user: { id: state.email, email: state.email } } : null),
   supabase: async () => ({ auth }),
   sync: async () => false,
   lastSync: () => null,
+  syncedUser: () => state.synced,
+  switchAccount,
 }))
 const { Account } = await import('./Account')
 
@@ -54,4 +57,26 @@ it("an expired link's error is shown once", async () => {
   render(<Account db={{} as Db} onSynced={() => {}} />)
   await screen.findByRole('heading', { name: 'Sign in' })
   expect(screen.queryByRole('status')).toBeNull()
+})
+
+it("another account synced here last: Sync now asks first, Cancel on both questions changes nothing, and replacing needs its own yes", async () => {
+  state.email = 'b@b.c'
+  state.synced = 'a@b.c'
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  const user = userEvent.setup()
+  render(<Account db={{} as Db} onSynced={() => {}} />)
+  await screen.findByText(/Sync is paused/)
+  await user.click(await screen.findByRole('button', { name: 'Sync now' }))
+  expect(confirm).toHaveBeenCalledTimes(2)
+  expect(switchAccount).not.toHaveBeenCalled()
+  screen.getByText(/Not synced/)
+  confirm.mockReturnValueOnce(false).mockReturnValueOnce(true) // no to adding, yes to replacing
+  await user.click(screen.getByRole('button', { name: 'Sync now' }))
+  expect(switchAccount).toHaveBeenCalledWith({}, true)
+  confirm.mockClear()
+  state.synced = 'b@b.c' // same account: no question
+  await user.click(screen.getByRole('button', { name: 'Sync now' }))
+  expect(confirm).not.toHaveBeenCalled()
+  state.synced = null
+  confirm.mockRestore()
 })

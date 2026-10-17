@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Db } from '../db/db'
 import { Icon } from '../icons'
-import { endRecovery, lastSync, recovery, session, supabase, sync, takeLinkError } from '../sync'
+import { endRecovery, lastSync, recovery, session, supabase, switchAccount, sync, syncedUser, takeLinkError } from '../sync'
 
 /** Sign in and keep progress in sync across devices. */
 export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
@@ -18,7 +18,12 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
   })
 
   useEffect(() => {
-    void session().then((s) => setEmail(s?.user.email ?? null), () => setEmail(null))
+    void session().then((s) => {
+      setEmail(s?.user.email ?? null)
+      // signed in from an email link: background sync pauses until Sync now settles whose progress this is
+      const prev = syncedUser()
+      if (s && prev && prev !== s.user.id) setStatus({ text: 'Sync is paused: this device last synced with a different account. Choose Sync now to decide what happens to its progress.', bad: true })
+    }, () => setEmail(null))
   }, [])
 
   const act = (f: () => Promise<void>) => async () => {
@@ -33,6 +38,14 @@ export function Account({ db, onSynced }: { db: Db; onSynced: () => void }) {
     }
   }
   const syncNow = async () => {
+    const s = await session()
+    const prev = syncedUser()
+    // another account synced here last: its progress must not slip into this one unasked, nor be erased by a Cancel meant as "not now"
+    if (s && prev && prev !== s.user.id) {
+      if (window.confirm(`This device last synced with a different account. Add this device's progress to ${s.user.email}?`)) await switchAccount(db, false)
+      else if (window.confirm(`Replace this device's progress with ${s.user.email}'s instead? What is on this device now is erased.`)) await switchAccount(db, true)
+      else return setStatus({ text: 'Not synced: this device still holds the other account’s progress.', bad: true })
+    }
     if (await sync(db)) onSynced()
     setStatus({ text: 'Synced.' })
   }
