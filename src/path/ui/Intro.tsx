@@ -5,6 +5,7 @@ import { written, type Item } from '../course'
 import { Example } from './Example'
 import { fit, useRomaji } from './furigana'
 import { Mnemonic } from './Mnemonic'
+import { Pitch } from './Pitch'
 
 export function Intro({ item, autoplay, onDone }: { item: Item; autoplay: boolean; onDone: (missed: string[]) => void }) {
   const romaji = useRomaji()
@@ -24,6 +25,7 @@ export function Intro({ item, autoplay, onDone }: { item: Item; autoplay: boolea
         </div>
       ) : <div className="kana" lang="ja" style={fit(written(item), item.jp)}>{written(item)}</div>}
       {item.kind === 'word' && reading.length > 0 && <div className="reading">{reading.map((r, i) => <span key={i}>{i > 0 && ' · '}{r}</span>)}</div>}
+      <Pitch item={item} />
       <div className="answer">{item.gloss} <SpeakButton text={item.jp} /></div>
       <Mnemonic item={item} />
       <Example item={item} />
