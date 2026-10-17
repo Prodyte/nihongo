@@ -37,8 +37,8 @@ it('sections by level: only the one holding the current lesson is open', async (
   render(<Path db={db} onStart={() => {}} onTest={() => {}} />)
   await screen.findByRole('heading', { name: 'JLPT N5' })
   const sections = [...document.querySelectorAll<HTMLDetailsElement>('details.section')]
-  expect(sections.map((d) => d.querySelector('h2')!.textContent)).toEqual(['Kana', 'First words and sentences', 'JLPT N5', 'JLPT N4', 'JLPT N3'])
-  expect(sections.map((d) => d.open)).toEqual([false, false, true, false, false])
+  expect(sections.map((d) => d.querySelector('h2')!.textContent)).toEqual(['Kana', 'First words and sentences', 'JLPT N5', 'JLPT N4', 'JLPT N3', 'JLPT N2'])
+  expect(sections.map((d) => d.open)).toEqual([false, false, true, false, false, false])
   expect(sections[0].querySelector('summary small')!.textContent).toBe('✓ Done')
   expect(screen.getByRole('button', { name: new RegExp(`^Continue: ${LESSONS[68].title}`) })).toBeTruthy()
   await userEvent.click(sections[4].querySelector('summary')!) // opening a folded section shows its units

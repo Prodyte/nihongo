@@ -564,3 +564,18 @@ ul.mock-missed small { color: var(--muted); flex-basis: 100%; }
 .mock-entry .row2 button { display: grid; gap: .1rem; min-width: 5rem; }
 .mock-entry .row2 small { color: var(--muted); font-weight: 400; }
 .card.mock-entry { align-items: stretch; text-align: left; margin-top: 1rem; }
+
+/* Pitch accent: a line over the high morae, a drop mark after the accent (Pitch.tsx) */
+.pitch { display: flex; flex-wrap: wrap; justify-content: center; gap: .25rem 1rem; font-size: 1.1rem; color: var(--muted); }
+.pitch > span { display: inline-flex; padding-top: .3em; }
+.pitch > span > span { padding: .1em .05em 0; border-top: 2px solid transparent; }
+.pitch .hi { border-top-color: currentColor; }
+.pitch .drop { border-right: 2px solid currentColor; }
+.pitch .tail { width: .6em; } /* heiban: the line runs on into what follows */
+ul.results .pitch { justify-content: flex-start; }
+
+/* Listening (and Reading's look-up popup, which can save the word: Study this goes on its own line) */
+.lookup-pop { flex-wrap: wrap; }
+.lookup-pop > .row2 { flex-basis: 100%; }
+.transcript .said { display: flex; align-items: baseline; gap: .6rem; }
+.transcript .who { flex: none; display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--indigo-soft); color: var(--indigo); font-size: .9rem; }

@@ -7,8 +7,9 @@ import wordRows from './words.json'
 const words = wordRows as [number, string, string, string][]
 const kanji = kanjiRows as [string, number, string[], string[], string[], number][]
 
-it('words: N5, then N4, then N3; about 3,400 of them, each written once', () => {
-  expect(words.length).toBeGreaterThan(3300)
+it('words: N5, then N4, then N3, then N2; about 5,000 of them, each written once', () => {
+  expect(words.length).toBeGreaterThan(4900)
+  expect(words.filter((w) => w[0] === 2).length).toBeGreaterThan(1600)
   const levels = words.map((w) => w[0])
   expect(levels).toEqual([...levels].sort((a, b) => b - a))
   const keys = words.map(([, k, r]) => k || r)
@@ -32,9 +33,10 @@ it('words: every reading has romaji, and typing that romaji gives the reading ba
   }
 })
 
-it('kanji: 612 for N5-N3 in level order, each with a meaning and a reading', () => {
-  expect(kanji).toHaveLength(612)
+it('kanji: 979 for N5-N2 in level order, each with a meaning and a reading', () => {
+  expect(kanji).toHaveLength(979)
   expect(kanji.filter((k) => k[1] === 5)).toHaveLength(79)
+  expect(kanji.filter((k) => k[1] === 2)).toHaveLength(367)
   const levels = kanji.map((k) => k[1])
   expect(levels).toEqual([...levels].sort((a, b) => b - a))
   for (const [c, , meanings, on, kun, strokes] of kanji) {

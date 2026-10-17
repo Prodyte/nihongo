@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { contentChunks, grammarWords, ITEMS, LESSONS, wordFor, written } from './course'
+import { N2_GRAMMAR } from './grammarN2'
 import { N3_GRAMMAR } from './grammarN3'
 import { N4_GRAMMAR } from './grammarN4'
 import { N5_GRAMMAR } from './grammarN5'
@@ -7,7 +8,7 @@ import { readingOf, surfaceOf } from './romaji'
 
 const HAN = /\p{Script=Han}/u
 
-describe.each([[5, N5_GRAMMAR], [4, N4_GRAMMAR], [3, N3_GRAMMAR]] as const)('N%i grammar', (level, specs) => {
+describe.each([[5, N5_GRAMMAR], [4, N4_GRAMMAR], [3, N3_GRAMMAR], [2, N2_GRAMMAR]] as const)('N%i grammar', (level, specs) => {
   const lessons = LESSONS.filter((l) => l.id.startsWith(`n${level}-g-`))
   const sentences = lessons.flatMap((l) => l.items.map((id) => ITEMS.get(id)!))
   const words = grammarWords(level)
@@ -39,7 +40,7 @@ describe.each([[5, N5_GRAMMAR], [4, N4_GRAMMAR], [3, N3_GRAMMAR]] as const)('N%i
         expect(readingOf(t), `${s.id}: ${t}`).toMatch(/^[ぁ-んァ-ヶー]+$/)
         expect(surfaceOf(t), `${s.id}: ${t}`).not.toMatch(/[[\]]/)
         const w = words.find((x) => x.written === surfaceOf(t) && HAN.test(surfaceOf(t))) // JLPT words (a starter word's kanji is only a hint)
-        if (w && !['何', '背'].includes(w.written!)) expect(readingOf(t), `${s.id}: ${t} is read ${w.jp}`).toBe(w.jp) // 何 なに/なん and 背 せ/せい both have two readings
+        if (w && !['何', '背', '気味'].includes(w.written!)) expect(readingOf(t), `${s.id}: ${t} is read ${w.jp}`).toBe(w.jp) // 何 なに/なん and 背 せ/せい both have two readings; 気味 is ぎみ after a word (疲れ気味)
       }
   })
   it('sentences are unique in Japanese and English; written forms keep kanji, jp is all kana', () => {

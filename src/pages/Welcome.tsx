@@ -8,7 +8,7 @@ const LEVELS: [StartLevel, string, string][] = [
   ['basics', 'I know some basic words and grammar', 'Take a short test and skip to JLPT N5.'],
 ]
 const FEATURES: [IconName, string, string][] = [
-  ['path', 'A path from zero to JLPT N3', 'Kana, 3,400 words, 600 kanji and grammar, in short lessons.'],
+  ['path', 'A path from zero to JLPT N2', 'Kana, 5,000 words, 1,000 kanji and grammar, in short lessons.'],
   ['review', 'Reviews that stick', 'Spaced repetition brings each word back just before you’d forget it.'],
   ['mic', 'Speak, listen, read and write', 'Practise out loud, read short stories, and write kanji by hand.'],
 ]

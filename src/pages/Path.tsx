@@ -19,7 +19,7 @@ function Fold({ open: initial, className, summary, children }: { open: boolean; 
   )
 }
 
-const SECTION_NAMES: Record<string, string> = { Kana: 'Kana', Starter: 'First words and sentences', N5: 'JLPT N5', N4: 'JLPT N4', N3: 'JLPT N3' }
+const SECTION_NAMES: Record<string, string> = { Kana: 'Kana', Starter: 'First words and sentences', N5: 'JLPT N5', N4: 'JLPT N4', N3: 'JLPT N3', N2: 'JLPT N2' }
 
 export function Path({ db, onStart, onTest }: { db: Db; onStart: (lessonId: string) => void; onTest: (unitId: string) => void }) {
   const [done, setDone] = useState<ReadonlySet<string> | null>(null)

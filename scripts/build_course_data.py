@@ -15,7 +15,7 @@ from wordfreq import get_frequency_dict
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / 'data' / 'raw'
 OUT = ROOT / 'src' / 'data' / 'jlpt'
-LEVELS = [5, 4, 3]
+LEVELS = [5, 4, 3, 2]
 MAX_GLOSS = 40  # characters: longer glosses crowd the answer buttons
 
 # Hand fixes, keyed by the raw (expression, reading). None drops the entry.
@@ -42,7 +42,39 @@ OVERRIDES = {
     ('終る', 'おわる'): ('終わる', 'おわる', 'to finish, to end'),
     ('楽む', 'たのしむ'): ('楽しむ', 'たのしむ', 'to enjoy'),
     ('ゆっくりと', 'ゆっくりと'): ('', 'ゆっくり', 'slowly, at ease'),
+    # N2: two words in one entry, or a note in brackets
+    ('下品(な)', 'げひん(な)'): ('下品', 'げひん', 'vulgar'),
+    ('朗らか(な)', 'ほがらか(な)'): ('朗らか', 'ほがらか', 'cheerful, merry'),
+    ('こうよう もみじ', 'こうよう もみじ'): ('紅葉', 'もみじ', 'maple, autumn leaves'),
+    ('しかく しかくい', 'しかく しかくい'): ('四角', 'しかく', 'square'),
+    ('じゅうたん (カーペット)', 'じゅうたん (カーペット)'): ('', 'じゅうたん', 'carpet'),
+    ('だいいち (とりわけ)', 'だいいち (とりわけ)'): ('第一', 'だいいち', 'first, foremost'),
+    ('×', 'ばつ'): ('', 'ばつ', 'cross (× mark)'),
+    ('ミリ (メートル)', 'ミリ (メートル)'): ('', 'ミリ', 'millimetre, milli-'),
+    ('レクリェーション', 'レクリェーション'): ('', 'レクリエーション', 'recreation'),  # standard spelling (ェ has no romaji)
+    # N2 glosses too long for the answer buttons, or with Japanese or source notes in them
+    ('学部', 'がくぶ'): ('学部', 'がくぶ', 'faculty, department (university)'),
+    ('自宅', 'じたく'): ('自宅', 'じたく', "one's own home"),
+    ('親類', 'しんるい'): ('親類', 'しんるい', 'relative(s)'),
+    ('長短', 'ちょうたん'): ('長短', 'ちょうたん', 'length, long and short'),
+    ('うどん', 'うどん'): ('', 'うどん', 'udon noodles'),
+    ('ぜひとも', 'ぜひとも'): ('', 'ぜひとも', 'by all means'),
+    ('漢和', 'かんわ'): ('漢和', 'かんわ', 'Chinese-Japanese (dictionary)'),
+    ('テーマ', 'テーマ'): ('', 'テーマ', 'theme, topic'),
+    ('コンクール', 'コンクール'): ('', 'コンクール', 'contest'),
+    ('かるた', 'かるた'): ('', 'かるた', 'playing cards'),
+    ('ペンチ', 'ペンチ'): ('', 'ペンチ', 'pliers'),
+    # greetings the N2 list includes: the starter units teach them, so they would count as N2 words
+    ('お願いします', 'おねがいします'): None,
+    ('おはよう', 'おはよう'): None,
+    ('こんばんは', 'こんばんは'): None,
+    ('さようなら', 'さようなら'): None,
+    ('はじめまして', 'はじめまして'): None,
+    ('どういたしまして (かん)', 'どういたしまして (かん)'): None,
 }
+# Misspellings fixed after ordering: the word keeps the place its source spelling's frequency gave it, so saved lessons
+# keep their words (its id stays the old one too: LEGACY_ID in src/path/course.ts).
+RESPELL = {'落る': '落ちる'}
 # Basic words the lists leave out (or put too late), added at N5: the grammar lessons need them.
 EXTRA_N5 = [('日本', 'にほん', 'Japan'), ('日本語', 'にほんご', 'Japanese (language)')]
 
@@ -107,19 +139,19 @@ def words():
                 continue
             # one entry per written form: 文字 もじ/もんじ is one word, and 上 うえ/かみ/じょう or 金 かね/きん would show the same
             # prompt with two right answers. The first (easiest level, listed first) reading wins.
-            key = c[0] or c[1]
+            key = RESPELL.get(c[0], c[0]) or c[1]
             if key in seen:
                 continue  # listed twice (two levels or two readings): keep the first
             seen.add(key)
             f = max(freq.get(c[0] or c[1], 0), freq.get(c[1], 0) if not c[0] else 0)
-            rows.append((-f, i, [level, *c]))
+            rows.append((-f, i, [level, RESPELL.get(c[0], c[0]), *c[1:]]))
         out += [r for _, _, r in sorted(rows)]
     print(f'{len(out)} words, {len(skipped)} skipped as affixes/patterns', file=sys.stderr)
     return out
 
 
 def kanji():
-    raw = json.load(open(RAW / 'kanji-n5-n3.json', encoding='utf-8'))
+    raw = json.load(open(RAW / 'kanji-n5-n2.json', encoding='utf-8'))
     order = sorted(raw, key=lambda k: (-raw[k]['jlpt_new'], raw[k]['freq'] or 9999))
     out = []
     for k in order:

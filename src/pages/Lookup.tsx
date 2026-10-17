@@ -9,6 +9,7 @@ import { loadStrokes } from '../path/strokes'
 import { Example } from '../path/ui/Example'
 import { useRomaji } from '../path/ui/furigana'
 import { Mnemonic } from '../path/ui/Mnemonic'
+import { Pitch } from '../path/ui/Pitch'
 import { Strokes } from '../path/ui/Strokes'
 import { WriteBoard } from '../path/ui/WriteBoard'
 
@@ -55,7 +56,7 @@ export function Lookup({ db }: { db: Db }) {
         </label>
       )}
       <p role="status" className="hint">{byPart ? (sel.length ? `${parts.kanji.length} kanji with ${sel.join(' + ')}` : 'Pick parts to find the kanji made of them.')
-        : q.trim() ? (results.length ? `${results.length === MAX ? `First ${MAX}` : results.length} result${results.length === 1 ? '' : 's'}` : 'Nothing found in the course.') : `${ENTRIES.length} words and kanji from kana to N3.`}</p>
+        : q.trim() ? (results.length ? `${results.length === MAX ? `First ${MAX}` : results.length} result${results.length === 1 ? '' : 's'}` : 'Nothing found in the course.') : `${ENTRIES.length} words and kanji from kana to N2.`}</p>
       {!byPart && !q.trim() && saved.length > 0 && <h3>Saved words</h3>}
       <ul className="results">
         {list.map((it) => {
@@ -74,7 +75,7 @@ export function Lookup({ db }: { db: Db }) {
                 </span>
               </>}>
                 <Study db={db} it={it} card={card} onCard={onCard} />
-                {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <>{romaji && <p className="hint">{it.romaji}</p>}<Mnemonic item={it} /><Example item={it} /></>}
+                {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <><Pitch item={it} />{romaji && <p className="hint">{it.romaji}</p>}<Mnemonic item={it} /><Example item={it} /></>}
                 <a href={`https://jisho.org/search/${encodeURIComponent((it.written ?? it.kanji ?? written(it)) + (it.kind === 'kanji' ? ' #kanji' : ''))}`} target="_blank" rel="noopener noreferrer">
                   Jisho<span aria-hidden="true">{'\u00a0↗'}</span><span className="visually-hidden"> (opens in a new tab)</span>
                 </a>
@@ -88,7 +89,7 @@ export function Lookup({ db }: { db: Db }) {
 }
 
 /** "Study this": saves the item and makes its card now (so it comes up in Review); unsaving keeps a card already reviewed. */
-function Study({ db, it, card, onCard }: { db: Db; it: Item; card?: StoredCard; onCard: (id: string, c: StoredCard | undefined) => void }) {
+export function Study({ db, it, card, onCard }: { db: Db; it: Item; card?: StoredCard; onCard: (id: string, c: StoredCard | undefined) => void }) {
   const on = (card?.saved ?? 0) > 0
   const toggle = () => void setSaved(db, it, !on).then((c) => onCard(it.id, c), () => {}) // a double tap asks for the same state twice: harmless
   return (

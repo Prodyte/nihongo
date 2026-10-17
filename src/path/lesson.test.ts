@@ -122,6 +122,18 @@ describe('writing', () => {
     }
     expect(buildLesson(lessonById('n5-v-1')!, ITEMS, { canSpeak: true, canWrite: true, learned: new Set() }).some((e) => e.type === 'write')).toBe(false)
   })
+  it('kana lessons trace each new hiragana, then write two from their romaji; a replay only writes from memory; combined sounds never write', () => {
+    const writes = (id: string, learned: Set<string>, canWrite = true) => buildLesson(lessonById(id)!, ITEMS, { canSpeak: true, canWrite, learned, rand: seeded(3) }).filter((e): e is Extract<Exercise, { type: 'write' }> => e.type === 'write')
+    const l = lessonById('kana-basic-2')! // か き く け こ
+    const w = writes(l.id, new Set())
+    expect(w.filter((e) => e.guide).map((e) => e.item.jp)).toEqual([...'かきくけこ'])
+    expect(w.filter((e) => !e.guide)).toHaveLength(2)
+    expect(w.every((e) => e.item.script === 'hira' && e.item.kind === 'kana')).toBe(true)
+    expect(writes(l.id, new Set(l.items)).map((e) => e.guide)).toEqual([false, false])
+    expect(writes(l.id, new Set(), false)).toEqual([])
+    expect(writes('kana-voiced-3', new Set()).filter((e) => !e.guide).map((e) => e.item.gloss)).not.toContain('ji') // ぢ and じ are both "ji"
+    expect(writes('kana-combos-1', new Set())).toEqual([])
+  })
 })
 
 describe('kanji lessons', () => {
@@ -146,8 +158,8 @@ describe('kanji lessons', () => {
   })
   it('most kanji have example words; examples are course words written with that kanji', () => {
     const kanji = [...ITEMS.values()].filter((i) => i.kind === 'kanji')
-    expect(kanji).toHaveLength(612)
-    expect(kanji.filter((k) => k.examples!.length > 0).length).toBeGreaterThan(560)
+    expect(kanji).toHaveLength(979)
+    expect(kanji.filter((k) => k.examples!.length > 0).length).toBeGreaterThan(900)
     for (const k of kanji) for (const id of k.examples!) expect((ITEMS.get(id)!.written ?? ITEMS.get(id)!.kanji)!, k.jp).toContain(k.jp)
     expect(ITEMS.get('kanji:日')).toMatchObject({ gloss: 'day, sun, japan', on: ['にち', 'じつ'], strokes: 4, level: 5 })
   })

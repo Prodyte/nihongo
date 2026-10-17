@@ -2,6 +2,7 @@ import { KANA, toHira, toKata } from '../data/kana'
 import jlptKanji from '../data/jlpt/kanji.json'
 import jlptWords from '../data/jlpt/words.json'
 import { GRAMMAR_LESSONS, GRAMMAR_UNIT, type GrammarLessonSpec } from './grammar'
+import { N2_GRAMMAR } from './grammarN2'
 import { N3_GRAMMAR } from './grammarN3'
 import { N4_GRAMMAR } from './grammarN4'
 import { N5_GRAMMAR } from './grammarN5'
@@ -22,7 +23,7 @@ export interface Item {
   sound: string // what it sounds like: items with the same sound can't be told apart by ear (お/を are both "o")
   kanji?: string // starter words: the kanji, shown as a small extra
   written?: string // JLPT words written with kanji: shown instead of jp, with jp (the reading) as furigana
-  level?: 5 | 4 | 3 // JLPT level
+  level?: Level // JLPT level
   on?: string[] // kanji: on'yomi (Chinese-derived readings), in hiragana
   kun?: string[] // kanji: kun'yomi (native readings); okurigana in brackets: ひと(つ)
   strokes?: number // kanji
@@ -97,7 +98,7 @@ function vocabUnits(): Unit[] {
 
 /** Register a grammar lesson's sentences and make the lesson. Chunks may carry furigana (学校[がっこう]): jp is then the
  * kana sentence (typed, spoken) and `written` the marked-up one (shown). */
-function grammarLesson(spec: GrammarLessonSpec, id: string, level?: 5 | 4 | 3): Lesson {
+function grammarLesson(spec: GrammarLessonSpec, id: string, level?: Level): Lesson {
   const ids = spec.sentences.map((s) => {
     const romaji = tokensToRomaji(s.tokens)
     const sid = `sent:${romaji.replace(/'/g, '').replace(/ /g, '-')}`
@@ -115,7 +116,10 @@ function grammarUnits(): Unit[] {
 
 // ---- JLPT words (src/data/jlpt, built by scripts/build_course_data.py) --------------------------------------------------
 
-const LEVELS = [5, 4, 3] as const
+export const LEVELS = [5, 4, 3, 2] as const
+export type Level = (typeof LEVELS)[number]
+/** Each level's grammar lessons, placed among its words and kanji. */
+const GRAMMAR: Record<Level, GrammarLessonSpec[]> = { 5: N5_GRAMMAR, 4: N4_GRAMMAR, 3: N3_GRAMMAR, 2: N2_GRAMMAR }
 const WORDS_PER_LESSON = 6 // like the starter units: about 20 steps a lesson
 const LESSONS_PER_UNIT = 10
 /** Source spellings of starter words that the automatic match below can't see (different gloss wording). */
@@ -143,7 +147,8 @@ export const grammarWords = (level: number) => [...ITEMS.values()].filter((w) =>
 export const GRAMMAR_CHUNKS = new Set(['です', 'でした', 'じゃありません', 'じゃありませんでした', 'でしょう', 'いけません', 'ほう', 'けど',
   'だ', 'だった', 'じゃない', 'だったら', 'なら', 'ので', 'のに', 'ように', 'よう', 'みたい', 'らしい', 'かもしれません', 'とき', 'よ', 'ね', 'つもり', 'はず',
   'ばかり', 'ところ', 'ために', 'について', 'によると', 'によって', 'として', 'にとって', 'うちに', 'まま', 'たびに', 'ほしい', 'べき', '代わりに',
-  'おかげで', 'せいで', 'という', 'とか', 'ほど', 'くらい', 'だけでなく', 'わけ', 'にも', 'では'])
+  'おかげで', 'せいで', 'という', 'とか', 'ほど', 'くらい', 'だけでなく', 'わけ', 'にも', 'では',
+  'っぽい', 'がち', 'つつ', 'かねない', 'わりに'])
 const COUNTED = /^[一二三四五六七八九十]+(人|本|枚|時|分)$/ // 五人, 二本, 三時: taught by the counters lesson
 // forms of kana-only verbs, matched by their polite or て stems (a plain prefix match would be too loose)
 // (checked before exact matches: いない is いる, not 以内; した is する, not 下)
@@ -252,7 +257,7 @@ export function pullForward(order: string[], grammar: GrammarLessonSpec[], words
 function jlptUnits(): Unit[] {
   const starter = [...ITEMS.values()].filter((i) => i.kind === 'word')
   const words = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
-  for (const [level, written, reading, gloss] of jlptWords as [5 | 4 | 3, string, string, string][]) {
+  for (const [level, written, reading, gloss] of jlptWords as [Level, string, string, string][]) {
     const twin = starterTwin(written || reading, reading, gloss, starter)
     if (twin) { twin.level ??= level; continue } // already taught (and carded) by the starter units, which now count toward this level
     const romaji = kanaToRomaji(reading)
@@ -260,10 +265,10 @@ function jlptUnits(): Unit[] {
     registerItem(ITEMS, { id, kind: 'word', jp: reading, written: written || undefined, gloss, romaji, sound: romaji, level })
     words.get(level)!.push(id)
   }
-  const allWords = [...ITEMS.values()].filter((i) => i.kind === 'word') // starter first, then N5 -> N3, most common first
+  const allWords = [...ITEMS.values()].filter((i) => i.kind === 'word') // starter first, then N5 -> N2, most common first
   words.set(5, pullForward(words.get(5)!, N5_GRAMMAR, allWords.filter((w) => w.id.startsWith('vocab:') || w.level === 5)))
   const kanji = new Map<number, string[]>(LEVELS.map((l) => [l, []]))
-  for (const [char, level, meanings, on, kun, strokes] of jlptKanji as [string, 5 | 4 | 3, string[], string[], string[], number][]) {
+  for (const [char, level, meanings, on, kun, strokes] of jlptKanji as [string, Level, string[], string[], string[], number][]) {
     const examples = allWords.filter((w) => (w.written ?? w.kanji ?? '').includes(char)).slice(0, 3).map((w) => w.id)
     registerItem(ITEMS, { id: `kanji:${char}`, kind: 'kanji', jp: char, gloss: meanings.join(', '), romaji: '', sound: `kanji:${char}`, level, on, kun: kun.map((k) => k.replace(/-/g, '〜')), strokes, examples }) // -び (a suffix form) reads as 〜び
     kanji.get(level)!.push(`kanji:${char}`)
@@ -277,7 +282,7 @@ function jlptUnits(): Unit[] {
     }))
     let path = interleave(vocab, kanjiLessons)
     // N4 words keep their frequency order (pulling them forward like N5's would move words between saved lessons)
-    const grammar = level === 5 ? N5_GRAMMAR : level === 4 ? N4_GRAMMAR : N3_GRAMMAR
+    const grammar = GRAMMAR[level]
     if (grammar.length) path = placeGrammar(path, grammar.map((spec, i) => grammarLesson(spec, `n${level}-g-${i + 1}`, level)), grammarWords(level))
     return even(path, LESSONS_PER_UNIT).map((lessons, u): Unit => {
       const chars = lessons.filter((l) => l.id.includes('-k-')).flatMap((l) => l.items.map((id) => id.slice(6)))

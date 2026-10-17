@@ -43,7 +43,7 @@ describe('byParts', () => {
 describe('coverage', () => {
   it('counts words, kanji and grammar per level from finished lessons; starter twins count toward their level', () => {
     const none = coverage(LESSONS, ITEMS, new Set())
-    expect(none.map((c) => c.level)).toEqual([5, 4, 3])
+    expect(none.map((c) => c.level)).toEqual([5, 4, 3, 2])
     expect(none[0].kanji).toEqual([0, 79])
     expect(none[0].grammar).toEqual([0, 24])
     expect(none[2].grammar).toEqual([0, 32])

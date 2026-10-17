@@ -36,8 +36,8 @@ describe('vocabulary content', () => {
 })
 
 describe('course structure', () => {
-  it('sections in order: kana, starter, then N5, N4, N3; kana lessons teach both scripts, one card per sound', () => {
-    expect(SECTIONS).toEqual(['Kana', 'Starter', 'N5', 'N4', 'N3'])
+  it('sections in order: kana, starter, then N5, N4, N3, N2; kana lessons teach both scripts, one card per sound', () => {
+    expect(SECTIONS).toEqual(['Kana', 'Starter', 'N5', 'N4', 'N3', 'N2'])
     const sections = UNITS.map((u) => u.section)
     expect(sections).toEqual([...sections].sort((a, b) => SECTIONS.indexOf(a) - SECTIONS.indexOf(b))) // each section contiguous
     // kana: one lesson per row of sounds, hiragana and katakana together (db.ts folds older per-script progress into these ids)
@@ -49,7 +49,7 @@ describe('course structure', () => {
     expect([firstOf('kana:'), firstOf('vocab:'), firstOf('sent:'), firstOf('kanji:'), firstOf('w:')]).toEqual([0, 20, 44, 48, 49])
   })
   it('JLPT units hold up to 10 lessons at one level: words (6 a lesson) and kanji (5) spread through, ids counting from 1', () => {
-    for (const level of [5, 4, 3]) {
+    for (const level of [5, 4, 3, 2]) {
       const lessons = UNITS.filter((u) => u.section === `N${level}`).flatMap((u) => u.lessons)
       for (const [kind, prefix, size] of [['word', 'v', 6], ['kanji', 'k', 5]] as const) {
         const mine = lessons.filter((l) => l.id.startsWith(`n${level}-${prefix}-`))
@@ -71,8 +71,13 @@ describe('course structure', () => {
     expect(sample).toMatchSnapshot()
     // and every JLPT lesson: if this changes, saved progress would point at other words. Append new words at the end of a
     // level (or migrate saved lessons) instead of regenerating the order.
-    const all = LESSONS.filter((l) => /^n\d-/.test(l.id)).map((l) => `${l.id}=${l.items.join(',')}`).join('\n')
+    const all = LESSONS.filter((l) => /^n[543]-/.test(l.id)).map((l) => `${l.id}=${l.items.join(',')}`).join('\n')
     expect(createHash('sha256').update(all).digest('hex')).toMatchSnapshot()
+  })
+  it('N2 lesson ids map to the same words as when N2 was added', () => {
+    const lessons = LESSONS.filter((l) => /^n2-[vk]-/.test(l.id)) // words and kanji: N2 grammar lessons, when written, go in between
+    expect(Object.fromEntries(['n2-v-1', 'n2-v-100', 'n2-k-1'].map((id) => [id, lessons.find((l) => l.id === id)?.items]))).toMatchSnapshot()
+    expect(createHash('sha256').update(lessons.map((l) => `${l.id}=${l.items.join(',')}`).join('\n')).digest('hex')).toMatchSnapshot()
   })
   it('every lesson has 1-6 items that all exist, and ids/titles are unique and non-empty', () => {
     for (const l of LESSONS) {
@@ -89,7 +94,7 @@ describe('course structure', () => {
     for (const k of KANA.filter((x) => x.script === 'hira')) expect(counts.get(`kana:${k.kana}`), k.kana).toBe(1) // one card per sound, both scripts
     expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('vocab:'))).toHaveLength(144)
     expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('w:')).length).toBeGreaterThan(3200)
-    expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('sent:'))).toHaveLength(24 + 144 + 192 + 192)
+    expect(LESSONS.flatMap((l) => l.items).filter((id) => id.startsWith('sent:'))).toHaveLength(24 + 144 + 192 + 192 + 192)
     for (const [id, n] of counts) expect(n, id).toBe(1)
   })
   it('items carry the right fields', () => {

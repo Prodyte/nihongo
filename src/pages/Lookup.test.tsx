@@ -2,13 +2,13 @@
 import 'fake-indexeddb/auto'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { openDb } from '../db/db'
 import { ITEMS, LESSONS } from '../path/course'
 import { completeLesson } from '../path/progress'
 import { Lookup } from './Lookup'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 it('typing a search lists matches with level and learning state, and a Jisho link', async () => {
   const db = await openDb('lookup-1')
@@ -55,4 +55,14 @@ it('Kanji by parts: picking parts lists the kanji made of all of them and dims p
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Clear parts' })) // focus stays put
   expect(screen.queryAllByRole('listitem')).toHaveLength(0)
   expect((screen.getByRole('button', { name: '門 gate' }) as HTMLButtonElement).disabled).toBe(false)
+})
+
+it('an opened word shows its pitch accent', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => (url.endsWith('accents.json') ? new Response(JSON.stringify({ '時間|じかん': [0] })) : new Response('', { status: 404 }))))
+  const user = userEvent.setup()
+  render(<Lookup db={await openDb('lookup-4')} />)
+  await user.type(screen.getByRole('searchbox', { name: /Search/ }), 'jikan')
+  const row = (await screen.findAllByRole('listitem'))[0]
+  await user.click(row.querySelector('summary')!)
+  expect(await within(row).findByRole('img', { name: 'pitch: heiban, no drop' })).toBeTruthy()
 })

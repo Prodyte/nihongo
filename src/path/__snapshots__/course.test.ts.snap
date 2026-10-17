@@ -1,5 +1,35 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`course structure > N2 lesson ids map to the same words as when N2 was added 1`] = `
+{
+  "n2-k-1": [
+    "kanji:党",
+    "kanji:協",
+    "kanji:総",
+    "kanji:区",
+    "kanji:領",
+  ],
+  "n2-v-1": [
+    "w:発売",
+    "w:登場",
+    "w:やっぱり",
+    "w:撮影",
+    "w:公式",
+    "w:終了",
+  ],
+  "n2-v-100": [
+    "w:しつこい",
+    "w:水面",
+    "w:住まい",
+    "w:艶",
+    "w:南米",
+    "w:響く",
+  ],
+}
+`;
+
+exports[`course structure > N2 lesson ids map to the same words as when N2 was added 2`] = `"ba4ca14c69131fd47a03af3c9747e066ff57153ebd1b8369ccaa4ff18911e0db"`;
+
 exports[`course structure > lesson ids map to the same words as when progress was first saved (a data edit must not shift them) 1`] = `
 {
   "n3-v-1": [

@@ -7,7 +7,7 @@ jpn_transcriptions.tsv and eng_sentences.tsv. Tatoeba sentences are CC BY 2.0 FR
 
 Matching uses the Japanese index (each sentence's words in dictionary form), so 食べました counts for 食べる. For each word
 the easiest sentence wins: fewest words from beyond the word's level or outside the course, then human-checked furigana
-and index entries, then shorter. A sentence already given to another word is avoided.
+and index entries, then shorter. A sentence already given to another word is avoided. A word keeps the sentence it already has.
 """
 import csv
 import json
@@ -83,8 +83,13 @@ for c in cands:
         if reading:
             by_form.setdefault(reading, []).append(c)
 
-used, out = set(), {}
-for key, lv in sorted(words, key=lambda x: -x[1]):  # N3 first: they have the fewest candidates
+# words that have a sentence keep it (learners have seen it): only words without one get a new pick
+keys = {k for k, _ in words}
+out = {k: v for k, v in json.loads((ROOT / 'public/examples.json').read_text(encoding='utf-8')).items() if k in keys}
+used = {str(v[2]) for v in out.values()}
+for key, lv in sorted(words, key=lambda x: -x[1]):  # N2 first: they have the fewest candidates
+    if key in out:
+        continue
     w, r = key.split('|')
     pool = by_form.get(w, []) if w else by_form.get(r, [])
     pool = [c for c in pool if (w and any(h == w and (not rd or rd == r) for h, rd in c[2])) or (not w and any(h == r or rd == r for h, rd in c[2]))]
@@ -93,7 +98,7 @@ for key, lv in sorted(words, key=lambda x: -x[1]):  # N3 first: they have the fe
 
     def cost(c):
         others = [h for h, _ in c[2] if h not in (w, r)]
-        hard = sum(1 for h in others if level_of.get(h, 0) < lv)  # a word from a later level (5 > 4 > 3)
+        hard = sum(1 for h in others if level_of.get(h, 0) < lv)  # a word from a later level (5 > 4 > 3 > 2)
         unknown = sum(1 for h in others if h not in level_of and HAN.search(h))
         return (c[0] in used, hard + 2 * unknown, not furi[c[0]][1], (w or r) not in c[3], len(jpn[c[0]]))
     best = min(pool, key=cost)

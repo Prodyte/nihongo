@@ -77,19 +77,23 @@ def parts(g, meanings, kvg):
 STROKES = set('一丨丿丶乙乚亅𠂊𠂉丆𠂇㐄龰マ')
 NS = {'svg': 'http://www.w3.org/2000/svg'}
 KVG = 'kvg_'
-meanings = {r[0]: r[2][0] for r in rows}
+# an N5-N3 kanji is split only into N5-N3 kanji and radicals, as before N2 was added (時 stays 日 土 寸, not 日 寺), so its
+# parts and the kanji-by-parts search don't change; an N2 part keeps its radical name (貝 shell, not KANJIDIC's shellfish)
+meanings = {r[0]: (r[1] == 2 and RADICALS.get(r[0])) or r[2][0] for r in rows}
+before_n2 = {r[0]: r[2][0] for r in rows if r[1] != 2}
 out, missing = {}, Counter()
 with zipfile.ZipFile(sys.argv[1]) as z:
-    for k in [r[0] for r in rows]:
+    for k, level in [(r[0], r[1]) for r in rows]:
+        m = meanings if level == 2 else before_n2
         svg = z.read(f'kanji/{ord(k):05x}.svg').decode('utf-8')
         # the kvg namespace URL differs between releases: turn kvg:x attributes into plain kvg_x ones
         svg = re.sub(r'\skvg:(\w+)=', r' kvg_\1=', re.sub(r'\sxmlns:kvg="[^"]*"', '', svg))
         root = ET.fromstring(svg[svg.index('<svg '):])
         top = root.find(f".//svg:g[@id='kvg:{ord(k):05x}']", NS)
-        ps = [p for p in parts(top, meanings, KVG) if p not in STROKES]
+        ps = [p for p in parts(top, m, KVG) if p not in STROKES]
         if len(set(ps)) >= 2 and k not in ps:
-            out[k] = [[p, meaning(p, None, meanings) or ''] for p in dict.fromkeys(ps)]
-            missing.update(p for p in ps if not meaning(p, None, meanings))
+            out[k] = [[p, meaning(p, None, m) or ''] for p in dict.fromkeys(ps)]
+            missing.update(p for p in ps if not meaning(p, None, m))
 text = '{\n' + ',\n'.join(f'{json.dumps(k, ensure_ascii=False)}:{json.dumps(v, ensure_ascii=False)}' for k, v in out.items()) + '\n}\n'
 (ROOT / 'src' / 'data' / 'jlpt' / 'parts.json').write_text(text, encoding='utf-8')
 print(f'{len(out)} of {len(rows)} kanji have parts; parts without a name: {missing.most_common(40)}', file=sys.stderr)

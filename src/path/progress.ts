@@ -1,7 +1,7 @@
 import { Rating, State, type Grade } from 'ts-fsrs'
 import { newFsrsCard, schedule } from '../srs/scheduler'
 import { BUILTIN_DECKS, type Db, type StoredCard } from '../db/db'
-import { written, type Item, type Lesson } from './course'
+import { LEVELS, written, type Item, type Lesson, type Level } from './course'
 
 // ---- pure helpers ----------------------------------------------------------------------------
 
@@ -160,12 +160,12 @@ function failWith(msg: string): never {
   throw new Error(msg)
 }
 
-export interface LevelCoverage { level: 5 | 4 | 3; words: [number, number]; kanji: [number, number]; grammar: [number, number] } // [learned, total]
+export interface LevelCoverage { level: Level; words: [number, number]; kanji: [number, number]; grammar: [number, number] } // [learned, total]
 
 /** How much of each JLPT level the finished lessons cover: words, kanji and grammar lessons (learned of total). */
 export function coverage(lessons: readonly Lesson[], items: ReadonlyMap<string, Item>, done: ReadonlySet<string>): LevelCoverage[] {
   const learned = learnedItems(lessons, done)
-  return ([5, 4, 3] as const).map((level) => {
+  return LEVELS.map((level) => {
     const of = (kind: Item['kind']): [number, number] => {
       const all = [...items.values()].filter((i) => i.kind === kind && i.level === level && i.kind !== 'sentence')
       return [all.filter((i) => learned.has(i.id)).length, all.length]

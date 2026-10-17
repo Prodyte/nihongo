@@ -2,7 +2,7 @@ import { shuffle } from '../modes/choices'
 import { LESSONS, written, type Item } from './course'
 import { gapFor, options, type Exercise } from './lesson'
 
-export const MOCK_LEVELS = [5, 4, 3] as const
+export const MOCK_LEVELS = [5, 4, 3, 2] as const
 export type MockLevel = (typeof MOCK_LEVELS)[number]
 export type Section = 'Vocabulary' | 'Kanji' | 'Grammar' | 'Listening'
 export interface MockQuestion { section: Section; ex: Extract<Exercise, { type: 'choice' | 'listen' }> }
