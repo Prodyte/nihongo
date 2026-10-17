@@ -1,35 +1,52 @@
-import { useEffect, useRef, useState } from 'react'
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { warmUpVoices } from './audio'
-import { openDb, seedKana, type Db } from './db/db'
+import { openDb, reviewCounts, seedKana, type Db } from './db/db'
 import { Icon, Logo } from './icons'
-import { About } from './pages/About'
-import { Account } from './pages/Account'
-import { Decks } from './pages/Decks'
-import { Drill } from './pages/Drill'
-import { KanaChart } from './pages/KanaChart'
-import { Reading } from './pages/Reading'
 import type { DrillKind } from './path/drills'
-import { Grammar } from './pages/Grammar'
 import { Home, type Config } from './pages/Home'
 import { Lesson } from './pages/Lesson'
 import { Lookup } from './pages/Lookup'
 import { Path } from './pages/Path'
-import { Settings } from './pages/Settings'
-import { Stats } from './pages/Stats'
 import { MISTAKES, Study } from './pages/Study'
-import { TestOut } from './pages/TestOut'
 import { Today } from './pages/Today'
 import { Welcome, type StartLevel } from './pages/Welcome'
 import { lessonById, LESSONS, UNITS } from './path/course'
+import type { MockLevel } from './path/mock'
 import { getProgress, learnedItems } from './path/progress'
 import { FURIGANA, FuriganaContext, ROMAJI, type Furigana, type Romaji } from './path/ui/furigana'
 import { readBool, readStr, writeBool, writeStr } from './settings'
 import { maybeSignedIn, recovery, sync, update } from './sync'
 
+// screens opened now and then load on demand, so the first visit downloads less. A chunk that fails to load (a deploy
+// renamed it, and no service worker holds the old one) reloads the page onto the new version instead of crashing.
+const reloadOnFail = <T,>(p: Promise<T>) => p.then((m) => { sessionStorage.removeItem('nihongo.reloaded'); return m }, (e) => {
+  if (sessionStorage.getItem('nihongo.reloaded')) throw e // once: a chunk missing for good must not reload forever
+  sessionStorage.setItem('nihongo.reloaded', '1')
+  location.reload()
+  return new Promise<T>(() => {})
+})
+/** A screen whose code couldn't load (offline, twice) says so instead of blanking the whole app. */
+class LoadFailed extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  render() { return this.state.failed ? <p role="alert">Couldn't load this screen. <button onClick={() => location.reload()}>Reload</button></p> : this.props.children }
+}
+const About = lazy(() => reloadOnFail(import('./pages/About')).then((m) => ({ default: m.About })))
+const Account = lazy(() => reloadOnFail(import('./pages/Account')).then((m) => ({ default: m.Account })))
+const Decks = lazy(() => reloadOnFail(import('./pages/Decks')).then((m) => ({ default: m.Decks })))
+const Drill = lazy(() => reloadOnFail(import('./pages/Drill')).then((m) => ({ default: m.Drill })))
+const KanaChart = lazy(() => reloadOnFail(import('./pages/KanaChart')).then((m) => ({ default: m.KanaChart })))
+const Reading = lazy(() => reloadOnFail(import('./pages/Reading')).then((m) => ({ default: m.Reading })))
+const Grammar = lazy(() => reloadOnFail(import('./pages/Grammar')).then((m) => ({ default: m.Grammar })))
+const MockTest = lazy(() => reloadOnFail(import('./pages/MockTest')).then((m) => ({ default: m.MockTest })))
+const Settings = lazy(() => reloadOnFail(import('./pages/Settings')).then((m) => ({ default: m.Settings })))
+const Stats = lazy(() => reloadOnFail(import('./pages/Stats')).then((m) => ({ default: m.Stats })))
+const TestOut = lazy(() => reloadOnFail(import('./pages/TestOut')).then((m) => ({ default: m.TestOut })))
+
 type Tab = 'today' | 'path' | 'review' | 'lookup' | 'more'
-type View = Tab | 'lesson' | 'test' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
+type View = Tab | 'lesson' | 'test' | 'mock' | 'study' | 'drill' | 'reading' | 'kana' | 'decks' | 'stats' | 'settings' | 'about' | 'grammar' | 'account'
 const TABS: [Tab, string][] = [['today', 'Today'], ['path', 'Path'], ['review', 'Review'], ['lookup', 'Lookup'], ['more', 'More']]
-const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', about: 'more', grammar: 'more', account: 'more' }
+const TAB_OF: Record<View, Tab> = { today: 'today', path: 'path', lesson: 'path', test: 'path', review: 'review', study: 'review', drill: 'review', mock: 'review', reading: 'review', kana: 'review', lookup: 'lookup', more: 'more', decks: 'more', stats: 'more', settings: 'more', about: 'more', grammar: 'more', account: 'more' }
 const KANA_LESSONS = UNITS.filter((u) => u.section === 'Kana').flatMap((u) => u.lessons)
 const MORE: [View, string, string][] = [
   ['grammar', 'Grammar', 'Every grammar point with its sentences'],
@@ -38,6 +55,12 @@ const MORE: [View, string, string][] = [
   ['settings', 'Settings', 'Sync, theme, audio, furigana, backup'],
   ['about', 'About', 'The app on GitHub, and credits for the course data'],
 ]
+
+/** The installed app's icon shows how many reviews are due (Badging API, where there is one). */
+function showBadge(db: Db) {
+  if (!('setAppBadge' in navigator)) return
+  void reviewCounts(db, 'all', 'flashcard').then((c) => (c.due ? navigator.setAppBadge(c.due) : navigator.clearAppBadge()).catch(() => {}), () => {})
+}
 
 /** Whether a media query matches, kept current (false where matchMedia is missing, as in tests). */
 function useMedia(query: string) {
@@ -59,6 +82,7 @@ export default function App() {
   const [back, setBack] = useState<View>('today') // where a lesson or review session returns to
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [testUnit, setTestUnit] = useState<string | null>(null)
+  const [mockLevel, setMockLevel] = useState<MockLevel>(5)
   const [drill, setDrill] = useState<DrillKind>('speak-read')
   const [welcome, setWelcome] = useState(false)
   const [autoplay, setAutoplay] = useState(() => readBool('nihongo.autoplay', true))
@@ -124,7 +148,11 @@ export default function App() {
   }, [])
   useEffect(() => {
     // leaving the app (switching tabs or apps) pushes what was just studied; nobody is mid-answer then
-    const away = () => { if (db && document.visibilityState === 'hidden' && maybeSignedIn()) void sync(db).catch(() => {}) }
+    const away = () => {
+      if (!db || document.visibilityState !== 'hidden') return
+      showBadge(db)
+      if (maybeSignedIn()) void sync(db).catch(() => {})
+    }
     document.addEventListener('visibilitychange', away)
     return () => document.removeEventListener('visibilitychange', away)
   }, [db])
@@ -134,7 +162,8 @@ export default function App() {
   }, [onTab])
   useEffect(() => { window.scrollTo(0, 0) }, [view]) // braces: scroll methods may return a Promise, which React would take for a cleanup
   useEffect(() => {
-    // refreshed on every screen change, so a finished kanji lesson drops its furigana straight away
+    // refreshed on every screen change, so a finished kanji lesson drops its furigana straight away (and the icon badge its reviews)
+    if (db) showBadge(db)
     if (db) void getProgress(db).then((p) => {
       setKnown(new Set([...learnedItems(LESSONS, p.done)].filter((id) => id.startsWith('kanji:')).map((id) => id.slice(6))))
       setKanaDone(KANA_LESSONS.every((l) => p.done.has(l.id)))
@@ -145,7 +174,7 @@ export default function App() {
   const study = (from: View, c: Config) => { setSession(c); setBack(from); go('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
-  const focused = !!lesson || !!unit || view === 'study' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
+  const focused = !!lesson || !!unit || view === 'study' || view === 'mock' || view === 'drill' || view === 'reading' || view === 'kana' // lessons and reviews are full-screen: no tabs to wander off to
 
   const account = maybeSignedIn()
     ? <button className="icon-btn account-btn" aria-label="Account and sync" aria-current={view === 'account' ? 'page' : undefined} onClick={() => go('account')}><Icon name="user" /></button>
@@ -174,10 +203,14 @@ export default function App() {
         {/* full-screen lessons hide the title, but keep it for screen readers (one h1 per page) */}
         {/* one h1 for screen readers; the logo is drawn in the top bar (phones) or the side/top navigation (wider screens) */}
         <h1 className="visually-hidden">Nihongo</h1>
+        <LoadFailed key={view}>
+        <Suspense fallback={<div className="skeleton tall" />}>
         {lesson ? (
           <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => leave(back)} onStart={setLessonId} />
         ) : unit ? (
           <TestOut key={unit.id} db={db} unit={unit} onExit={() => leave('path')} />
+        ) : view === 'mock' ? (
+          <MockTest key={mockLevel} level={mockLevel} onExit={() => leave('review')} />
         ) : view === 'drill' ? (
           <Drill key={drill} db={db} kind={drill} onExit={() => leave('review')} />
         ) : view === 'reading' ? (
@@ -188,7 +221,8 @@ export default function App() {
           <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => leave(back)} />
         ) : view === 'review' ? (
           <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })}
-            onDrill={(k) => { setDrill(k); go('drill') }} onRead={() => go('reading')} onKana={() => go('kana')} />
+            onDrill={(k) => { setDrill(k); go('drill') }} onRead={() => go('reading')} onKana={() => go('kana')}
+            onMock={(l) => { setMockLevel(l); go('mock') }} />
         ) : view === 'path' ? (
           <Path db={db} onStart={startLesson} onTest={(id) => { setTestUnit(id); go('test') }} />
         ) : view === 'lookup' ? (
@@ -216,6 +250,8 @@ export default function App() {
         ) : (
           <Today db={db} onReview={() => study('today', { deck: 'all', mode: 'flashcard' })} onLesson={startLesson} />
         )}
+        </Suspense>
+        </LoadFailed>
       </main>
       {!focused && (
         <nav aria-label="Main" className="tabs">

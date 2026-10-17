@@ -2,9 +2,11 @@
 import 'fake-indexeddb/auto'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { State } from 'ts-fsrs'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import App from './App'
 import { KANA } from './data/kana'
+import { openDb } from './db/db'
 
 afterEach(cleanup)
 beforeEach(() => localStorage.setItem('nihongo.onboarded', '1')) // the welcome flow has its own test
@@ -92,4 +94,43 @@ it("the phone's back button goes back a screen (not out of the app); tabs don't 
   await waitFor(() => expect(current()).toBe('Review'))
   await new Promise((r) => setTimeout(r, 50)) // the exit's own history.back() must not move the view again
   expect(current()).toBe('Review')
+})
+
+it('the app icon badge shows the reviews due: cleared at 0, set when cards fall due, refreshed when the app is hidden', async () => {
+  const badge = { setAppBadge: vi.fn(() => Promise.resolve()), clearAppBadge: vi.fn(() => Promise.resolve()) }
+  Object.assign(navigator, badge)
+  try {
+    const db = await openDb()
+    for (const c of await db.getAll('cards')) if (c.fsrs.state !== State.New) await db.delete('cards', c.id) // earlier tests' reviews
+    db.close()
+    const user = userEvent.setup()
+    render(<App />)
+    await waitFor(() => expect(badge.clearAppBadge).toHaveBeenCalled()) // on startup
+    expect(badge.setAppBadge).not.toHaveBeenCalled()
+    const d = await openDb()
+    const card = (await d.getAll('cards'))[0]
+    await d.put('cards', { ...card, fsrs: { ...card.fsrs, state: State.Review, due: new Date(Date.now() - 60_000) } })
+    d.close()
+    await user.click(tab('Review')) // a screen change
+    await waitFor(() => expect(badge.setAppBadge).toHaveBeenLastCalledWith(1))
+    badge.setAppBadge.mockClear()
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    await waitFor(() => expect(badge.setAppBadge).toHaveBeenCalledWith(1))
+  } finally {
+    delete (document as { visibilityState?: string }).visibilityState
+    for (const k of Object.keys(badge)) delete (navigator as unknown as Record<string, unknown>)[k]
+  }
+})
+
+it('the Review tab opens a mock JLPT test full-screen; Exit returns to Review', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  await screen.findByRole('navigation', { name: 'Main' })
+  await user.click(tab('Review'))
+  await user.click(await screen.findByRole('button', { name: /^Mock N4/ }))
+  await screen.findByRole('heading', { name: 'Mock JLPT N4' })
+  expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Exit' }))
+  await waitFor(() => expect(current()).toBe('Review'))
 })

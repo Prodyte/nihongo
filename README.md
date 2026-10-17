@@ -2,7 +2,7 @@
 
 Learn Japanese in the browser, from hiragana to JLPT N3: a guided path through kana, 3,400 words, 612 kanji and N5 to N3 grammar, spaced-repetition review, and import for Anki decks (with their audio and images). Everything runs on your device and your progress is stored in your browser; an optional account syncs it across devices.
 
-**Live:** https://prodyte.github.io/nihongo/ (installable as an app, works offline after the first visit)
+**Live:** https://prodyte.github.io/nihongo/ (installable as an app, works offline after the first visit; installed, its icon shows how many reviews are due)
 
 ## What it does
 
@@ -16,12 +16,13 @@ Learn Japanese in the browser, from hiragana to JLPT N3: a guided path through k
 - **Speaking:** say words and sentences aloud; the browser's Japanese speech recognition checks them (Chrome, Safari incl. iPad). "Can't speak now" skips speaking for a lesson; a Settings switch turns it off. The browser sends the recording to its speech service.
 - **Kanji writing:** trace kanji over a guide and write them from memory with a finger, pencil or mouse, checked stroke by stroke for order, direction and shape. In kanji lessons and from Lookup ("Practise writing").
 - **Skip ahead:** a locked unit has "Test out": 15 questions over every lesson up to it; 80% marks them done, and what you missed starts as due.
-- **Lookup:** search every word and kanji by kanji, kana, romaji or English; see readings, stroke order, your learning state and a Jisho link.
+- **Lookup:** search every word and kanji by kanji, kana, romaji or English; see readings, stroke order, your learning state and a Jisho link. "Study this" puts a word or kanji into Review before its lesson, and saved words are listed when the search box is empty. **Kanji by parts:** pick components (亻, 木, …) to find the kanji built from them.
+- **Mock JLPT test (Review tab):** 30 timed questions over a whole level (N5, N4 or N3): vocabulary, kanji, grammar and, with a Japanese voice, listening; a score per section, 60% to pass, your best score kept. It never touches your schedule.
 - **Stats:** JLPT progress per level (words, kanji, grammar); cards by stage (Apprentice, Guru, Master, Burned, from how long you're expected to remember them); a 7-day forecast; an activity heatmap; leeches.
 - **Path and Review work together:** finishing a lesson puts its items into the same spaced-repetition scheduler that Review uses, so what you learn on the path comes back when it is due. Replaying a lesson for practice never inflates the schedule.
 - **Review:** all due cards across decks by default: the path's kana, words, kanji and sentences, and imported decks. Flashcards, type-the-answer (romaji for kana, the meaning for words), and multiple choice; a word is asked in context, its example sentence (the word marked) on the front, with the sentence's English and audio coming with the answer; grammar cards are always fill-the-gap sentences. "Practise mistakes" drills this week's misses and leeches without touching their schedule.
 - **Practice hub (Review tab):** speaking drills (read aloud, say it from the English, shadowing), listening (type the word you hear, pick what a sentence means), verb conjugation (ます, ません, ました, て, た, ない), graded reading, and a kana chart. Drills use only what you've learned, and practising keeps the streak going.
-- **Reading:** short N5 stories with furigana, audio sentence by sentence or all at once, tap any word to look it up, and comprehension questions.
+- **Reading:** short N5, N4 and N3 stories with furigana, audio sentence by sentence or all at once, tap any word to look it up, and comprehension questions.
 - **Grammar reference:** every grammar point with its explanation and sentences (More → Grammar).
 - **Sounds:** short right/wrong/complete sounds and a vibration on wrong answers (Settings switch).
 - **Scheduling:** [FSRS](https://github.com/open-spaced-repetition/ts-fsrs), the algorithm modern Anki uses. 20 new cards a day.

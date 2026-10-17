@@ -10,7 +10,9 @@ export default defineConfig({
       registerType: 'prompt', // a new version waits for a tab screen (see App's update), never reloading mid-lesson
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,wasm,svg,png,webmanifest,json}'], // wasm: deck import must work offline; json: kanji stroke order
+        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,json}'], // json: kanji stroke order and examples, used in lessons
+        // the 650 KB SQLite wasm is only for deck import: cached on first use, not downloaded on everyone's first visit
+        runtimeCaching: [{ urlPattern: /\.wasm$/, handler: 'CacheFirst', options: { cacheName: 'wasm', expiration: { maxEntries: 1 } } }],
         navigateFallback: '/nihongo/index.html',
       },
       manifest: {

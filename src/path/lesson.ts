@@ -32,7 +32,7 @@ const show = (it: Item, field: 'jp' | 'gloss') => (field === 'jp' ? written(it) 
 
 /** `n` options: the answer plus distractors from `pool` (taken in order, so put the closest items first). Japanese options
  * are shown as written (kanji where the word has them). */
-function options(answer: Item, field: 'jp' | 'gloss', pool: Item[], same: 'gloss' | 'sound', n = 4): { options: string[]; readings?: Readings } {
+export function options(answer: Item, field: 'jp' | 'gloss', pool: Item[], same: 'gloss' | 'sound', n = 4): { options: string[]; readings?: Readings } {
   const chosen = [answer]
   for (const it of pool) {
     if (chosen.length === n) break

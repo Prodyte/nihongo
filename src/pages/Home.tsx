@@ -4,6 +4,8 @@ import { BUILTIN_DECKS, reviewCounts, studyCards, type Db, type DeckRecord, type
 import { Icon, type IconName } from '../icons'
 import { DRILL_TITLE, learnedForDrills, verbsIn, type DrillKind } from '../path/drills'
 import { canRecognise } from '../speech'
+import { MOCK_LEVELS, mockBestKey, type MockLevel } from '../path/mock'
+import { readInt } from '../settings'
 import { Ruby } from '../path/ui/Ruby'
 import { nextDue, until, weakSpots } from '../srs/stages'
 import type { Mode } from './Study'
@@ -16,8 +18,8 @@ const BUILT_IN = [BUILTIN_DECKS.word, BUILTIN_DECKS.kanji, BUILTIN_DECKS.sentenc
 interface Tile { key: string; icon: IconName; title: string; blurb: string; go: () => void; off?: string; count?: string }
 
 /** Review: the spaced-repetition queue first, then practice modes for what you've learned. */
-export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRead, onKana }: {
-  db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void; onPractice: () => void; onDrill: (k: DrillKind) => void; onRead: () => void; onKana: () => void
+export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRead, onKana, onMock }: {
+  db: Db; config: Config; onChange: (c: Config) => void; onStart: () => void; onPractice: () => void; onDrill: (k: DrillKind) => void; onRead: () => void; onKana: () => void; onMock?: (level: MockLevel) => void
 }) {
   const voice = useJaVoice()
   const [loaded, setLoaded] = useState<{ key: string; due: number; fresh: number; empty?: boolean } | null>(null)
@@ -124,6 +126,18 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
           </li>
         ))}
       </ul>
+      {onMock && (
+        <section className="card mock-entry" aria-labelledby="mock-title">
+          <h3 id="mock-title">Mock JLPT test</h3>
+          <p className="hint left">A timed exam over a whole level, learned or not. Practice only: nothing is scheduled.</p>
+          <div className="row2 left">
+            {MOCK_LEVELS.map((l) => {
+              const best = readInt(mockBestKey(l), -1)
+              return <button key={l} onClick={() => onMock(l)} aria-label={`Mock N${l}${best >= 0 ? `, best ${best}%` : ''}`}>N{l}{best >= 0 && <small>Best {best}%</small>}</button>
+            })}
+          </div>
+        </section>
+      )}
     </>
   )
 }
