@@ -13,6 +13,7 @@ import { sfx } from '../sfx'
 
 const WORDS = [...ITEMS.values()].filter((w) => w.kind === 'word')
 const READ_KEY = 'nihongo.read'
+const LEVELS = [5, 4, 3] as const
 const readSet = () => { try { return new Set<string>(JSON.parse(localStorage.getItem(READ_KEY) ?? '[]')) } catch { return new Set<string>() } }
 const markRead = (id: string) => { try { localStorage.setItem(READ_KEY, JSON.stringify([...readSet(), id])) } catch { /* per device only */ } }
 const sentenceText = (tokens: string[]) => displayJp(tokens.map(readingOf))
@@ -29,17 +30,22 @@ export function Reading({ db, onExit }: { db: Db; onExit: () => void }) {
         <h2>Reading</h2>
         <p>Short stories in Japanese you already know. Tap any word to look it up.</p>
       </div>
-      <ul className="story-list">
-        {STORIES.map((s) => (
-          <li key={s.id}>
-            <button className="tile-btn story" onClick={() => setOpen(s)}>
-              <span className="tile-icon"><Icon name="book" /></span>
-              <strong lang="ja"><Ruby text={s.title} /></strong>
-              <small>{s.en} · N{s.level} · {s.sentences.length} sentences{read.has(s.id) ? ' · ✓ read' : ''}</small>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {LEVELS.map((level) => (
+        <section key={level} aria-labelledby={`stories-n${level}`}>
+          <h3 className="section-title" id={`stories-n${level}`}>N{level}</h3>
+          <ul className="story-list">
+            {STORIES.filter((s) => s.level === level).map((s) => (
+              <li key={s.id}>
+                <button className="tile-btn story" onClick={() => setOpen(s)}>
+                  <span className="tile-icon"><Icon name="book" /></span>
+                  <strong lang="ja"><Ruby text={s.title} /></strong>
+                  <small>{s.en} · {s.sentences.length} sentences{read.has(s.id) ? ' · ✓ read' : ''}</small>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </>
   )
 }

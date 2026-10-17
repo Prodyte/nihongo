@@ -27,3 +27,9 @@ it('open a story, tap a word to look it up, reveal a translation, answer the que
   await vi.waitFor(async () => expect((await getProgress(db)).xpToday).toBe(6))
   expect(localStorage.getItem('nihongo.read')).toContain('my-day')
 })
+
+it('lists stories under their level, N5 then N4 then N3', async () => {
+  render(<Reading db={await openDb('reading-2')} onExit={() => {}} />)
+  expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['N5', 'N4', 'N3'])
+  for (const s of STORIES) expect(within(screen.getByRole('region', { name: `N${s.level}` })).getByRole('button', { name: new RegExp(s.en) })).toBeTruthy()
+})
