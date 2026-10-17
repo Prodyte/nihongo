@@ -20,6 +20,8 @@ it('typing a search lists matches with level and learning state, and a Jisho lin
   expect(row.textContent).toMatch(/時間 じかん time/)
   expect(within(row).getByText('N5')).toBeTruthy()
   expect(await within(row).findByText('Apprentice')).toBeTruthy()
+  expect(within(row).queryByRole('link')).toBeNull() // a closed row renders only its summary
+  await user.click(row.querySelector('summary')!)
   expect(within(row).getByRole('link', { name: /Jisho/ }).getAttribute('href')).toBe(`https://jisho.org/search/${encodeURIComponent('時間')}`)
   await user.clear(screen.getByRole('searchbox', { name: /Search/ }))
   await user.type(screen.getByRole('searchbox', { name: /Search/ }), 'zzzzqq')

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Card } from 'ts-fsrs'
 import { toKata } from '../data/kana'
 import type { Db } from '../db/db'
@@ -19,7 +19,8 @@ export function Lookup({ db }: { db: Db }) {
   useEffect(() => {
     void db.getAll('cards').then((all) => setCards(new Map(all.map((c) => [c.id, c.fsrs]))), () => {})
   }, [db])
-  const results = useMemo(() => search(query), [query])
+  const q = useDeferredValue(query) // typing stays responsive while the list catches up
+  const results = useMemo(() => search(q), [q])
 
   return (
     <div className="card form">
@@ -28,35 +29,40 @@ export function Lookup({ db }: { db: Db }) {
         Search words and kanji
         <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="日, taberu, たべる, eat…" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
       </label>
-      <p role="status" className="hint">{query.trim() ? (results.length ? `${results.length === MAX ? `First ${MAX}` : results.length} result${results.length === 1 ? '' : 's'}` : 'Nothing found in the course.') : `${ENTRIES.length} words and kanji from kana to N3.`}</p>
+      <p role="status" className="hint">{q.trim() ? (results.length ? `${results.length === MAX ? `First ${MAX}` : results.length} result${results.length === 1 ? '' : 's'}` : 'Nothing found in the course.') : `${ENTRIES.length} words and kanji from kana to N3.`}</p>
       <ul className="results">
         {results.map((it) => {
           const card = cards.get(it.id)
           const st = card && (stage(card) ?? 'New')
           return (
             <li key={it.id}>
-              <details>
-                <summary>
-                  <span className="jp" lang="ja">{it.written ?? it.kanji ?? it.jp}</span>
-                  {it.kind === 'word' && (it.written ?? it.kanji) && <span lang="ja"> {it.jp}</span>}
-                  <span className="gloss"> {it.gloss}</span>
-                  <span className="tags">
-                    {it.kind === 'kanji' && <span className="tag">kanji</span>}
-                    {it.level && <span className="tag">N{it.level}</span>}
-                    {st && <span className={`tag ${st.toLowerCase()}`}>{st}</span>}
-                  </span>
-                </summary>
+              <Details summary={<>
+                <span className="jp" lang="ja">{it.written ?? it.kanji ?? it.jp}</span>
+                {it.kind === 'word' && (it.written ?? it.kanji) && <span lang="ja"> {it.jp}</span>}
+                <span className="gloss"> {it.gloss}</span>
+                <span className="tags">
+                  {it.kind === 'kanji' && <span className="tag">kanji</span>}
+                  {it.level && <span className="tag">N{it.level}</span>}
+                  {st && <span className={`tag ${st.toLowerCase()}`}>{st}</span>}
+                </span>
+              </>}>
                 {it.kind === 'kanji' ? <KanjiDetail it={it} /> : <>{romaji && <p className="hint">{it.romaji}</p>}<Mnemonic item={it} /><Example item={it} /></>}
                 <a href={`https://jisho.org/search/${encodeURIComponent((it.written ?? it.kanji ?? written(it)) + (it.kind === 'kanji' ? ' #kanji' : ''))}`} target="_blank" rel="noopener noreferrer">
                   Jisho<span aria-hidden="true">{'\u00a0↗'}</span><span className="visually-hidden"> (opens in a new tab)</span>
                 </a>
-              </details>
+              </Details>
             </li>
           )
         })}
       </ul>
     </div>
   )
+}
+
+/** A <details> whose body renders only while open: a closed row costs nothing (no example fetch, stroke SVG or buttons). */
+function Details({ summary, children }: { summary: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return <details onToggle={(e) => setOpen(e.currentTarget.open)}><summary>{summary}</summary>{open && children}</details>
 }
 
 function KanjiDetail({ it }: { it: Item }) {

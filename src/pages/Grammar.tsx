@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { Db } from '../db/db'
 import { SpeakButton } from '../modes/SpeakButton'
 import { ITEMS, LESSONS, written } from '../path/course'
@@ -38,11 +38,10 @@ export function Grammar({ db }: { db: Db }) {
             <ul className="results">
               {here.map((l) => (
                 <li key={l.id}>
-                  <details>
-                    <summary>
-                      <span className="gloss"><JaText text={l.explain!.title} /></span>
-                      <span className="tags">{done.has(l.id) ? <span className="tag guru">Learned</span> : <span className="tag">Not yet</span>}</span>
-                    </summary>
+                  <Details summary={<>
+                    <span className="gloss"><JaText text={l.explain!.title} /></span>
+                    <span className="tags">{done.has(l.id) ? <span className="tag guru">Learned</span> : <span className="tag">Not yet</span>}</span>
+                  </>}>
                     <div className="explain-body">
                       {l.explain!.body.map((p, i) => <p key={i}><JaText text={p} /></p>)}
                       <ul className="examples">
@@ -55,7 +54,7 @@ export function Grammar({ db }: { db: Db }) {
                         ))}
                       </ul>
                     </div>
-                  </details>
+                  </Details>
                 </li>
               ))}
             </ul>
@@ -64,4 +63,10 @@ export function Grammar({ db }: { db: Db }) {
       })}
     </div>
   )
+}
+
+/** A <details> whose body renders only while open: a closed row costs nothing (no example fetch, stroke SVG or buttons). */
+function Details({ summary, children }: { summary: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return <details onToggle={(e) => setOpen(e.currentTarget.open)}><summary>{summary}</summary>{open && children}</details>
 }

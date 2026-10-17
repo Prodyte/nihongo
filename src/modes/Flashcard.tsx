@@ -51,24 +51,28 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
       )}
       {/* a word is asked in context: its sentence on the front, the sentence's English and sound with the answer */}
       {item && <Example item={item} revealed={shown} />}
-      <div className="answer-slot" aria-live="polite" tabIndex={-1} ref={slot}>
+      <div className="answer-slot" tabIndex={-1} ref={slot}>
+        <div className="answer-slot" aria-live="polite">{/* announce the answer, not the grade buttons */}
+          {shown && (
+            <>
+              {card.reading && <div className="reading" lang="ja">{card.reading}</div>}
+              {kanji ? (
+                <>
+                  <div className="answer">{kanji.gloss}</div>
+                  <Mnemonic item={kanji} />
+                  <p className="kanji-readings" lang="ja">{[kanji.on?.length && `音 ${kanji.on.join('・')}`, kanji.kun?.length && `訓 ${kanji.kun.join('・')}`].filter(Boolean).join('　')}</p>
+                  {example && <p className="kanji-example"><span lang="ja"><Ruby text={example.written ?? example.kanji ?? example.jp} reading={example.written ?? example.kanji ? example.jp : undefined} /></span> {example.gloss} <SpeakButton text={example.jp} /></p>}
+                </>
+              ) : !card.html && <><div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>{item && <Mnemonic item={item} />}</>}
+            </>
+          )}
+        </div>
         {shown && (
-          <>
-            {card.reading && <div className="reading" lang="ja">{card.reading}</div>}
-            {kanji ? (
-              <>
-                <div className="answer">{kanji.gloss}</div>
-                <Mnemonic item={kanji} />
-                <p className="kanji-readings" lang="ja">{[kanji.on?.length && `音 ${kanji.on.join('・')}`, kanji.kun?.length && `訓 ${kanji.kun.join('・')}`].filter(Boolean).join('　')}</p>
-                {example && <p className="kanji-example"><span lang="ja"><Ruby text={example.written ?? example.kanji ?? example.jp} reading={example.written ?? example.kanji ? example.jp : undefined} /></span> {example.gloss} <SpeakButton text={example.jp} /></p>}
-              </>
-            ) : !card.html && <><div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>{item && <Mnemonic item={item} />}</>}
-            <div className="grades">
-              {GRADES.map(([g, label, cls]) => (
-                <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small aria-label={`next in ${next[g]}`}>{next[g]}</small></button>
-              ))}
-            </div>
-          </>
+          <div className="grades">
+            {GRADES.map(([g, label, cls]) => (
+              <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small><span className="visually-hidden">, next in </span>{next[g]}</small></button>
+            ))}
+          </div>
         )}
       </div>
       {!shown && <button className="primary" autoFocus onClick={() => setShown(true)}>Show answer <kbd aria-hidden="true">space</kbd></button>}

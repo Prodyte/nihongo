@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { audiosToPlay, playInOrder, slowly, speak, speakAll } from './audio'
+import { audiosToPlay, playInOrder, slowly, speak, speakAll, unlockAudio } from './audio'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -78,6 +78,13 @@ describe('speak', () => {
     const u = s.speak.mock.calls[0][0] as Utterance
     expect(u).toMatchObject({ text: 'あ', lang: 'ja-JP', voice: ja, rate: 1 })
   })
+  it('speaks in Japanese without picking a voice while the voice list is still empty (Chrome and Android load it later)', () => {
+    const s = synth([])
+    vi.stubGlobal('speechSynthesis', s)
+    vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
+    expect(speak('あ')).toBe(true)
+    expect(s.speak.mock.calls[0][0]).toMatchObject({ text: 'あ', lang: 'ja-JP', voice: null })
+  })
   it('plays at the Settings speed, or at the speed asked for (the turtle button)', () => {
     const s = synth([{ lang: 'ja-JP' }])
     vi.stubGlobal('speechSynthesis', s)
@@ -102,16 +109,29 @@ describe('speak', () => {
     speak('みず', 60)
     expect(s.speak.mock.calls.map((c) => (c[0] as Utterance).text)).toEqual(['みず', 'み、ず'])
   })
-  it('speakAll ends when its last sentence ends, or is cancelled by other speech (Chrome reports an error then)', () => {
+  it('speakAll ends once: when its last sentence ends, is cancelled by other speech (Chrome reports an error then), or is stopped', () => {
     const s = synth([{ lang: 'ja-JP' }])
     vi.stubGlobal('speechSynthesis', s)
     vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
     const onEnd = vi.fn()
-    speakAll(['あ', 'い'], () => {}, onEnd)
+    const stop = speakAll(['あ', 'い'], () => {}, onEnd)
     const last = s.speak.mock.calls[1][0] as { onend: () => void; onerror: () => void }
     last.onerror()
     expect(onEnd).toHaveBeenCalledOnce()
     last.onend()
-    expect(onEnd).toHaveBeenCalledTimes(2)
+    stop()
+    expect(onEnd).toHaveBeenCalledOnce()
+  })
+  it('the first tap or key speaks an empty utterance (iOS then plays later speech), only once', () => {
+    const s = { ...synth([]), speaking: false }
+    vi.stubGlobal('speechSynthesis', s)
+    vi.stubGlobal('SpeechSynthesisUtterance', Utterance)
+    unlockAudio()
+    unlockAudio()
+    expect(s.speak).not.toHaveBeenCalled()
+    window.dispatchEvent(new KeyboardEvent('keydown'))
+    window.dispatchEvent(new Event('pointerup'))
+    expect(s.speak).toHaveBeenCalledOnce()
+    expect(s.speak.mock.calls[0][0]).toMatchObject({ text: '' })
   })
 })

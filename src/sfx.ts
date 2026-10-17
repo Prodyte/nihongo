@@ -33,3 +33,14 @@ export function sfx(kind: Sfx) {
     /* no audio (old browser, blocked): stay silent */
   }
 }
+
+/** iOS starts an AudioContext only from a tap or key: audio.ts calls this on the first one. */
+export function unlockSfx() {
+  if (!readBool('nihongo.sfx', true)) return
+  try {
+    ctx ??= new AudioContext()
+    void ctx.resume()
+  } catch {
+    /* no audio */
+  }
+}

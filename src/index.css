@@ -7,7 +7,7 @@
   --card: #fffdf9;
   --raised: #fff;
   --line: #e5dfd3;
-  --ctl: #b9b1a3;
+  --ctl: #8f877a;
   --accent: #c8372d; /* shu (vermilion) */
   --accent-press: #9b2a22;
   --accent-soft: #fbe9e5;
@@ -33,13 +33,13 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    color-scheme: dark; --bg: #141312; --fg: #efebe4; --muted: #aaa398; --card: #1e1c1a; --raised: #262321; --line: #36322d; --ctl: #5d574f;
+    color-scheme: dark; --bg: #141312; --fg: #efebe4; --muted: #aaa398; --card: #1e1c1a; --raised: #262321; --line: #36322d; --ctl: #78716a;
     --accent: #f0675a; --accent-press: #b8483e; --accent-soft: #3b2220; --on-accent: #1a0f0d; --indigo: #9db4e0; --indigo-soft: #222b3b;
     --good: #6bc48a; --good-soft: #1c2e22; --bad: #f2837a; --bad-soft: #3a1f1d; --gold: #e3b062; --shadow: none;
   }
 }
 :root[data-theme="dark"] {
-  color-scheme: dark; --bg: #141312; --fg: #efebe4; --muted: #aaa398; --card: #1e1c1a; --raised: #262321; --line: #36322d; --ctl: #5d574f;
+  color-scheme: dark; --bg: #141312; --fg: #efebe4; --muted: #aaa398; --card: #1e1c1a; --raised: #262321; --line: #36322d; --ctl: #78716a;
   --accent: #f0675a; --accent-press: #b8483e; --accent-soft: #3b2220; --on-accent: #1a0f0d; --indigo: #9db4e0; --indigo-soft: #222b3b;
   --good: #6bc48a; --good-soft: #1c2e22; --bad: #f2837a; --bad-soft: #3a1f1d; --gold: #e3b062; --shadow: none;
 }
@@ -76,12 +76,12 @@ button.big { min-height: 3.5rem; font-size: 1.1rem; }
 button.icon-btn.slow { min-width: 2.75rem; padding: .4rem; }
 button.icon-btn { padding: .5rem; min-width: 2.75rem; min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; color: var(--indigo); }
 button.ghost { background: none; border-color: transparent; box-shadow: none; color: var(--muted); }
-select, input { font-size: 1rem; padding: .6rem 1rem; border: 1.5px solid var(--line); border-radius: var(--radius-s); background: var(--raised); }
+select, input { font-size: 1rem; padding: .6rem 1rem; border: 1.5px solid var(--ctl); border-radius: var(--radius-s); background: var(--raised); }
 input { text-align: center; font-size: 1.3rem; width: 100%; }
 input:focus { border-color: var(--indigo); }
 input[type="search"] { text-align: left; font-size: 1.1rem; }
 input[type="file"] { font-size: 1rem; text-align: left; padding: .5rem; }
-input[type="file"]::file-selector-button { font: inherit; margin-right: .75rem; padding: .45rem .9rem; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); cursor: pointer; }
+input[type="file"]::file-selector-button { font: inherit; margin-right: .75rem; padding: .45rem .9rem; border: 1.5px solid var(--ctl); border-radius: 10px; background: var(--bg); color: var(--fg); cursor: pointer; }
 button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--indigo); outline-offset: 2px; }
 label { display: flex; flex-direction: column; gap: .3rem; width: 100%; font-size: .9rem; font-weight: 500; }
 /* the box lines up with the first line of a long label, not the middle of it */
