@@ -24,9 +24,12 @@ async function populated() {
 describe('backup', () => {
   it('round-trips cards, reviews and decks, including Dates', async () => {
     const src = await populated()
+    const [, , r] = await src.getAll('reviews')
+    delete r.id
+    await src.add('reviews', { ...r, cardId: 'kana:さ', lesson: true }) // a lesson's review keeps its tag
     const text = await exportBackup(src)
     const dst = await fresh()
-    expect(await importBackup(dst, text)).toEqual({ cards: 104, reviews: 3, decks: 1, lessons: 0 })
+    expect(await importBackup(dst, text)).toEqual({ cards: 104, reviews: 4, decks: 1, lessons: 0 })
     expect(await dst.getAll('cards')).toEqual(await src.getAll('cards'))
     expect(await dst.getAll('reviews')).toEqual(await src.getAll('reviews'))
     const c = (await dst.get('cards', 'kana:あ'))!

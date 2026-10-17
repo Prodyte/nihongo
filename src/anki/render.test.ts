@@ -11,6 +11,8 @@ describe('renderTemplate', () => {
     const t = '{{#Hint}}H:{{Hint}}{{/Hint}}{{^Hint}}no hint{{/Hint}}'
     expect(r(t, { Hint: 'x' }, ctx)).toBe('H:x')
     expect(r(t, { Hint: '<br>  ' }, ctx)).toBe('no hint')
+    expect(r(t, { Hint: '<div>&nbsp;</div>' }, ctx)).toBe('no hint')
+    expect(r(t, { Hint: '<img src="a.jpg">' }, ctx)).toBe('H:<img src="a.jpg">') // image-only is not empty
   })
   it('handles nested sections', () => {
     const t = '{{#A}}a{{#B}}b{{/B}}{{/A}}'
@@ -25,6 +27,9 @@ describe('renderTemplate', () => {
     const f = { Text: 'The capital of {{c1::Japan::country}} is {{c2::Tokyo}}' }
     expect(r('{{cloze:Text}}', f, ctx)).toBe('The capital of <span class="cloze">[country]</span> is Tokyo')
     expect(r('{{cloze:Text}}', f, { ...ctx, ord: 1, answer: true })).toBe('The capital of Japan is <span class="cloze">Tokyo</span>')
+    const n = { T: '{{c1::a {{c2::b}} c}}' } // nested
+    expect(r('{{cloze:T}}', n, ctx)).toBe('<span class="cloze">[...]</span>')
+    expect(r('{{cloze:T}}', n, { ...ctx, ord: 1 })).toBe('a <span class="cloze">[...]</span> c')
   })
   it('furigana / kana / kanji filters, and they leave [sound:] alone', () => {
     const f = { W: '漢字[かんじ]を 勉強[べんきょう]' }
@@ -40,5 +45,6 @@ describe('renderTemplate', () => {
     expect(r('{{text:A}}', { A: '<b>x</b>' }, ctx)).toBe('x')
     expect(r('{{hint:A}}', { A: 'h' }, ctx)).toBe('<details><summary>Hint</summary>h</details>')
     expect(r('{{type:A}}', { A: 'h' }, ctx)).toBe('')
+    expect(r('{{tts ja_JP:A}}', { A: 'secret' }, ctx)).toBe('') // would spoil a listening card
   })
 })

@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { openDB } from 'idb'
 import { Rating, State } from 'ts-fsrs'
 import { describe, expect, it } from 'vitest'
-import { gradeCard, openDb, seedKana, studyCards } from '../db/db'
+import { gradeCard, newToday, openDb, seedKana, studyCards } from '../db/db'
 import { newFsrsCard } from '../srs/scheduler'
 import { ITEMS, LESSONS, lessonById } from './course'
 import { addReviewXp, completeLesson, currentLesson, dayKey, getProgress, glossAnswers, isUnlocked, learnedItems, setSaved, streak, xpFor } from './progress'
@@ -86,6 +86,7 @@ describe('completeLesson', () => {
     expect(cards.every((c) => c.fsrs.state !== State.New && c.fsrs.reps === 1)).toBe(true)
     expect(cards.find((c) => c.id === 'vocab:konnichiwa')).toMatchObject({ front: 'こんにちは', back: ['hello, good afternoon', 'hello', 'good afternoon'] })
     expect((await db.getAll('reviews')).map((x) => x.grade)).toEqual(Array(6).fill(Rating.Good))
+    expect(await newToday(db, now)).toBe(0) // lessons don't use up Review's daily new cards
     expect(await db.get('decks', 'vocab')).toEqual({ id: 'vocab', name: 'Path words' })
     expect(await db.get('lessons', lesson.id)).toEqual({ id: lesson.id, completedAt: now, plays: 1, bestAccuracy: 1 })
     expect(await db.get('activity', '2026-03-04')).toEqual({ date: '2026-03-04', xp: 15, lessons: 1 })

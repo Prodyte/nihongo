@@ -36,7 +36,7 @@ it('opens on Today; Review studies a flashcard end to end (full-screen), and rev
   const expected = KANA.find((k) => k.kana === front.split(' ')[0])!.romaji[0]
   expect(screen.getByText(expected, { selector: '.answer' })).toBeTruthy()
 
-  await user.click(screen.getByRole('button', { name: /^Good/ }))
+  await user.click(screen.getByRole('button', { name: /^Easy/ })) // Good would keep the new card for its 10-minute step
   await screen.findByText('19 left')
   await user.click(screen.getByRole('button', { name: 'Exit' }))
   expect(current()).toBe('Review') // back where the session started

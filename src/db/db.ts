@@ -27,6 +27,7 @@ export interface ReviewRecord {
   grade: Grade
   at: Date
   log: ReviewLog
+  lesson?: true // graded by a path lesson, test-out or placement, not a Review session: doesn't use up the daily new-card cap
 }
 interface Schema extends DBSchema {
   cards: { key: string; value: StoredCard; indexes: { 'by-deck': string } }
@@ -133,12 +134,12 @@ export async function reviewCounts(db: Db, deck: string, mode: string, now = new
   }
 }
 
-/** Cards first studied since local midnight, to enforce the daily new-card cap. */
+/** Cards first studied in Review since local midnight, to enforce the daily new-card cap. Untagged reviews from before the `lesson` tag count. */
 export async function newToday(db: Db, now = new Date()) {
   const start = new Date(now)
   start.setHours(0, 0, 0, 0)
   // ponytail: full scan of reviews; add an 'at' index if history grows large
-  return (await db.getAll('reviews')).filter((r) => r.at >= start && r.log.state === State.New).length
+  return (await db.getAll('reviews')).filter((r) => r.at >= start && r.log.state === State.New && !r.lesson).length
 }
 
 /** Apply a grade: update the card and append a review record in one transaction. */
@@ -177,8 +178,26 @@ export const setDeckTombs = (t: Record<string, boolean>) => {
   } catch { /* private mode: a deleted deck may come back from another device */ }
 }
 
+/**
+ * An SVG opened in its own tab runs its scripts as this origin (IndexedDB, localStorage): keep only safe SVG markup.
+ * DOMPurify loads only when a deck has SVGs (import is lazy already; this keeps it out of the main bundle).
+ */
+async function cleanSvgs(media: Map<string, Uint8Array>) {
+  const svgs = [...media.keys()].filter((n) => /\.svg$/i.test(n))
+  if (!svgs.length) return media
+  const { default: purify } = await import('dompurify')
+  const out = new Map(media)
+  for (const n of svgs) {
+    const svg = purify.sanitize(new TextDecoder().decode(media.get(n)), { USE_PROFILES: { svg: true, svgFilters: true }, RETURN_DOM_FRAGMENT: true }).firstElementChild
+    if (svg) out.set(n, new TextEncoder().encode(new XMLSerializer().serializeToString(svg))) // XML, not HTML, serialization: it's served as image/svg+xml
+    else out.delete(n)
+  }
+  return out
+}
+
 /** Store a parsed deck. Re-importing refreshes content but keeps each card's review progress. */
 export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs'] => newFsrsCard()) {
+  const media = await cleanSvgs(p.media) // before the transaction: an await on anything but it would commit it early
   const tx = db.transaction(['cards', 'decks', 'media'], 'readwrite')
   let added = 0
   let updated = 0
@@ -200,7 +219,7 @@ export async function saveImport(db: Db, p: Parsed, fresh = (): StoredCard['fsrs
   }
   for (const [deckId, names] of refs)
     for (const name of names) {
-      const data = p.media.get(name) // parseApkg keys media by NFC name
+      const data = media.get(name) // parseApkg keys media by NFC name
       if (data) await tx.objectStore('media').put({ key: mediaKey(`anki:${deckId}`, name), data, type: MIME[name.split('.').pop()!.toLowerCase()] ?? 'application/octet-stream' })
     }
   await tx.done

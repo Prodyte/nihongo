@@ -47,7 +47,7 @@ function reviveActivity(a: unknown): ActivityRecord {
 function reviveReview(r: unknown): ReviewRecord {
   if (!isObj(r) || typeof r.cardId !== 'string' || typeof r.grade !== 'number' || !isObj(r.log))
     throw new BackupError('Backup is corrupt: a review is malformed.')
-  if (!LOG_NUMS.every((k) => fin((r.log as Record<string, unknown>)[k]))) throw new BackupError('Backup is corrupt: a review has invalid scheduling data.')
+  if (!LOG_NUMS.every((k) => fin((r.log as Record<string, unknown>)[k])) || (r.lesson !== undefined && r.lesson !== true)) throw new BackupError('Backup is corrupt: a review has invalid scheduling data.')
   return { ...(r as unknown as ReviewRecord), at: date(r.at, 'review.at')!, log: { ...(r.log as unknown as ReviewRecord['log']), due: date(r.log.due, 'log.due')!, review: date(r.log.review, 'log.review')! } }
 }
 

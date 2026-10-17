@@ -85,7 +85,7 @@ export async function completeLesson(
       const grade = rateByMisses(misses[item.id] ?? 0)
       const { card: next, log } = schedule(card.fsrs, grade, now)
       card = { ...card, fsrs: next }
-      await tx.objectStore('reviews').add({ cardId: item.id, grade, at: now, log })
+      await tx.objectStore('reviews').add({ cardId: item.id, grade, at: now, log, lesson: true }) // tagged: doesn't use up Review's new-card cap
       graded++
     }
     await cards.put(card)

@@ -17,6 +17,7 @@ const MODES = { flashcard: Flashcard, typing: Typing, quiz: Quiz }
 
 /** Deck id for "practise weak spots" (see weakSpots), drilled without changing their schedule. */
 export const MISTAKES = 'mistakes'
+const LEARN_AHEAD = 20 * 60_000
 
 export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: string; mode: Mode; autoplay: boolean; onExit: () => void }) {
   const practice = deck === MISTAKES
@@ -56,8 +57,10 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
         // practice drills without touching the schedule (the cards keep their real reviews)
         const updated = practice ? queue[0] : await gradeCard(db, queue[0].id, g)
         if (!practice) void addReviewXp(db).catch(() => {}) // best effort: XP must never block grading
-        // Again: see it once more this session (FSRS also schedules it for later)
-        setQueue((q) => [...q!.slice(1), ...(g === Rating.Again ? [updated] : [])])
+        // Again, or a learning step due within 20 min (Anki's learn-ahead limit): see it again after the rest. Practice
+        // never reschedules, so only Again repeats there; elsewhere Good/Easy eventually graduate it past the window.
+        const again = g === Rating.Again || (!practice && updated.fsrs.due.getTime() - Date.now() <= LEARN_AHEAD)
+        setQueue((q) => [...q!.slice(1), ...(again ? [updated] : [])])
         setReviewed((n) => n + 1)
         setError(null)
       } catch (e) {

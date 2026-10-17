@@ -7,6 +7,7 @@ import { newFsrsCard } from '../srs/scheduler'
 import { describe, expect, it } from 'vitest'
 import { deleteDeck, getDeck, gradeCard, openDb, saveImport, studyCards } from '../db/db'
 import { parseApkg } from './apkg'
+import { mediaRefs } from './refs'
 
 const SQL = await initSqlJs()
 
@@ -31,6 +32,7 @@ async function makeApkg(extra: Record<string, Uint8Array | string> = {}) {
   note(100, 1, ['犬[いぬ]', 'dog <img src="dog.png"><img src=a&amp;b.png><img src="が.png">']); card(1000, 100, 0); card(1001, 100, 1)
   note(101, 2, ['{{c1::Tokyo}} is the capital']); card(1002, 101, 0)
   note(102, 1, ['', '']); card(1003, 102, 0) // blank question
+  note(103, 1, ['<img src="dog.png">', 'dog']); card(1004, 103, 0) // image-only question is not blank
   const zip = new JSZip()
   zip.file('collection.anki2', db.export())
   zip.file('media', JSON.stringify({ 0: 'dog.png', 1: 'unused.png', 2: 'a&b.png', 3: 'か\u3099.png' }))
@@ -46,7 +48,7 @@ describe('parseApkg', () => {
   it('renders standard + cloze cards, skips blank ones, reads media and deck names', async () => {
     const p = await parseApkg(await makeApkg(), SQL)
     expect(p.decks).toEqual([{ id: '10', name: 'Japanese::Basics' }]) // empty deck omitted
-    expect(p.cards.map((c) => c.id)).toEqual(['1000', '1001', '1002'])
+    expect(p.cards.map((c) => c.id)).toEqual(['1000', '1001', '1002', '1004'])
     expect(p.skipped).toBe(1)
     const [fwd, rev, cloze] = p.cards
     expect(fwd.front).toBe('犬[いぬ]')
@@ -65,14 +67,14 @@ describe('saveImport / deleteDeck', () => {
   it('imports, keeps progress on re-import, filters html cards from typing/quiz, and deletes everything', async () => {
     const db = await openDb('apkg-test')
     const parsed = await parseApkg(await makeApkg(), SQL)
-    expect(await saveImport(db, parsed)).toEqual({ added: 3, updated: 0, skipped: 1 })
+    expect(await saveImport(db, parsed)).toEqual({ added: 4, updated: 0, skipped: 1 })
 
     await gradeCard(db, 'anki:10:1000', Rating.Good)
-    expect(await saveImport(db, parsed)).toEqual({ added: 0, updated: 3, skipped: 1 })
+    expect(await saveImport(db, parsed)).toEqual({ added: 0, updated: 4, skipped: 1 })
     expect((await db.get('cards', 'anki:10:1000'))!.fsrs.state).not.toBe(State.New)
     expect((await db.get('cards', 'anki:10:1001'))!.fsrs.state).toBe(State.New)
 
-    expect(await studyCards(db, 'anki:10', 'flashcard')).toHaveLength(3)
+    expect(await studyCards(db, 'anki:10', 'flashcard')).toHaveLength(4)
     expect(await studyCards(db, 'anki:10', 'typing')).toHaveLength(0)
     await db.put('cards', { id: 'sent:x', deck: 'grammar', front: 'わたしは がくせいです。', back: ['I am a student.'], fsrs: newFsrsCard() })
     expect(await studyCards(db, 'grammar', 'typing')).toHaveLength(1) // grammar cards are reviewed fill-the-gap in every mode
@@ -91,6 +93,19 @@ describe('saveImport / deleteDeck', () => {
   })
 })
 
+describe('mediaRefs', () => {
+  it('any-case src with spaces around =, and %-decoded names in NFC', () => {
+    expect(mediaRefs('<IMG SRC="x.jpg"><img src = "y.jpg"><img src="%E3%81%8B%E3%82%99.png">')).toEqual(['x.jpg', 'x.jpg', 'y.jpg', 'y.jpg', '%E3%81%8B%E3%82%99.png', 'が'.normalize('NFC') + '.png'])
+  })
+})
+
+it('saveImport strips scripts from SVGs (opened in a tab, one runs as this origin)', async () => {
+  const db = await openDb('svg-test')
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script><circle r="5" onload="alert(2)"/></svg>'
+  await saveImport(db, { decks: [{ id: '1', name: 'D' }], cards: [{ id: '9', deckId: '1', front: '<img src="x.svg">', back: '' }], media: new Map([['x.svg', new TextEncoder().encode(svg)]]), skipped: 0 })
+  expect(new TextDecoder().decode((await db.get('media', 'anki:1\0x.svg'))!.data)).toBe('<svg xmlns="http://www.w3.org/2000/svg"><circle r="5"/></svg>')
+})
+
 describe('resolveMedia', () => {
   it('sanitizes scripts/handlers, drops remote images, wires local media', async () => {
     const { resolveMedia } = await import('./resolve')
@@ -107,11 +122,20 @@ describe('resolveMedia', () => {
       '<div style="background:url(https://evil.example/x)">s</div><style>body{display:none}</style>',
       '<form action="https://evil.example"><input name="pw"></form>',
       '<img src="dog%.png">', // malformed % must not blank the card
+      '<table background="https://evil.example/t.gif"><tr><td background="https://evil.example/td.gif">t</td></tr></table>',
+      '<div><track src="https://evil.example/t.vtt"></div><img src="dog.png" lowsrc="https://evil.example/l.gif">',
     ].join('')
     const out = await resolveMedia(db, 'anki:10', html, () => 'blob:test')
     expect(out).toContain('<b>ok</b>')
     expect(out).not.toMatch(/script|onerror|javascript:|evil\.example|nope\.png|srcset|style|<form|<input/)
     expect(out).toContain('<img src="blob:test">')
     expect(out).toContain('<audio controls="" data-media="dog.png" src="blob:test"></audio>')
+  })
+  it('[sound:] with an &amp; in its name finds the file', async () => {
+    const { resolveMedia } = await import('./resolve')
+    const db = await openDb('amp-test')
+    const html = '[sound:a&amp;b.mp3]'
+    await saveImport(db, { decks: [{ id: '1', name: 'D' }], cards: [{ id: '9', deckId: '1', front: html, back: html }], media: new Map([['a&b.mp3', new Uint8Array([1])]]), skipped: 0 })
+    expect(await resolveMedia(db, 'anki:1', html, () => 'blob:ok')).toContain('src="blob:ok"')
   })
 })

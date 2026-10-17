@@ -3,7 +3,7 @@ import JSZip from 'jszip'
 import type { Database, SqlJsStatic } from 'sql.js'
 import { parsePb, pbNum, pbText } from './proto'
 import { mediaRefs } from './refs'
-import { renderTemplate } from './render'
+import { isEmpty, renderTemplate } from './render'
 
 export class ApkgError extends Error {
   name = 'ApkgError'
@@ -108,7 +108,7 @@ export async function parseApkg(bytes: ArrayBuffer | Uint8Array, SQL: SqlJsStati
       const ctx = { ord: Number(ord), answer: false, frontSide: '' }
       const front = renderTemplate(tmpl.qfmt, fields, ctx)
       const back = renderTemplate(tmpl.afmt, fields, { ...ctx, answer: true, frontSide: front })
-      if (!front.replace(/<[^>]*>|&nbsp;|\s/g, '')) { skipped++; continue } // blank question
+      if (isEmpty(front.replace(/<(?!img\b)[^>]*>/gi, ''))) { skipped++; continue } // blank question: no text, no image
       used.add(String(did))
       cards.push({ id: String(cid), deckId: String(did), front, back })
     }

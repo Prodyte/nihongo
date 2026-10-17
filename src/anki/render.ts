@@ -1,5 +1,5 @@
 // Minimal Anki template renderer: fields, {{#S}}/{{^S}} sections, {{FrontSide}}, and the
-// text/hint/type/cloze/furigana/kana/kanji filters. ponytail: no nested clozes, no {{Tags}}/{{Deck}}.
+// text/hint/type/cloze/furigana/kana/kanji/tts filters. ponytail: no {{Tags}}/{{Deck}}; a cloze body can't contain {{ or }}.
 export interface RenderCtx {
   ord: number // card ordinal; for cloze notes this is cloze number - 1
   answer: boolean // rendering the back side
@@ -7,16 +7,22 @@ export interface RenderCtx {
 }
 
 const strip = (h: string) => h.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')
-export const isEmpty = (v: string | undefined) => !v || strip(v).trim() === ''
+/** Anki's rule: a field is empty if it holds only whitespace, &nbsp;, <br> and <div> (an image-only field is not empty). */
+export const isEmpty = (v: string | undefined) => !v || /^(?:\s|&nbsp;|<\/?(?:br|div)\b[^>]*>)*$/i.test(v)
 
 const SECTION = /\{\{([#^])\s*([^{}]+?)\s*\}\}([\s\S]*?)\{\{\/\s*\2\s*\}\}/g
-const CLOZE = /\{\{c(\d+)::([\s\S]*?)(?:::([\s\S]*?))?\}\}/g
+const NOBRACE = '(?:(?!\\{\\{|\\}\\})[\\s\\S])*?' // so the innermost cloze matches first
+const CLOZE = new RegExp(`\\{\\{c(\\d+)::(${NOBRACE})(?:::(${NOBRACE}))?\\}\\}`, 'g')
 const FURIGANA = / ?([^ >\n]+?)\[(?!sound:)(.+?)\]/g
 
 function cloze(text: string, ord: number, answer: boolean) {
-  return text.replace(CLOZE, (_, n, body, hint) =>
-    Number(n) === ord + 1 ? `<span class="cloze">${answer ? body : `[${hint ?? '...'}]`}</span>` : body,
-  )
+  for (let prev = ''; prev !== text; ) { // nested: {{c1::a {{c2::b}} c}} resolves c2, then c1
+    prev = text
+    text = text.replace(CLOZE, (_, n, body, hint) =>
+      Number(n) === ord + 1 ? `<span class="cloze">${answer ? body : `[${hint ?? '...'}]`}</span>` : body,
+    )
+  }
+  return text
 }
 
 function applyFilter(filter: string, v: string, ctx: RenderCtx) {
@@ -28,7 +34,7 @@ function applyFilter(filter: string, v: string, ctx: RenderCtx) {
     case 'furigana': return v.replace(FURIGANA, '<ruby>$1<rt>$2</rt></ruby>')
     case 'kana': return v.replace(FURIGANA, '$2')
     case 'kanji': return v.replace(FURIGANA, '$1')
-    default: return v
+    default: return /^tts\b/.test(filter) ? '' : v // {{tts ja_JP:F}} would print (and spoil) a listening card's text
   }
 }
 
