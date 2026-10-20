@@ -9,7 +9,10 @@ export const FORM_LABEL: Record<Form, string> = {
 /** Verbs ending in -iru/-eru that are godan anyway (the る is part of the stem): 帰る かえります, not かえます. By written
  * form, since readings collide: 帰る (godan) and 変える (ichidan) are both かえる; 切る (godan) and 着る (ichidan) both きる. */
 const GODAN_RU = new Set(['帰る', '返る', '入る', '知る', '走る', '切る', '要る', '減る', '喋る', 'しゃべる', '滑る', '握る', '蹴る', '焦る', '限る',
-  '散る', '参る', '混じる', '交じる', '練る', '茂る', '湿る', '遮る', '覆る', '嘲る', '罵る', '捻る', '翻る', '陥る', '甦る', '照る', 'いじる', '弄る', '反る'])
+  '散る', '参る', '混じる', '交じる', 'まじる', '練る', '茂る', '湿る', 'しめる', '遮る', '覆る', '嘲る', '罵る', '捻る', '翻る', '陥る', '甦る', '蘇る',
+  '照る', 'いじる', '弄る', '反る', '斬る', '齧る', 'かじる', '千切る', 'ちぎる', '炒る', '煎る', '捩る', 'ねじる']) // しめる: the course's kana-only しめる is 湿る (to be damp)
+/** Honorific godan verbs whose ます stem ends in い, not り: いらっしゃいます, おっしゃいます, なさいます, くださいます. */
+const HONORIFIC = /(?:いらっしゃ|おっしゃ|なさ|くださ|ござ)る$/
 
 const I_ROW: Record<string, string> = { う: 'い', く: 'き', ぐ: 'ぎ', す: 'し', つ: 'ち', ぬ: 'に', ぶ: 'び', む: 'み', る: 'り' }
 const A_ROW: Record<string, string> = { う: 'わ', く: 'か', ぐ: 'が', す: 'さ', つ: 'た', ぬ: 'な', ぶ: 'ば', む: 'ま', る: 'ら' }
@@ -38,7 +41,7 @@ export function conjugate(reading: string, form: Form, cls: VerbClass): string {
   const stem = reading.slice(0, -1)
   const last = reading.slice(-1)
   if (cls === 'ichidan') return stem + { masu: 'ます', masen: 'ません', mashita: 'ました', te: 'て', ta: 'た', nai: 'ない' }[form]
-  const i = stem + I_ROW[last]
+  const i = stem + (HONORIFIC.test(reading) ? 'い' : I_ROW[last])
   if (form === 'masu' || form === 'masen' || form === 'mashita') return i + { masu: 'ます', masen: 'ません', mashita: 'ました' }[form]
   if (form === 'nai') return reading === 'ある' ? 'ない' : stem + A_ROW[last] + 'ない'
   const [te, ta] = reading === 'いく' ? ['って', 'った'] : reading === 'とう' || reading === 'こう' ? ['うて', 'うた'] : TE[last] // 行く: いって, not いいて; 問う: とうて

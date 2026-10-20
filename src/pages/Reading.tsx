@@ -3,7 +3,7 @@ import { speak, speakAll, useJaVoice } from '../audio'
 import type { Db, StoredCard } from '../db/db'
 import { ExitButton, Icon } from '../icons'
 import { SpeakButton } from '../modes/SpeakButton'
-import { ITEMS, wordFor, written, type Item } from '../path/course'
+import { contentChunks, GRAMMAR_CHUNKS, ITEMS, wordFor, written, type Item } from '../path/course'
 import { addReviewXp } from '../path/progress'
 import { displayJp, PARTICLES, readingOf, surfaceOf } from '../path/romaji'
 import { STORIES, type Story } from '../path/stories'
@@ -76,7 +76,10 @@ function StoryView({ db, story, onExit }: { db: Db; story: Story; onExit: () => 
     stop.current = speakAll(story.sentences.map((s) => sentenceText(s.tokens)), setPlaying, () => setPlaying(null))
   }
   const lookUp = (chunk: string) => {
-    const item = PARTICLES.has(chunk) ? undefined : wordFor(chunk, WORDS) // は is the particle, not 歯 (tooth)
+    // a particle, ending or counter is only ever the word spelled and read just like it (つもり, 二人): は is not 歯 (tooth),
+    // せいで not 巣 (nest), 十分 (じゅっぷん) not じゅうぶん (enough)
+    const item = PARTICLES.has(chunk) ? undefined : contentChunks([chunk]).length ? wordFor(chunk, WORDS)
+      : WORDS.find((w) => written(w) === surfaceOf(chunk) && w.jp === readingOf(chunk))
     setWord({ chunk, item })
     speak(readingOf(chunk))
     if (item) void db.get('cards', item.id).then((c) => setCard({ id: item.id, card: c }), () => {})
@@ -97,7 +100,7 @@ function StoryView({ db, story, onExit }: { db: Db; story: Story; onExit: () => 
         {word && (
           <div className="lookup-pop" role="status">
             <span lang="ja" className="jp">{word.item ? <Ruby text={written(word.item)} reading={word.item.written && word.item.jp} /> : surfaceOf(word.chunk)}</span>
-            <span>{word.item ? `${word.item.jp !== surfaceOf(word.chunk) ? `${readingOf(word.chunk)} · ` : ''}${word.item.gloss}` : PARTICLES.has(word.chunk) ? 'a particle (see the grammar lessons)' : readingOf(word.chunk)}</span>
+            <span>{word.item ? `${word.item.jp !== surfaceOf(word.chunk) ? `${readingOf(word.chunk)} · ` : ''}${word.item.gloss}` : PARTICLES.has(word.chunk) ? 'a particle (see the grammar lessons)' : GRAMMAR_CHUNKS.has(surfaceOf(word.chunk)) ? 'grammar (see the grammar lessons)' : readingOf(word.chunk)}</span>
             <button className="icon-btn ghost" aria-label="Close" onClick={() => setWord(null)}><Icon name="close" size={18} /></button>
             {word.item && card?.id === word.item.id && <Study db={db} it={word.item} card={card.card} onCard={(id, c) => setCard({ id, card: c })} />}
           </div>

@@ -161,7 +161,7 @@ describe('kanji lessons', () => {
     expect(kanji).toHaveLength(979)
     expect(kanji.filter((k) => k.examples!.length > 0).length).toBeGreaterThan(900)
     for (const k of kanji) for (const id of k.examples!) expect((ITEMS.get(id)!.written ?? ITEMS.get(id)!.kanji)!, k.jp).toContain(k.jp)
-    expect(ITEMS.get('kanji:日')).toMatchObject({ gloss: 'day, sun, japan', on: ['にち', 'じつ'], strokes: 4, level: 5 })
+    expect(ITEMS.get('kanji:日')).toMatchObject({ gloss: 'day, sun, Japan', on: ['にち', 'じつ'], strokes: 4, level: 5 })
   })
 })
 

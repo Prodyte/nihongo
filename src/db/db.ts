@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import { State, type Card, type Grade, type ReviewLog } from 'ts-fsrs'
+import { Rating, State, type Card, type Grade, type ReviewLog } from 'ts-fsrs'
 import { mediaRefs } from '../anki/refs'
 import type { Parsed } from '../anki/apkg'
 import { KANA, toKata } from '../data/kana'
@@ -31,7 +31,7 @@ export interface ReviewRecord {
 }
 interface Schema extends DBSchema {
   cards: { key: string; value: StoredCard; indexes: { 'by-deck': string } }
-  reviews: { key: number; value: ReviewRecord; indexes: { 'by-card': string } }
+  reviews: { key: number; value: ReviewRecord; indexes: { 'by-card': string; 'by-at': Date } }
   decks: { key: string; value: DeckRecord }
   media: { key: string; value: MediaRecord }
   lessons: { key: string; value: LessonRecord }
@@ -40,12 +40,12 @@ interface Schema extends DBSchema {
 export type Db = IDBPDatabase<Schema>
 
 export const openDb = (name = 'nihongo') => {
-  const opening: Promise<Db> = openDB<Schema>(name, 3, {
+  const opening: Promise<Db> = openDB<Schema>(name, 4, {
     // another tab opened a newer version: close this connection so its upgrade isn't blocked forever
     blocking() {
       void opening.then((d) => d.close())
     },
-    upgrade(db, old) {
+    upgrade(db, old, _new, tx) {
       if (old < 1) {
         db.createObjectStore('cards', { keyPath: 'id' }).createIndex('by-deck', 'deck')
         db.createObjectStore('reviews', { keyPath: 'id', autoIncrement: true }).createIndex('by-card', 'cardId')
@@ -58,6 +58,7 @@ export const openDb = (name = 'nihongo') => {
         db.createObjectStore('lessons', { keyPath: 'id' })
         db.createObjectStore('activity', { keyPath: 'date' })
       }
+      if (old < 4) tx.objectStore('reviews').createIndex('by-at', 'at') // today's or this month's reviews without reading a year of them
     },
   })
   return opening
@@ -138,8 +139,19 @@ export async function reviewCounts(db: Db, deck: string, mode: string, now = new
 export async function newToday(db: Db, now = new Date()) {
   const start = new Date(now)
   start.setHours(0, 0, 0, 0)
-  // ponytail: full scan of reviews; add an 'at' index if history grows large
-  return (await db.getAll('reviews')).filter((r) => r.at >= start && r.log.state === State.New && !r.lesson).length
+  return (await db.getAllFromIndex('reviews', 'by-at', IDBKeyRange.lowerBound(start))).filter((r) => r.log.state === State.New && !r.lesson).length
+}
+
+/**
+ * The reviews weakSpots needs to rank `cards`: the whole history of each card it could list (a miss or Hard in the last
+ * 30 days, or 2+ lapses). Any other card scores under 2 and is never listed, so its reviews aren't read: after a year of
+ * study, reading every review blocks a phone for about half a second.
+ */
+export async function weakSpotReviews(db: Db, cards: StoredCard[], now = new Date()) {
+  const month = await db.getAllFromIndex('reviews', 'by-at', IDBKeyRange.lowerBound(new Date(now.getTime() - 30 * 86400000)))
+  const ids = new Set([...month.filter((r) => r.grade <= Rating.Hard).map((r) => r.cardId), ...cards.filter((c) => c.fsrs.lapses >= 2).map((c) => c.id)])
+  const byCard = db.transaction('reviews').store.index('by-card')
+  return (await Promise.all([...ids].map((id) => byCard.getAll(id)))).flat()
 }
 
 /** Apply a grade: update the card and append a review record in one transaction. */

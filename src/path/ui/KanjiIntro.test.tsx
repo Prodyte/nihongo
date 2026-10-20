@@ -12,7 +12,7 @@ it('shows meanings, on readings in katakana, kun readings, stroke count and exam
   vi.stubGlobal('fetch', fetch)
   const onDone = vi.fn()
   render(<KanjiIntro item={ITEMS.get('kanji:日')!} onDone={onDone} />)
-  expect(screen.getByText('day, sun, japan')).toBeTruthy()
+  expect(screen.getByText('day, sun, Japan')).toBeTruthy()
   expect(screen.getByText('ニチ、ジツ')).toBeTruthy()
   expect(screen.getByText('ひ、〜び、〜か')).toBeTruthy()
   expect(screen.getByText('4')).toBeTruthy()

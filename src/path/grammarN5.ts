@@ -157,7 +157,7 @@ export const N5_GRAMMAR: GrammarLessonSpec[] = [
       examples: [0, 1],
     },
     sentences: [
-      { tokens: ['図書館[としょかん]', 'で', '本[ほん]', 'を', '読[よ]みます'], en: 'I read books at the library.', bank: ['に'], gap: { at: 1, wrong: ['を', 'の'] } },
+      { tokens: ['図書館[としょかん]', 'で', '本[ほん]', 'を', '読[よ]みます'], en: 'I read books at the library.', bank: ['に'], gap: { at: 1, wrong: ['を', 'に'] } },
       { tokens: ['バス', 'で', '学校[がっこう]', 'へ', '行[い]きます'], en: 'I go to school by bus.', bank: ['を'], gap: { at: 1, wrong: ['を', 'が'] } },
       { tokens: ['箸[はし]', 'で', 'ご飯[はん]', 'を', '食[た]べます'], en: 'I eat rice with chopsticks.', bank: ['が'], gap: { at: 1, wrong: ['を', 'が'] } },
       { tokens: ['レストラン', 'で', '昼[ひる]ご飯[はん]', 'を', '食[た]べました'], en: 'I ate lunch at a restaurant.', bank: ['が'], gap: { at: 1, wrong: ['を', 'が'] } },

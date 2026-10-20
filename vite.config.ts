@@ -18,7 +18,7 @@ export default defineConfig({
       manifest: {
         name: 'Nihongo: learn Japanese',
         short_name: 'Nihongo',
-        description: 'Learn Japanese from kana to JLPT N3: words, kanji and grammar with spaced repetition. Imports Anki decks.',
+        description: 'Learn Japanese from kana to JLPT N2: words, kanji and grammar with spaced repetition. Imports Anki decks.',
         lang: 'en',
         start_url: '/nihongo/',
         scope: '/nihongo/',

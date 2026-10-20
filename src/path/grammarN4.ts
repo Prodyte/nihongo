@@ -401,7 +401,7 @@ export const N4_GRAMMAR: GrammarLessonSpec[] = [
       { tokens: ['外[そと]', 'は', '寒[さむ]い', 'みたい', 'です'], en: 'It seems cold outside.', bank: ['よう'], gap: { at: 2, wrong: ['寒[さむ]く', '寒[さむ]くて'] } },
       { tokens: ['あの', '二人[ふたり]', 'は', '兄弟[きょうだい]', 'みたい', 'です'], en: 'Those two seem like brothers.', bank: ['よう'], gap: { at: 4, wrong: ['よう', 'そう'] } },
       { tokens: ['彼[かれ]', 'は', '先生[せんせい]', 'らしい', 'です'], en: 'Apparently he is a teacher.', bank: ['みたい'], gap: { at: 3, wrong: ['よう', 'そう'] } },
-      { tokens: ['あの', '店[みせ]', 'は', '今日[きょう]', '休[やす]み', 'らしい', 'です'], en: 'Apparently that shop is closed today.', bank: ['よう'], gap: { at: 5, wrong: ['よう', 'そう'] } },
+      { tokens: ['あの', '店[みせ]', 'は', '今日[きょう]', '休[やす]み', 'らしい', 'です'], en: 'Apparently that shop is closed today.', bank: ['よう'], gap: { at: 5, wrong: ['よう', 'でしょう'] } },
     ],
   },
   {

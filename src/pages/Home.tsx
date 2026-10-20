@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useJaVoice } from '../audio'
-import { BUILTIN_DECKS, reviewCounts, studyCards, type Db, type DeckRecord, type StoredCard } from '../db/db'
+import { BUILTIN_DECKS, reviewCounts, studyCards, weakSpotReviews, type Db, type DeckRecord, type StoredCard } from '../db/db'
 import { Icon, type IconName } from '../icons'
 import { DRILL_TITLE, learnedForDrills, verbsIn, type DrillKind } from '../path/drills'
 import { canRecognise } from '../speech'
@@ -44,11 +44,13 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
   useEffect(() => {
     let live = true
     // studyCards: the same cards a weak-spots session can show
-    void Promise.all([studyCards(db, 'all', config.mode), db.getAll('reviews'), learnedForDrills(db)]).then(([cards, reviews, items]) => {
-      const now = new Date()
+    const now = new Date()
+    void (async () => {
+      const cards = await studyCards(db, 'all', config.mode)
+      const [reviews, items] = await Promise.all([weakSpotReviews(db, cards, now), learnedForDrills(db)])
       const next = nextDue(cards, now)
       if (live) setInfo({ next: next && until(next, now), weak: weakSpots(reviews, cards, now).flatMap((w) => { const card = cards.find((c) => c.id === w.id); return card ? [{ card, why: w.why }] : [] }), words: items.length, verbs: verbsIn(items).length })
-    }, () => {})
+    })().catch(() => {})
     return () => {
       live = false
     }

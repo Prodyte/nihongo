@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useJaVoice } from '../audio'
 import { ExitButton } from '../icons'
-import { ITEMS, written } from '../path/course'
+import { ITEMS } from '../path/course'
 import { buildMock, MOCK_MINUTES, MOCK_PASS, MOCK_QUESTIONS, mockBestKey, type MockLevel, type MockQuestion } from '../path/mock'
 import { ExerciseView } from '../path/ui/ExerciseView'
 import { Ruby } from '../path/ui/Ruby'
@@ -75,7 +75,7 @@ export function MockTest({ level, onExit }: { level: MockLevel; onExit: () => vo
             <ul className="mock-missed">
               {missed.map(({ ex }) => (
                 <li key={ex.item.id}>
-                  <span lang="ja"><Ruby text={ex.type === 'listen' ? written(ex.item) : ex.prompt} /></span>
+                  <span lang="ja"><Ruby text={ex.type === 'listen' ? ex.item.jp : ex.prompt} /></span>{/* listening: what was heard, then how it is written */}
                   <strong lang={ex.answer === ex.item.gloss ? undefined : 'ja'}><Ruby text={ex.answer} reading={ex.readings?.[ex.answer]} /></strong>
                   {ex.answer !== ex.item.gloss && <small>{ex.item.gloss}</small>}
                 </li>

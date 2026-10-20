@@ -64,6 +64,18 @@ OVERRIDES = {
     ('コンクール', 'コンクール'): ('', 'コンクール', 'contest'),
     ('かるた', 'かるた'): ('', 'かるた', 'playing cards'),
     ('ペンチ', 'ペンチ'): ('', 'ペンチ', 'pliers'),
+    # notes about a word rather than its meaning: "honorific expression for いう" can't be typed as an answer
+    ('方', 'かた'): ('方', 'かた', 'person (polite), way of doing'),
+    ('半', 'はん'): ('半', 'はん', 'half, half past'),
+    ('カレー', 'カレー'): ('', 'カレー', 'curry, curry and rice'),
+    ('いらっしゃる', 'いらっしゃる'): ('', 'いらっしゃる', 'to come, to go, to be (honorific)'),
+    ('おっしゃる', 'おっしゃる'): ('', 'おっしゃる', 'to say (honorific)'),
+    ('なさる', 'なさる'): ('', 'なさる', 'to do (honorific)'),
+    ('おる', 'おる'): ('', 'おる', 'to be (humble)'),
+    ('申す', 'もうす'): ('申す', 'もうす', 'to say, to be called (humble)'),
+    ('参る', 'まいる'): ('参る', 'まいる', 'to go, to come (humble)'),
+    ('差し上げる', 'さしあげる'): ('差し上げる', 'さしあげる', 'to give (humble)'),
+    ('致す', 'いたす'): ('致す', 'いたす', 'to do (humble)'),
     # greetings the N2 list includes: the starter units teach them, so they would count as N2 words
     ('お願いします', 'おねがいします'): None,
     ('おはよう', 'おはよう'): None,
@@ -79,6 +91,8 @@ RESPELL = {'落る': '落ちる'}
 EXTRA_N5 = [('日本', 'にほん', 'Japan'), ('日本語', 'にほんご', 'Japanese (language)')]
 
 KANA = re.compile(r'^[぀-ヿー]+$')
+# KANJIDIC meanings are in Title Case and get lowercased; names keep their capital (私: "I", 日: "Japan")
+PROPER = re.compile(r'\b(?:i|mr|japan|japanese|china|sino|england|english|europe|buddha|buddhist|france|spain)\b')
 WRITTEN = re.compile(r'^[぀-ヿ一-鿿々ー]+$')
 
 
@@ -156,7 +170,7 @@ def kanji():
     out = []
     for k in order:
         v = raw[k]
-        meanings = [m.lower() for m in v['meanings'] if 'radical' not in m.lower()][:3]
+        meanings = [PROPER.sub(lambda p: p[0].capitalize(), m.lower()) for m in v['meanings'] if 'radical' not in m.lower()][:3]
         kun = [re.sub(r'\.(.+)$', r'(\1)', r) for r in v['readings_kun']][:4]  # ひと.つ -> ひと(つ): the okurigana in brackets
         out.append([k, v['jlpt_new'], meanings, v['readings_on'][:3], kun, v['strokes']])
     print(f'{len(out)} kanji', file=sys.stderr)

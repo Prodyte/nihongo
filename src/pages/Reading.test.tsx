@@ -34,6 +34,24 @@ it('lists stories under their level, N5 then N4 then N3', async () => {
   for (const s of STORIES) expect(within(screen.getByRole('region', { name: `N${s.level}` })).getByRole('button', { name: new RegExp(s.en) })).toBeTruthy()
 })
 
+it('endings and counters are not taken for a dictionary word that only looks like them', async () => {
+  const user = userEvent.setup()
+  render(<Reading db={await openDb('reading-4')} onExit={() => {}} />)
+  const tap = async (story: RegExp, text: string) => {
+    await user.click(screen.getByRole('button', { name: story }))
+    await user.click([...document.querySelectorAll<HTMLButtonElement>('button.word')].find((w) => w.textContent === text)!)
+    const pop = document.querySelector('.lookup-pop')!.textContent!
+    await user.click(screen.getByRole('button', { name: 'Exit' }))
+    return pop
+  }
+  const tenMinutes = await tap(/My town/, '十分じゅっぷん') // ruby: the kanji, then the reading
+  expect(tenMinutes).toMatch(/じゅっぷん/)
+  expect(tenMinutes).not.toMatch(/enough/) // 十分 じゅうぶん
+  const blame = await tap(/Getting up early/, 'せいで')
+  expect(blame).toMatch(/grammar/)
+  expect(blame).not.toMatch(/nest/) // 巣
+})
+
 it('a looked-up word can be saved for Review with Study this (a particle has no button)', async () => {
   const db = await openDb('reading-3')
   const user = userEvent.setup()

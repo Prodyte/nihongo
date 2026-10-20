@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { conjugate, conjugateWritten, FORMS, verbClass } from './conjugate'
+import { ITEMS } from './course'
 
 const all = (reading: string, written?: string) => { const c = verbClass(reading, written)!; return FORMS.map((f) => conjugate(reading, f, c)) }
 
@@ -43,6 +44,27 @@ describe('conjugate', () => {
     expect(all('くる', '来る')).toEqual(['きます', 'きません', 'きました', 'きて', 'きた', 'こない'])
     expect(all('とう', '問う').slice(3, 5)).toEqual(['とうて', 'とうた'])
     expect(all('あいする', '愛する')[5]).toBe('あいさない')
+  })
+  it('-iru/-eru verbs that are godan anyway, and the honorifics whose ます stem is い', () => {
+    expect(all('よみがえる', '蘇る')[0]).toBe('よみがえります')
+    expect(all('きる', '斬る')[0]).toBe('きります')
+    expect(all('かじる')[0]).toBe('かじります')
+    expect(all('ちぎる')[3]).toBe('ちぎって')
+    expect(all('まじる')[5]).toBe('まじらない')
+    expect(all('いる', '煎る')[0]).toBe('いります')
+    expect(all('ねじる', '捩る')[0]).toBe('ねじります')
+    expect(all('しめる')[0]).toBe('しめります') // the course's kana-only しめる is 湿る; 閉める keeps its kanji
+    expect(all('しめる', '閉める')[0]).toBe('しめます')
+    expect(all('いらっしゃる')).toEqual(['いらっしゃいます', 'いらっしゃいません', 'いらっしゃいました', 'いらっしゃって', 'いらっしゃった', 'いらっしゃらない'])
+    expect(all('おっしゃる')[0]).toBe('おっしゃいます')
+    expect(all('なさる')[2]).toBe('なさいました')
+    expect(all('さる', '去る')[0]).toBe('さります') // not honorific
+  })
+  it('every course verb a drill can ask is classed as its dictionary says (spot checks over the whole list)', () => {
+    const words = [...ITEMS.values()].filter((w) => w.kind === 'word' && /^to /.test(w.gloss))
+    const cls = (written: string) => { const w = words.find((x) => x.written === written || (!x.written && x.jp === written))!; return verbClass(w.jp, w.written) }
+    for (const g of ['蘇る', '斬る', 'かじる', 'ちぎる', 'まじる', '炒る', '煎る', '捩る', 'しめる', '入る', '帰る', '参る']) expect(cls(g), g).toBe('godan')
+    for (const i of ['経る', '得る', '診る', '着る', 'おきる', '閉める']) expect(cls(i), i).toBe('ichidan')
   })
 })
 

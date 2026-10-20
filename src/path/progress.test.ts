@@ -186,9 +186,9 @@ describe('getProgress / addReviewXp', () => {
 describe('database upgrade', () => {
   it('a connection closes itself when another tab upgrades the database, so the upgrade is not blocked', async () => {
     const name = 'blocking-test'
-    const mine = await openDb(name) // v3, held open like an older tab
-    const newer = await openDB(name, 4) // would hang forever if `mine` did not close
-    expect(newer.version).toBe(4)
+    const mine = await openDb(name) // v4, held open like an older tab
+    const newer = await openDB(name, 5) // would hang forever if `mine` did not close
+    expect(newer.version).toBe(5)
     await expect(mine.count('cards')).rejects.toThrow() // closed
     newer.close()
   })

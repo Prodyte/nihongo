@@ -2,7 +2,7 @@ import { Loading } from '../Loading'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ExitButton } from '../icons'
 import { Rating, type Grade } from 'ts-fsrs'
-import { BUILTIN_DECKS, DAILY_NEW, gradeCard, newToday, studyCards, type Db, type StoredCard } from '../db/db'
+import { BUILTIN_DECKS, DAILY_NEW, gradeCard, newToday, studyCards, weakSpotReviews, type Db, type StoredCard } from '../db/db'
 import { Cloze } from '../modes/Cloze'
 import { Flashcard } from '../modes/Flashcard'
 import { Quiz } from '../modes/Quiz'
@@ -32,7 +32,8 @@ export function Study({ db, deck, mode, autoplay, onExit }: { db: Db; deck: stri
     void (async () => {
       const cards = await studyCards(db, practice ? 'all' : deck, mode)
       if (practice) {
-        const weak = weakSpots(await db.getAll('reviews'), cards, new Date())
+        const now = new Date()
+        const weak = weakSpots(await weakSpotReviews(db, cards, now), cards, now)
         if (!live) return
         const byId = new Map(cards.map((c) => [c.id, c]))
         setPool(cards)

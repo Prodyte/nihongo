@@ -35,8 +35,9 @@ export function Feedback({ result, item, answer, note, audio = true, onContinue 
         {result !== null && audio && item.kind !== 'kanji' && <SpeakButton text={item.jp} />}
       </div>
       {result !== null && (
-        // a held Enter would auto-repeat onto this button and skip the next exercise
-        <button className="primary" autoFocus onKeyDown={(e) => e.repeat && e.preventDefault()} onClick={onContinue}>Continue</button>
+        // a held Enter would auto-repeat onto this button and skip the next exercise. type="button": inside Type's form it
+        // would also submit the form it has just replaced
+        <button type="button" className="primary" autoFocus onKeyDown={(e) => e.repeat && e.preventDefault()} onClick={onContinue}>Continue</button>
       )}
     </div>
   )
