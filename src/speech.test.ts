@@ -42,12 +42,17 @@ it('a blocked microphone or silence gives a helpful error', async () => {
   await expect(listen().result).rejects.toBeInstanceOf(SpeechError)
 })
 
-it('gives up after 10 seconds if the recogniser never answers', async () => {
+it('gives up after 10 seconds if the recogniser never answers, even when abort fires no end (Safari)', async () => {
   vi.useFakeTimers()
-  class Silent { onresult = null; onerror = null; onend: (() => void) | null = null; start() {} abort() { this.onend?.() } }
+  class Silent { onresult = null; onerror = null; onend: (() => void) | null = null; start() {} abort() {} }
   vi.stubGlobal('webkitSpeechRecognition', Silent)
   const r = listen().result
   vi.advanceTimersByTime(10_000)
   await expect(r).rejects.toThrow(/Didn’t hear anything/)
   vi.useRealTimers()
+})
+
+it('a recogniser that refuses to start is an error, not a hang', async () => {
+  vi.stubGlobal('webkitSpeechRecognition', class { start() { throw new DOMException('already started', 'InvalidStateError') } abort() {} })
+  await expect(listen().result).rejects.toThrow(/InvalidStateError/)
 })

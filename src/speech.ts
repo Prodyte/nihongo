@@ -39,16 +39,21 @@ export function listen(): { result: Promise<string[]>; stop: () => void } {
   rec.lang = 'ja-JP'
   rec.maxAlternatives = 5
   rec.interimResults = false
+  let done = () => {}
   const result = new Promise<string[]>((resolve, reject) => {
     let heard: string[] = []
-    rec.onresult = (e) => { heard = Array.from(e.results[0] ?? [], (a) => a.transcript) }
+    done = () => (heard.length ? resolve(heard) : reject(new SpeechError('no-speech')))
+    // Answer on the final result and settle on abort ourselves: Safari can skip onend (after a result, or an abort before audio started).
+    rec.onresult = (e) => { heard = Array.from(e.results[0] ?? [], (a) => a.transcript); done() }
     rec.onerror = (e) => reject(new SpeechError(e.error))
-    rec.onend = () => (heard.length ? resolve(heard) : reject(new SpeechError('no-speech')))
+    rec.onend = done
+    globalThis.speechSynthesis?.cancel() // shadowing's playback still holding the audio session keeps iOS from listening
+    try { rec.start() } catch (e) { reject(new SpeechError(e instanceof Error ? e.name : String(e))) } // InvalidStateError: a recogniser already running
   })
-  rec.start()
-  const timer = setTimeout(() => rec.abort(), LISTEN_MS) // a recogniser that never answers must not leave us "listening" forever
-  void result.finally(() => clearTimeout(timer)).catch(() => {})
-  return { result, stop: () => rec.abort() }
+  const stop = () => { rec.abort(); done() }
+  const timer = setTimeout(stop, LISTEN_MS) // a recogniser that never answers must not leave us "listening" forever
+  void result.finally(() => { clearTimeout(timer); rec.abort() }).catch(() => {})
+  return { result, stop }
 }
 
 /** Did any of the transcripts say `expected`? Compared as written (kanji) or as kana, ignoring spaces and punctuation. */
