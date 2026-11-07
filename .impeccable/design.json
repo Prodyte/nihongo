@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T12:05:06.931Z",
+  "title": "Design System: Nihongo",
+  "extensions": {
+    "colorMeta": {
+      "shu": {
+        "role": "primary",
+        "displayName": "Shu Vermilion",
+        "canonical": "oklch(55.5% 0.184 28.5)",
+        "tonalRamp": [
+          "#320000",
+          "#5b0000",
+          "#870000",
+          "#ad1713",
+          "#d8473b",
+          "#ff6f5f",
+          "#ff9e8d",
+          "#ffcab9"
+        ]
+      },
+      "ai": {
+        "role": "secondary",
+        "displayName": "Ai Indigo",
+        "canonical": "oklch(41.2% 0.087 261.2)",
+        "tonalRamp": [
+          "#000826",
+          "#0d2249",
+          "#243e6d",
+          "#415d8f",
+          "#6280b5",
+          "#86a5dc",
+          "#afccfd",
+          "#d6f0ff"
+        ]
+      },
+      "matcha": {
+        "role": "tertiary",
+        "displayName": "Matcha Green",
+        "canonical": "oklch(49.1% 0.111 151.3)",
+        "tonalRamp": [
+          "#001300",
+          "#003006",
+          "#004f1e",
+          "#206f3c",
+          "#48935e",
+          "#6db881",
+          "#9bddab",
+          "#c6ffd2"
+        ]
+      },
+      "beni": {
+        "role": "tertiary",
+        "displayName": "Beni Red",
+        "canonical": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "#310000",
+          "#5a0000",
+          "#860000",
+          "#ac1d17",
+          "#d64a3d",
+          "#ff7161",
+          "#ffa08f",
+          "#ffcbba"
+        ]
+      },
+      "kincha": {
+        "role": "tertiary",
+        "displayName": "Kincha Gold",
+        "canonical": "oklch(53.3% 0.110 70.9)",
+        "tonalRamp": [
+          "#1f0100",
+          "#3f1700",
+          "#623200",
+          "#845100",
+          "#a9742b",
+          "#d09852",
+          "#f3c084",
+          "#ffe6b1"
+        ]
+      },
+      "washi": {
+        "role": "neutral",
+        "displayName": "Washi Paper",
+        "canonical": "oklch(96.5% 0.010 87.5)",
+        "tonalRamp": [
+          "#0c0b08",
+          "#26241f",
+          "#423f3a",
+          "#605d57",
+          "#83807a",
+          "#a7a49e",
+          "#cdcac4",
+          "#f0eee9"
+        ]
+      },
+      "sumi": {
+        "role": "neutral",
+        "displayName": "Sumi Ink",
+        "canonical": "oklch(22.8% 0.009 75.2)",
+        "tonalRamp": [
+          "#0d0b08",
+          "#262420",
+          "#433f3b",
+          "#615d58",
+          "#83807a",
+          "#a8a49f",
+          "#cdcac5",
+          "#f1eeea"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "oklch(47.8% 0.016 78.2)",
+        "tonalRamp": [
+          "#0e0b06",
+          "#28231c",
+          "#443f36",
+          "#635d54",
+          "#867f76",
+          "#aaa49a",
+          "#d0cac0",
+          "#f3eee6"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(90.5% 0.017 84.6)",
+        "tonalRamp": [
+          "#0e0b05",
+          "#27241c",
+          "#443f35",
+          "#625d53",
+          "#858075",
+          "#aaa499",
+          "#cfcac0",
+          "#f3eee5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-kana": {
+        "displayName": "Display Kana",
+        "purpose": "The character or word being studied, fitted to the card width."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Today greeting and lesson-complete title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card headings."
+      },
+      "answer": {
+        "displayName": "Answer",
+        "purpose": "The revealed answer on a flashcard."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Everything else."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tile captions and grammar level headings only (uppercase)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paper-lift",
+        "value": "0 1px 2px rgb(60 40 20 / .06), 0 4px 14px rgb(60 40 20 / .06)",
+        "purpose": "Cards, light theme only; none at night."
+      },
+      {
+        "name": "key-ledge",
+        "value": "0 2px 0 var(--line)",
+        "purpose": "Default buttons; collapses on press with a 2px drop."
+      },
+      {
+        "name": "seal-ledge",
+        "value": "0 3px 0 var(--accent-press)",
+        "purpose": "Primary button; collapses on press with a 3px drop."
+      }
+    ],
+    "motion": [
+      {
+        "name": "dur-1",
+        "value": "120ms",
+        "purpose": "Press and hover."
+      },
+      {
+        "name": "dur-2",
+        "value": "220ms",
+        "purpose": "Things arriving."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.2, .8, .2, 1)",
+        "purpose": "Default easing."
+      },
+      {
+        "name": "rise",
+        "value": "180ms ease-out translateY(100%) → 0",
+        "purpose": "The feedback bar arriving; off under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "xs",
+        "value": "360px"
+      },
+      {
+        "name": "sm",
+        "value": "400px"
+      },
+      {
+        "name": "tablet",
+        "value": "48rem"
+      },
+      {
+        "name": "desktop",
+        "value": "64rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one next action on a screen.",
+      "html": "<button class=\"ds-btn-primary\">Show answer</button>",
+      "css": ".ds-btn-primary{font:inherit;min-height:2.75rem;padding:.6rem 1.1rem;border:1.5px solid var(--accent);border-radius:var(--radius-s);background:var(--accent);color:var(--on-accent);font-weight:650;box-shadow:0 3px 0 var(--accent-press);cursor:pointer;transition:transform .06s,box-shadow .06s}.ds-btn-primary:hover{filter:brightness(1.04)}.ds-btn-primary:active{transform:translateY(3px);box-shadow:0 0 0 var(--accent-press)}.ds-btn-primary:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default raised key for secondary actions.",
+      "html": "<button class=\"ds-btn\">Practise mistakes</button>",
+      "css": ".ds-btn{font:inherit;color:var(--fg);min-height:2.75rem;padding:.6rem 1.1rem;border:1.5px solid var(--line);border-radius:var(--radius-s);background:var(--raised);box-shadow:0 2px 0 var(--line);font-weight:500;cursor:pointer;transition:transform .06s,box-shadow .06s,border-color .15s}.ds-btn:hover{border-color:var(--ctl)}.ds-btn:active{transform:translateY(2px);box-shadow:0 0 0 var(--line)}.ds-btn:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}"
+    },
+    {
+      "name": "Grade Buttons",
+      "kind": "custom",
+      "refersTo": "grade-good",
+      "description": "Again / Hard / Good / Easy with the next interval.",
+      "html": "<div class=\"ds-grades\"><button class=\"ds-g ds-again\">Again<small>10m</small></button><button class=\"ds-g ds-hard\">Hard<small>8d</small></button><button class=\"ds-g ds-good\">Good<small>11d</small></button><button class=\"ds-g ds-easy\">Easy<small>19d</small></button></div>",
+      "css": ".ds-grades{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;width:100%}.ds-g{font:inherit;display:grid;gap:.05rem;min-height:2.75rem;padding:.5rem .25rem;border:2px solid var(--line);border-radius:var(--radius-s);background:var(--raised);box-shadow:0 2px 0 var(--line);font-weight:650;cursor:pointer}.ds-g small{font-weight:500;font-size:.75rem}.ds-g:active{transform:translateY(2px);box-shadow:none}.ds-g:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}.ds-again{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}.ds-hard{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}.ds-good{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,var(--line))}.ds-easy{color:var(--indigo);border-color:color-mix(in srgb,var(--indigo) 45%,var(--line))}"
+    },
+    {
+      "name": "Answer Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Centred typing answer field.",
+      "html": "<input class=\"ds-input\" placeholder=\"Type the meaning\" />",
+      "css": ".ds-input{font:inherit;font-size:1.3rem;text-align:center;width:100%;min-height:2.75rem;padding:.6rem 1rem;border:1.5px solid var(--ctl);border-radius:var(--radius-s);background:var(--raised);color:var(--fg)}.ds-input:focus{border-color:var(--indigo)}.ds-input:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}"
+    },
+    {
+      "name": "Study Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Paper panel holding the kana being studied.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-kana\" lang=\"ja\">みず</div><div class=\"ds-reading\" lang=\"ja\">mizu</div><div class=\"ds-answer\">water</div></div>",
+      "css": ".ds-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem;display:flex;flex-direction:column;gap:1rem;align-items:center}.ds-kana{font-size:5rem;line-height:1.1}.ds-reading{font-size:1.2rem;color:var(--muted)}.ds-answer{font-size:1.6rem}"
+    },
+    {
+      "name": "Streak Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill with a tabular count.",
+      "html": "<span class=\"ds-chip\">🔥 12</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .7rem;border-radius:999px;background:var(--card);border:1px solid var(--line);font-weight:650;font-variant-numeric:tabular-nums;color:var(--accent)}"
+    },
+    {
+      "name": "Feedback Bar",
+      "kind": "custom",
+      "refersTo": "feedback-good",
+      "description": "Result of an exercise, pinned to the bottom.",
+      "html": "<div class=\"ds-feedback\"><div>✓ Correct</div><small>みず · water</small><button class=\"ds-fb-btn\">Continue</button></div>",
+      "css": ".ds-feedback{display:grid;gap:.25rem;padding:1rem;border-top:2px solid var(--good);background:var(--good-soft);color:var(--good);font-weight:650;font-size:1.1rem}.ds-feedback small{font-weight:400;font-size:.9rem;color:var(--fg)}.ds-fb-btn{font:inherit;margin-top:.5rem;min-height:3.25rem;border:1.5px solid var(--good);border-radius:var(--radius-s);background:var(--good);color:var(--card);box-shadow:0 3px 0 color-mix(in srgb,var(--good) 70%,black);cursor:pointer}.ds-fb-btn:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}"
+    },
+    {
+      "name": "Bottom Tabs",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Phone navigation; active tab in shu.",
+      "html": "<nav class=\"ds-tabs\"><button aria-current=\"page\">Today</button><button>Path</button><button>Review</button><button>Lookup</button><button>More</button></nav>",
+      "css": ".ds-tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:1px solid var(--line);padding:.3rem .5rem}.ds-tabs button{font:inherit;border:0;background:none;padding:.3rem .25rem;font-size:.75rem;color:var(--muted);min-height:3.25rem;border-radius:14px;cursor:pointer}.ds-tabs button[aria-current=page]{color:var(--accent);font-weight:650}.ds-tabs button:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Shu Ink on Washi",
+    "overview": "Nihongo looks like a well-used study notebook. A warm, off-white page (washi) holds near-black text (sumi), and red seal ink (shu) marks the one thing to do next. Indigo (ai) is the second ink, for listening, focus and example sentences. The Japanese being learned is always the largest thing on the screen. Everything else is set in the device’s own system font at modest sizes, so the learner reads the character first and the interface second.",
+    "keyCharacteristics": [
+      "A warm paper ground (washi) in both themes. Never cool grey.",
+      "One action colour (shu). Its rarity is what makes the next step obvious.",
+      "Japanese text scales to fill its container; everything else is set at a modest size.",
+      "Raised controls that press like keys, with touch targets of at least 2.75rem.",
+      "Phone-first layout: thumb-zone answers, a pinned result bar, bottom tabs."
+    ],
+    "rules": [
+      {
+        "name": "The One Seal Rule",
+        "section": "colors",
+        "body": "Shu marks the single next action on a screen. A second shu button on the same screen breaks the \"next step, not a menu\" promise. Secondary actions use the default raised button or the ghost button."
+      },
+      {
+        "name": "The Meaning-Only Color Rule",
+        "section": "colors",
+        "body": "Matcha, beni, kincha and ai always mean the same thing everywhere (right, wrong, earned/hard, focus/easy). They’re never used as decoration, and never as the only signal: ✓/✗ marks and text labels always come with them."
+      },
+      {
+        "name": "The Three-Place Night Rule",
+        "section": "colors",
+        "body": "Night values are declared in three places in src/index.css: prefers-color-scheme: dark guarded by :root:not([data-theme=\"light\"]), and :root[data-theme=\"dark\"]. Every new token or per-theme override goes in all three."
+      },
+      {
+        "name": "The Japanese Leads Rule",
+        "section": "typography",
+        "body": "On a study screen, the Japanese is the largest text. No interface label is ever larger than the kana or kanji being learned."
+      },
+      {
+        "name": "The Unbroken Word Rule",
+        "section": "typography",
+        "body": "Japanese never breaks inside a word. Use word-break: keep-all; overflow-wrap: anywhere so lines break at the spaces after particles, and fit single words to their container instead of wrapping them. Every Japanese run carries lang=\"ja\"."
+      },
+      {
+        "name": "The Tabular Count Rule",
+        "section": "typography",
+        "body": "Counts, streaks, scores and due numbers use font-variant-numeric: tabular-nums, so they don’t jitter as they change."
+      },
+      {
+        "name": "The Pressable Key Rule",
+        "section": "elevation",
+        "body": "The ledge shadow is a physical signal, not decoration: it exists only on things you can press, and it collapses when pressed. Cards, chips and tiles never get a ledge."
+      }
+    ],
+    "dos": [
+      "Do use the CSS custom properties in `src/index.css` (`--accent`, `--indigo`, `--good`, `--bad`, `--gold`, `--line`, `--muted`, `--radius`, `--radius-s`) instead of raw values, and declare any new token in all three theme blocks.",
+      "Do fit large Japanese to its container with `fit()` and `100cqi / var(--n)` instead of letting it wrap.",
+      "Do keep every control at least 2.75rem tall, and put a phone lesson's answers and primary button at the bottom, within thumb reach.",
+      "Do give every motion a `prefers-reduced-motion` fallback, using `--dur-1` (120ms, press and hover), `--dur-2` (220ms, things arriving) and `--ease-out`.",
+      "Do pair every semantic colour with a text or ✓/✗ signal.",
+      "Do check contrast on tints: when shu or ai text sits on its own wash, mix it toward sumi, as the active tab does."
+    ],
+    "donts": [
+      "Don't put more than one shu primary button on a screen.",
+      "Don't dim white text on shu. Muted text on a primary button fails contrast, which is why lesson rows keep `on-shu` at full strength.",
+      "Don't add web fonts, images or third-party assets the app would need to fetch. The app must stay fully usable offline.",
+      "Don't give cards, chips or tiles the pressable ledge shadow. It belongs to things you can press.",
+      "Don't follow the Stats stage colours as a pattern. Apprentice/Guru/Master use hard-coded one-off hexes with a night brightness filter, outside the token set."
+    ]
+  }
+}

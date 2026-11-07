@@ -169,7 +169,15 @@ export async function gradeCard(db: Db, id: string, grade: Grade, now = new Date
   return updated
 }
 
-export const mediaKey = (deck: string, name: string) => `${deck}\0${name.normalize('NFC')}` // macOS filenames are often NFD
+/** Take back a card's latest grade: its scheduling as it was before (`before`), and that review gone from the history. */
+export async function undoGrade(db: Db, before: StoredCard) {
+  const tx = db.transaction(['cards', 'reviews'], 'readwrite')
+  const last = await tx.objectStore('reviews').index('by-card').openCursor(IDBKeyRange.only(before.id), 'prev') // highest id: the latest
+  await Promise.all([tx.objectStore('cards').put(before), last?.delete()])
+  await tx.done
+}
+
+export const mediaKey =(deck: string, name: string) => `${deck}\0${name.normalize('NFC')}` // macOS filenames are often NFD
 const MIME: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
   mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac',

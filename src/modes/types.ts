@@ -7,4 +7,5 @@ export interface ModeProps {
   autoplay: boolean // play audio automatically
   pool: StoredCard[] // all cards in the session's deck, for quiz distractors
   onGrade: (g: Grade) => void
+  practice?: boolean // weak-spot drill: grading doesn't reschedule, so don't show when each grade would bring the card back
 }

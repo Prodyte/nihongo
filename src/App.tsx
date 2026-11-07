@@ -172,6 +172,9 @@ export default function App() {
   }, [db, view])
 
   const startLesson = (id: string) => { setBack(view); setLessonId(id); go('lesson') }
+  // from a finished review straight into the next lesson: the lesson takes the review's place in history and returns
+  // where the review would have (back stays), so phone-back and Exit don't land on a spent session
+  const nextLessonAfterReview = (id: string) => { setLessonId(id); history.replaceState({ view: 'lesson', pushed: history.state?.pushed }, ''); setView('lesson') }
   const study = (from: View, c: Config) => { setSession(c); setBack(from); go('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
@@ -221,7 +224,7 @@ export default function App() {
         ) : view === 'kana' ? (
           <KanaChart db={db} onExit={() => leave('review')} />
         ) : view === 'study' ? (
-          <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => leave(back)} />
+          <Study db={db} deck={session.deck} mode={session.mode} autoplay={autoplay} onExit={() => leave(back)} onLesson={nextLessonAfterReview} />
         ) : view === 'review' ? (
           <Home db={db} config={config} onChange={setConfig} onStart={() => study('review', config)} onPractice={() => study('review', { ...config, deck: MISTAKES })}
             onDrill={(k) => { setDrill(k); go('drill') }} onRead={() => go('reading')} onListen={() => go('listening')} onKana={() => go('kana')}

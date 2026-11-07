@@ -18,6 +18,19 @@ it('a kanji card shows its meanings, on/kun readings and an example word on the 
   expect(document.querySelector('.kanji-example')!.textContent).toMatch(/日/)
 })
 
+it('grade buttons show when the card comes back, except in weak-spot practice, which never reschedules', async () => {
+  const user = userEvent.setup()
+  const card = { id: 'kanji:日', deck: 'kanji', front: '日', back: ['day'], fsrs: createEmptyCard() }
+  const { unmount } = render(<Flashcard db={{} as Db} card={card} pool={[]} autoplay={false} onGrade={() => {}} />)
+  await user.click(screen.getByRole('button', { name: /Show answer/ }))
+  expect(screen.getByRole('button', { name: /^Good, next in 10 min$/ })).toBeTruthy()
+  unmount()
+  render(<Flashcard db={{} as Db} card={card} pool={[]} autoplay={false} onGrade={() => {}} practice />)
+  await user.click(screen.getByRole('button', { name: /Show answer/ }))
+  expect(screen.getByRole('button', { name: /^Got it$/ })).toBeTruthy() // practice: Again or Got it, no Hard/Easy
+  expect(screen.queryByRole('button', { name: /^Hard/ })).toBeNull()
+})
+
 it('a word card asks in context: its sentence (word marked) on the front; the English and sound come with the answer', async () => {
   const mizu = ITEMS.get('vocab:mizu')!
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({ [`${mizu.written ?? mizu.kanji ?? ''}|${mizu.jp}`]: ['水[みず]を飲[の]みます。', 'I drink water.', 1] })))

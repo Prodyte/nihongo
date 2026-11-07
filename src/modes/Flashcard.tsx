@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { Rating, type Grade } from 'ts-fsrs'
+import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
+import { Rating, State, type Grade } from 'ts-fsrs'
 import { speak } from '../audio'
 import { BUILTIN_DECKS, cardFront } from '../db/db'
 import { ITEMS } from '../path/course'
@@ -15,14 +15,22 @@ import type { ModeProps } from './types'
 const Html = lazy(() => import('../anki/media').then((m) => ({ default: m.Html })))
 
 const GRADES: [Grade, string, string][] = [[Rating.Again, 'Again', 'again'], [Rating.Hard, 'Hard', 'hard'], [Rating.Good, 'Good', 'good-g'], [Rating.Easy, 'Easy', 'easy']]
+// practice never reschedules, so only two outcomes are real: see it again in this session, or not
+const PRACTICE: [Grade, string, string][] = [[Rating.Again, 'Again', 'again'], [Rating.Good, 'Got it', 'good-g']]
 
-export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
+export function Flashcard({ db, card, autoplay, onGrade, practice }: ModeProps) {
   const [shown, setShown] = useState(false)
   const [next] = useState(() => intervals(card.fsrs))
   const slot = useRef<HTMLDivElement>(null)
   const kanji = card.deck === BUILTIN_DECKS.kanji.id ? ITEMS.get(card.id) : undefined // readings and an example word on the back
   const example = kanji?.examples?.[0] && ITEMS.get(kanji.examples[0])
   const item = ITEMS.get(card.id)
+  const grades = practice ? PRACTICE : GRADES
+  const id = useId()
+  // what to recall, said on the front: a beginner self-grading needs to know what "remembered" means here
+  const ask = card.html ? null : card.deck === 'kana' ? 'Say the sound' : kanji ? 'Its meaning and readings?' : 'What does it mean?'
+  // memory aids are a crutch: shown while a card is new or just forgotten, then they fade (practice drills weak cards: always)
+  const hint = practice || card.fsrs.reps < 3 || card.fsrs.state === State.Relearning
   // Move focus to the revealed answer, not a grade button: a held Enter would auto-repeat onto it and grade by accident.
   useEffect(() => {
     if (shown) slot.current?.focus()
@@ -36,18 +44,19 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
       if (!shown && (e.key === ' ' || e.key === 'Enter')) {
         if (!(e.target instanceof HTMLButtonElement)) setShown(true) // a focused button handles its own click
       }
-      else if (shown && e.key.length === 1 && '1234'.includes(e.key)) onGrade(GRADES[Number(e.key) - 1][0])
+      else if (shown && e.key.length === 1 && e.key >= '1' && e.key <= String(grades.length)) onGrade(grades[Number(e.key) - 1][0])
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [shown, onGrade])
+  }, [shown, onGrade, grades])
 
   return (
     <div className="card">
+      {ask && !shown && <p className="q" id={`${id}q`}>{ask}</p>}
       {card.html ? (
         <Suspense fallback={<div className="skeleton" />}><Html db={db} deck={card.deck} html={shown ? card.back[0] : card.front} autoplay={autoplay} /></Suspense>
       ) : (
-        <div className="kana" lang="ja" style={fit(cardFront(card), card.reading)}><Ruby text={cardFront(card)} reading={card.reading} /></div>
+        <div className="kana" id={`${id}k`} lang="ja" style={fit(cardFront(card), card.reading)}><Ruby text={cardFront(card)} reading={card.reading} /></div>
       )}
       {/* a word is asked in context: its sentence on the front, the sentence's English and sound with the answer */}
       {item && <Example item={item} revealed={shown} />}
@@ -59,23 +68,27 @@ export function Flashcard({ db, card, autoplay, onGrade }: ModeProps) {
               {kanji ? (
                 <>
                   <div className="answer">{kanji.gloss}</div>
-                  <Mnemonic item={kanji} />
+                  {hint && <Mnemonic item={kanji} />}
                   <p className="kanji-readings" lang="ja">{[kanji.on?.length && `音 ${kanji.on.join('・')}`, kanji.kun?.length && `訓 ${kanji.kun.join('・')}`].filter(Boolean).join('　')}</p>
                   {example && <p className="kanji-example"><span lang="ja"><Ruby text={example.written ?? example.kanji ?? example.jp} reading={example.written ?? example.kanji ? example.jp : undefined} /></span> {example.gloss} <SpeakButton text={example.jp} /></p>}
                 </>
-              ) : !card.html && <><div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>{item && <Mnemonic item={item} />}</>}
+              ) : !card.html && <><div className="answer">{card.back[0]} <SpeakButton text={card.reading ?? card.front} /></div>{item && hint && <Mnemonic item={item} />}</>}
             </>
           )}
         </div>
         {shown && (
           <div className="grades">
-            {GRADES.map(([g, label, cls]) => (
-              <button key={label} className={cls} onClick={() => onGrade(g)}>{label}<small><span className="visually-hidden">, next in </span>{next[g]}</small></button>
+            {grades.map(([g, label, cls], i) => (
+              // the name is spelled out whole: a hidden ", next in " beside the interval lost its space ("next in1 min")
+              <button key={label} className={cls} onClick={() => onGrade(g)} aria-label={practice ? label : `${label}, next in ${next[g]}`}>
+                <span>{label}<kbd>{i + 1}</kbd></span>{!practice && <small>{next[g]}</small>}
+              </button>
             ))}
           </div>
         )}
+        {shown && !practice && card.fsrs.reps < 3 && <p className="note">Again if you forgot, Good if you remembered.</p>}
       </div>
-      {!shown && <button className="primary" autoFocus onClick={() => setShown(true)}>Show answer <kbd aria-hidden="true">space</kbd></button>}
+      {!shown && <button className="primary" autoFocus aria-describedby={card.html ? undefined : `${ask ? `${id}q ` : ''}${id}k`} onClick={() => setShown(true)}>Show answer <kbd aria-hidden="true">space</kbd></button>}
     </div>
   )
 }

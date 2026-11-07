@@ -58,14 +58,14 @@ p[role="status"], p[role="alert"] { margin: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .icon { flex: none; }
 ruby rt { font-size: .45em; color: var(--muted); }
-kbd { opacity: .55; font-size: .7em; font-family: inherit; margin-left: .35em; }
+kbd { font-size: .7em; font-weight: 400; font-family: inherit; margin-left: .35em; } /* small and light, not faded: faded white on vermilion was 2.5:1 */
 @media (pointer: coarse) { kbd { display: none; } } /* number-key hints are for keyboards */
 
 /* ============ controls ============ */
 button, select, input { font: inherit; color: var(--fg); min-height: 2.75rem; }
 button { cursor: pointer; touch-action: manipulation; padding: .6rem 1.1rem; border: 1.5px solid var(--line); border-radius: var(--radius-s); background: var(--raised);
   box-shadow: 0 2px 0 var(--line); transition: transform .06s, box-shadow .06s, background .15s, border-color .15s; font-weight: 500; }
-button:hover:not(:disabled) { border-color: var(--ctl); }
+@media (hover: hover) { button:hover:not(:disabled) { border-color: var(--ctl); } } /* touch screens keep :hover after a tap: a stray border on whatever lands under the finger */
 button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--line); }
 button:disabled, button[aria-disabled="true"] { opacity: .5; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 3px 0 var(--accent-press); font-weight: 650; }
@@ -243,13 +243,13 @@ ul.menu small { color: var(--muted); font-weight: 400; }
 .prompt.gloss { font-size: 2rem; text-align: center; overflow-wrap: anywhere; font-weight: 600; }
 .prompt.sentence { font-size: 1.6rem; line-height: 1.5; }
 .reading { font-size: 1.2rem; color: var(--muted); }
-.kanji-readings { margin: 0; font-size: 1.1rem; color: var(--muted); text-align: center; }
+.kanji-readings { margin: 0; font-size: 1.1rem; color: var(--muted); text-align: center; word-break: keep-all; overflow-wrap: anywhere; } /* breaks between readings, not inside ひ・〜び */
 .kanji-example { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; } .kanji-example [lang] { font-size: 1.4rem; }
-.answer { font-size: 1.6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; text-align: center; }
+.answer { font-size: 1.6rem; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; text-align: center; }
 .note { margin: 0; font-size: .9rem; text-align: center; color: var(--muted); }
 /* memory aid: a kanji's parts or a word's kanji, as a soft chip under the meaning */
 .memo-hint { white-space: pre-line; } /* a kana sound's hint: one line per script */
-.mnemonic { align-self: stretch; margin: 0; padding: .45rem .75rem; border-radius: var(--radius-s); background: var(--accent-soft); color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
+.mnemonic { align-self: stretch; margin: 0; padding: .6rem .25rem 0; border-top: 1px solid var(--line); /* a quiet aid set off by a rule, not a card in the card; a shu wash next to Again read as an error */ color: var(--fg); font-size: .95rem; text-align: center; text-wrap: balance; }
 .example { margin: 0; padding: .55rem .8rem; border-left: 3px solid var(--indigo); border-radius: 0 var(--radius-s) var(--radius-s) 0; background: var(--indigo-soft); text-align: left; width: 100%; box-sizing: border-box; }
 .example p { margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
 .example p > [lang="ja"] { flex: 1; min-width: 0; } /* a long sentence wraps beside its audio buttons, which stay on the right */
@@ -326,7 +326,7 @@ button.mic { display: inline-flex; align-items: center; gap: .5rem; }
   .lesson { display: flex; flex-direction: column; min-height: calc(100dvh - max(1rem, env(safe-area-inset-top)) - 1rem - env(safe-area-inset-bottom));
     transition: padding-bottom var(--dur-2) var(--ease-out); }
   .lesson > .card:not(form) { flex: 1; }
-  .lesson > .card:not(form) > :is(.kana, .prompt, .strokes) { margin-block: auto; }
+  .lesson > .card:not(form) > :is(.kana, .prompt, .strokes, .html) { margin-block: auto; } /* .html: an Anki card's grades stay at the bottom too */
   /* intros: the character with its meaning centred together, Got it full width at the bottom */
   .lesson > .card > :is(.kana, .strokes):has(+ .answer, + .reading) { margin-block: auto 0; }
   ul.tiles-grid > li:last-child:nth-child(odd) { grid-column: 1 / -1; } /* no lone tile beside a hole */
@@ -339,7 +339,8 @@ button.mic { display: inline-flex; align-items: center; gap: .5rem; }
   .lesson > .card > button.primary:last-child { align-self: stretch; min-height: 3.5rem; font-size: 1.1rem; }
   .lesson > .card > .grid button, .lesson > .card > .match button { min-height: 3.75rem; }
   /* after answering, the answers rise above the result bar so both stay in view; choices keep that room from the start, so they don't jump */
-  .lesson:has(.feedback:not(.inline).good, .feedback:not(.inline).bad), .lesson:has(> .card > .grid) { padding-bottom: 11rem; }
+  .lesson:has(.feedback:not(.inline).good, .feedback:not(.inline).bad), .lesson:has(> .card:not(.quiz) > .grid) { padding-bottom: 11rem; } /* a review quiz has no result bar: its Next sits at the bottom instead */
+  .lesson > .done-card > h2 { margin-top: auto; } .lesson > .done-card > .actions { margin-top: auto; } /* the end: the result centred, Done under the thumb */
 }
 @media (max-width: 47.99rem) and (prefers-reduced-motion: reduce) { .lesson { transition: none; } }
 
@@ -359,7 +360,17 @@ button.mic { display: inline-flex; align-items: center; gap: .5rem; }
 /* review */
 .grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; width: 100%; }
 .grades button { display: grid; gap: .05rem; padding: .5rem .25rem; font-weight: 650; border-width: 2px; }
-.grades button small { font-weight: 500; font-size: .75rem; }
+.grades button small { font-weight: 500; font-size: .75rem; white-space: nowrap; }
+/* a double tap on Show answer (or a quiz option, or the last grade) mustn't land on what appears under the finger:
+   it would grade a card never seen. Same guard as the feedback bar's Continue (arm, above) */
+.grades button, .card.quiz > button.primary:last-child, .done-card .actions button { animation: arm 0s .3s both; }
+.grades:has(> :last-child:nth-child(2)) { grid-template-columns: 1fr 1fr; } /* practice: Again and Got it share the row */
+.bar .left { white-space: nowrap; }
+.quiz [role="status"].answer { font-size: 1.1rem; } /* the verdict, not a headline: the right answer and how to remember it matter more */
+.bar button.undo { flex: none; padding-inline: .6rem; } button.undo { color: var(--indigo); font-weight: 650; } /* a real control, not muted text */
+.practice-note { margin: -.5rem 0 .75rem; font-size: .9rem; }
+.done-card h2:focus { outline: none; } /* focused so the end is announced; not interactive */
+.done-card .summary { margin: 0; color: var(--muted); font-variant-numeric: tabular-nums; }
 .grades .again { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
 .grades .hard { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
 .grades .good-g { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
@@ -416,7 +427,7 @@ ol.forecast small { color: var(--muted); font-size: min(.75rem, max(3vw, 12px));
 .heatmap .l3 { background: color-mix(in srgb, var(--accent) 80%, var(--card)); } .heatmap .l4 { background: var(--accent); }
 
 /* ============ kanji: strokes and writing ============ */
-.kanji-readings { display: grid; grid-template-columns: auto 1fr; gap: .25rem .75rem; margin: 0; width: 100%; }
+dl.kanji-readings { display: grid; grid-template-columns: auto 1fr; gap: .25rem .75rem; margin: 0; width: 100%; } /* the intro's table; a review card's one line stays centred */
 .kanji-readings dt { color: var(--muted); text-align: left; } .kanji-readings dd { margin: 0; text-align: left; font-size: 1.15rem; font-weight: 500; }
 .strokes { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
 .strokes svg { width: 9rem; height: 9rem; fill: none; stroke-linecap: round; stroke-linejoin: round; border: 1px dashed var(--line); border-radius: var(--radius-s); background: var(--raised); }
