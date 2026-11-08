@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
 import { VOCAB_UNITS } from './vocab'
 import { glossAnswers } from './progress'
-import { checkEnglish, checkJapanese, distance, mayGrow, normKana, toKana } from './typing'
+import { checkEnglish, checkJapanese, distance, mayGrow, normEn, normKana, slips, toKana } from './typing'
 
 const kana = (s: string) => toKana(s).kana
 
@@ -124,28 +124,38 @@ describe('checkEnglish', () => {
     expect(checkEnglish('it’s ok', ["it's ok"]).ok).toBe(true) // iOS smart punctuation
     expect(checkEnglish('exist', glossAnswers('to exist (things)')).ok).toBe(true)
   })
-  it('forgives one wrong letter only in answers of 6+ letters, with a spelling note', () => {
+  it('accepts contractions either way and ignores articles', () => {
+    expect(checkEnglish('you are welcome', glossAnswers("you're welcome")).ok).toBe(true)
+    expect(checkEnglish('I’m home', ['I am home']).ok).toBe(true)
+    expect(checkEnglish("don't", ['do not']).ok).toBe(true)
+    expect(checkEnglish('pen', ['a pen']).ok).toBe(true)
+    expect(checkEnglish('the station', ['station']).ok).toBe(true)
+  })
+  it('forgives small typos with a spelling note: one from 6 letters, two from 10, a swap counts as one', () => {
     const r = checkEnglish('tomorow', glossAnswers('tomorrow'))
     expect(r).toEqual({ ok: true, note: 'Check the spelling: “tomorrow”.' })
     expect(checkEnglish('mandarin orang', glossAnswers('mandarin orange')).ok).toBe(true)
-    expect(checkEnglish('watar', glossAnswers('water')).ok).toBe(false) // 5 letters: too short to forgive
+    expect(checkEnglish('watar', glossAnswers('water')).ok).toBe(false) // 5 letters: too short to forgive (eight/night)
+    expect(checkEnglish('tomorrwo', glossAnswers('tomorrow')).ok).toBe(true) // swapped letters
     expect(checkEnglish('tomoroow', glossAnswers('tomorrow')).ok).toBe(true) // one substituted letter
-    expect(checkEnglish('tomorw', glossAnswers('tomorrow')).ok).toBe(false) // two edits
+    expect(checkEnglish('tomorw', glossAnswers('tomorrow')).ok).toBe(false) // two edits in 8 letters
+    expect(checkEnglish('univercity', glossAnswers('university')).ok).toBe(true)
+    expect(checkEnglish('univercty', glossAnswers('university')).ok).toBe(true) // two edits in 10 letters
     expect(checkEnglish('', ['water']).ok).toBe(false)
   })
-  it('never forgives into a different word: no two accepted answers in the vocabulary are within one letter of each other', () => {
-    const all = VOCAB_UNITS.flatMap((u) => u.words.map(([jp, , en]) => ({ jp, answers: glossAnswers(en).map((a) => a.toLowerCase().replace(/[^\p{L}\p{N}' ]/gu, ' ').replace(/\s+/g, ' ').trim()) })))
+  it('never forgives into a different word: no two accepted answers in the vocabulary are within a forgiven typo of each other', () => {
+    const all = VOCAB_UNITS.flatMap((u) => u.words.map(([jp, , en]) => ({ jp, answers: glossAnswers(en).map(normEn) })))
     const clashes: string[] = []
     for (const x of all) for (const y of all) {
       if (x === y) continue
-      for (const a of x.answers) for (const b of y.answers) if (a.length >= 6 && a !== b && distance(a, b) <= 1) clashes.push(`${x.jp}:${a} ~ ${y.jp}:${b}`)
+      for (const a of x.answers) for (const b of y.answers) if (a !== b && distance(a, b) <= slips(a)) clashes.push(`${x.jp}:${a} ~ ${y.jp}:${b}`)
     }
     expect(clashes).toEqual([])
   })
 })
 
 describe('distance', () => {
-  it.each([['', '', 0], ['a', '', 1], ['water', 'water', 0], ['water', 'watar', 1], ['kitten', 'sitting', 3], ['abc', 'acb', 2]])('%s / %s = %i', (a, b, d) => expect(distance(a as string, b as string)).toBe(d))
+  it.each([['', '', 0], ['a', '', 1], ['water', 'water', 0], ['water', 'watar', 1], ['kitten', 'sitting', 3], ['abc', 'acb', 1]])('%s / %s = %i', (a, b, d) => expect(distance(a as string, b as string)).toBe(d))
 })
 
 it('mayGrow: an answer that is the start of a longer accepted one (word by word) may still grow', () => {

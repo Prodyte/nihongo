@@ -18,7 +18,7 @@ export type Exercise = (
 export type Readings = Record<string, string>
 
 export interface BuildOpts {
-  canSpeak: boolean // a Japanese voice exists; otherwise there are no listening exercises
+  canSpeak: boolean // a Japanese voice exists (lessons' listening exercises are off for now)
   canListen?: boolean // speech recognition is available and switched on: add speaking exercises
   canWrite?: boolean // writing exercises are switched on: kanji and kana lessons add tracing and writing
   learned: ReadonlySet<string> // item ids from lessons already completed (no intro; used as distractors)
@@ -68,7 +68,7 @@ const fail = (msg: string): never => {
 }
 
 export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, opts: BuildOpts): Exercise[] {
-  const { canSpeak, learned, rand = Math.random } = opts
+  const { learned, rand = Math.random } = opts
   const taught = lesson.items.map((id) => items.get(id) ?? fail(`Unknown item ${id} in lesson ${lesson.id}`))
   if (lesson.explain) return buildGrammar(lesson, lesson.explain, taught, items, opts)
   if (taught[0]?.kind === 'kanji') return buildKanji(lesson, taught, items, opts)
@@ -77,11 +77,9 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? []).flatMap(views)
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)] // lesson items make the likeliest distractors
 
-  // Items sharing a gloss with another item of their kind can't be asked in reverse or matched (two right answers);
-  // items sharing a sound can't be asked by ear either.
-  const [uniqueGloss, uniqueSound] = [uniqueBy(items, 'gloss'), uniqueBy(items, 'sound')]
+  // Items sharing a gloss with another item of their kind can't be asked in reverse or matched (two right answers)
+  const uniqueGloss = uniqueBy(items, 'gloss')
   const askable = shuffle(mine.filter(uniqueGloss), rand)
-  const audible = shuffle(askable.filter(uniqueSound), rand).filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i) // あ and ア sound the same: play one
 
   const shuffled = (it: Item, field: 'jp' | 'gloss', same: 'gloss' | 'sound' = 'gloss') => { const o = options(it, field, pool, same); return { ...o, options: shuffle(o.options, rand) } }
   const toGloss = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...shuffled(it, 'gloss'), answer: it.gloss })
@@ -91,9 +89,9 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   out.push(...shuffle(mine, rand).map(toGloss))
   const pairable = askable.filter((it, i) => askable.findIndex((x) => x.id === it.id) === i) // one script per sound: a pair's id must be unique
   if (pairable.length >= 2) out.push({ type: 'match', pairs: pairable.slice(0, 5).map((it) => ({ id: it.id, jp: written(it), ...(it.written && { reading: it.jp }), gloss: it.gloss })) })
-  if (canSpeak) out.push(...audible.slice(0, 3).map((item): Exercise => ({ type: 'listen', item, ...shuffled(item, 'jp', 'sound'), answer: written(item) })))
+  // ponytail: listening ("Tap what you hear") is off in lessons for now; restore from git (c73d856) to bring it back
   if (opts.canListen && mine[0]?.kind === 'word') out.push(...shuffle(mine, rand).slice(0, 2).map((item): Exercise => ({ type: 'speak', item })))
-  out.push(...shuffle(askable, rand).slice(0, canSpeak ? (taught[0]?.kind === 'kana' ? 2 : 3) : 4).map(toJp)) // kana: each sound is already read in both scripts
+  out.push(...shuffle(askable, rand).slice(0, 4).map(toJp))
   if (opts.canWrite && taught[0]?.kind === 'kana') {
     // trace each new kana, then write two from their romaji. Hiragana only, to keep the lesson short (katakana: the kana
     // chart); a combined sound is a kana already written plus a small ゃゅょ, so its lessons don't write
@@ -123,10 +121,10 @@ export function bankFor(tokens: string[], extras: string[], rand: () => number):
 }
 
 /**
- * A grammar lesson: the explanation, then every sentence is met by recognising it (translate, fill the gap, listen) and
+ * A grammar lesson: the explanation, then every sentence is met by recognising it (translate, fill the gap, pick it from the English) and
  * produced (build it, type it). With six sentences o0..o5 each one gets at least one of each.
  */
-function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, mine: Item[], items: ReadonlyMap<string, Item>, { canSpeak, canListen, learned, rand = Math.random }: BuildOpts): Exercise[] {
+function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, mine: Item[], items: ReadonlyMap<string, Item>, { canListen, learned, rand = Math.random }: BuildOpts): Exercise[] {
   const far = [...learned].filter((id) => !lesson.items.includes(id)).flatMap((id) => items.get(id) ?? [])
   const pool = [...shuffle(mine, rand), ...shuffle(far, rand)]
   const o = shuffle(mine, rand)
@@ -135,7 +133,6 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
 
   const translate = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...opts(it, 'gloss'), answer: it.gloss })
   const say = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...opts(it, 'jp'), answer: written(it) })
-  const listen = (item: Item): Exercise => ({ type: 'listen', item, ...opts(item, 'jp', 'sound'), answer: written(item) })
   const gap = (it: Item) => gapFor(it, rand)
   const build = (it: Item): Exercise => {
     const tokens = it.tokens ?? fail(`Sentence ${it.id} has no tokens`)
@@ -146,7 +143,6 @@ function buildGrammar(lesson: Lesson, explain: NonNullable<Lesson['explain']>, m
   const out: Exercise[] = []
   if (mine.some((it) => !learned.has(it.id))) out.push({ type: 'explain', title: explain.title, body: explain.body, examples: explain.examples.flatMap((id) => items.get(id) ?? []) })
   out.push(...pick(0, 1, 2).map(translate), ...pick(3, 4, 5, 0).map(gap), ...pick(1, 2, 3, 4).map(build))
-  if (canSpeak) out.push(...pick(2, 4).map(listen))
   if (canListen) out.push(...pick(0, 3).map((item): Exercise => ({ type: 'speak', item })))
   out.push(...pick(1, 3).map(say), ...pick(5, 0).map(typed))
   return out.filter((e) => !('options' in e) || e.options.length >= 2)

@@ -220,13 +220,12 @@ describe('buildLesson specifics', () => {
     const grammar = LESSONS.filter((l) => l.explain)
     const kinds = (exs: Exercise[]) => exs.map((e) => (e.type === 'choice' ? `${e.type}:${e.dir}` : e.type))
 
-    it('explain, translate x3, fill x4, build x4, listen x2, say x2, type x2', () => {
+    it('explain, translate x3, fill x4, build x4, say x2, type x2 (no listening: off in lessons for now)', () => {
       for (const l of grammar) {
         const learned = learnedBefore(LESSONS.indexOf(l))
         expect(kinds(buildLesson(l, ITEMS, { canSpeak: true, learned, rand: seeded(3) })), l.id).toEqual([
-          'explain', ...Array(3).fill('choice:toGloss'), ...Array(4).fill('choice:fill'), ...Array(4).fill('build'), 'listen', 'listen', 'choice:toJp', 'choice:toJp', 'type', 'type',
+          'explain', ...Array(3).fill('choice:toGloss'), ...Array(4).fill('choice:fill'), ...Array(4).fill('build'), 'choice:toJp', 'choice:toJp', 'type', 'type',
         ])
-        expect(kinds(buildLesson(l, ITEMS, { canSpeak: false, learned, rand: seeded(3) })).includes('listen'), l.id).toBe(false) // no voice, no listening
       }
     })
     it('every sentence is both recognised (translate, gap, listen or say) and produced (built or typed)', () => {

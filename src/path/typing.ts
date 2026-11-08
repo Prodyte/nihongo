@@ -116,25 +116,41 @@ export function checkJapanese(typed: string, expected: string, o: { alts?: strin
 
 export function distance(a: string, b: string): number {
   let prev = Array.from({ length: b.length + 1 }, (_, j) => j)
+  let prevprev = prev
   for (let i = 1; i <= a.length; i++) {
     const cur = [i]
-    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) cur[j] = Math.min(cur[j], prevprev[j - 2] + 1) // swapped letters ("teh") are one slip
+    }
+    prevprev = prev
     prev = cur
   }
   return prev[b.length]
 }
 
-const normEn = (s: string) => s.toLowerCase().replace(/[’‘`]/g, "'").replace(/[^\p{L}\p{N}' ]/gu, ' ').replace(/\s+/g, ' ').trim()
+const CONTRACTIONS: [RegExp, string][] = [
+  [/\bcan't\b|\bcannot\b/g, 'can not'], [/\bwon't\b/g, 'will not'], [/n't\b/g, ' not'], [/'re\b/g, ' are'], [/'m\b/g, ' am'],
+  [/'ll\b/g, ' will'], [/'ve\b/g, ' have'], [/'d\b/g, ' would'], [/\b(it|that|what|there|here|he|she|who|where|how|let)'s\b/g, '$1 is'],
+]
+/** Lower case, no punctuation, contractions spelled out (you're = you are) and no articles (a, an, the): so close answers compare equal. */
+export const normEn = (s: string) => {
+  let t = s.toLowerCase().replace(/[’‘`]/g, "'")
+  for (const [re, to] of CONTRACTIONS) t = t.replace(re, to)
+  return t.replace(/[^\p{L}\p{N}' ]/gu, ' ').replace(/\b(a|an|the)\b/g, ' ').replace(/\s+/g, ' ').trim()
+}
+/** Typos forgiven in an answer of this many letters: none under 6 (eight/night, write/white), one up to 9, two from 10. */
+export const slips = (answer: string) => (answer.length >= 10 ? 2 : answer.length >= 6 ? 1 : 0)
 
 /** Could `typed` still grow into a longer accepted answer ("hello" of "hello, good afternoon")? Then it must not pass mid-typing. */
 export const mayGrow = (typed: string, answers: string[]) => { const t = `${normEn(typed)} `; return answers.some((a) => normEn(a).startsWith(t)) }
 
-/** Is `typed` one of the accepted English answers? One wrong letter is forgiven when the answer has 6+ letters. */
+/** Is `typed` one of the accepted English answers? Contractions and articles don't matter; small typos pass with a spelling note (see `slips`). */
 export function checkEnglish(typed: string, answers: string[]): Check {
   const t = normEn(typed)
   if (!t) return { ok: false }
   const norm = answers.map(normEn)
   if (norm.includes(t)) return { ok: true }
-  const near = norm.findIndex((a) => a.length >= 6 && distance(a, t) <= 1)
+  const near = norm.findIndex((a) => distance(a, t) <= slips(a))
   return near >= 0 ? { ok: true, note: `Check the spelling: “${answers[near]}”.` } : { ok: false }
 }
