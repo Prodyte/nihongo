@@ -34,6 +34,16 @@ export function speak(text: string, speed = readSpeed()): boolean {
   return true
 }
 
+/** Run `then` once the voice has finished speaking (straight away when it is quiet). Capped at `maxMs`: a voice that
+ * never reports the end must not block the app. Returns a cancel function. */
+export function whenQuiet(then: () => void, maxMs = 5000): () => void {
+  const s = synth()
+  if (!s?.speaking) { then(); return () => {} }
+  const until = Date.now() + maxMs
+  const id = setInterval(() => { if (!s.speaking || Date.now() > until) { clearInterval(id); then() } }, 100)
+  return () => clearInterval(id)
+}
+
 const queued: SpeechSynthesisUtterance[] = [] // Chrome garbage-collects an utterance nothing references, and its onend never fires
 
 /** Speak several texts one after another; `onStart(i)` fires as each begins (to highlight it). Returns a stop function.

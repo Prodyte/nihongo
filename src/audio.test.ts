@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { audiosToPlay, playInOrder, slowly, speak, speakAll, unlockAudio } from './audio'
+import { audiosToPlay, playInOrder, slowly, speak, speakAll, unlockAudio, whenQuiet } from './audio'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -149,4 +149,26 @@ describe('speak', () => {
     expect(s.speak).toHaveBeenCalledOnce()
     expect(s.speak.mock.calls[0][0]).toMatchObject({ text: '' })
   })
+})
+
+it('whenQuiet waits for the voice to finish (capped), and runs at once when it is quiet', () => {
+  vi.useFakeTimers()
+  const then = vi.fn()
+  whenQuiet(then)
+  expect(then).toHaveBeenCalledTimes(1) // no speechSynthesis: nothing to wait for
+  const s = { speaking: true }
+  vi.stubGlobal('speechSynthesis', s)
+  const later = vi.fn()
+  whenQuiet(later)
+  vi.advanceTimersByTime(1000)
+  expect(later).not.toHaveBeenCalled()
+  s.speaking = false
+  vi.advanceTimersByTime(100)
+  expect(later).toHaveBeenCalledTimes(1)
+  s.speaking = true // a voice that never reports the end
+  const stuck = vi.fn()
+  whenQuiet(stuck, 2000)
+  vi.advanceTimersByTime(2100)
+  expect(stuck).toHaveBeenCalledTimes(1)
+  vi.useRealTimers()
 })

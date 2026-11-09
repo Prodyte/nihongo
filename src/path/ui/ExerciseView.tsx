@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { whenQuiet } from '../../audio'
 import type { Exercise } from '../lesson'
 import { Build } from './Build'
 import { Choice } from './Choice'
@@ -11,7 +12,16 @@ import { Type } from './Type'
 import { Write } from './Write'
 
 /** Any exercise, by type. `step` keys it, so each new exercise starts fresh. */
-export function ExerciseView({ ex, step, autoplay, onDone, onSkipSpeaking }: { ex: Exercise; step: number; autoplay: boolean; onDone: (missed: string[]) => void; onSkipSpeaking: () => void }) {
+export function ExerciseView({ ex, step, autoplay, onDone: finish, onSkipSpeaking }: { ex: Exercise; step: number; autoplay: boolean; onDone: (missed: string[]) => void; onSkipSpeaking: () => void }) {
+  // The next exercise waits for the word being spoken to finish, so it never plays over the next question. Once per
+  // step: a second tap on Continue while waiting does nothing.
+  const waiting = useRef<{ step: number; cancel: () => void } | null>(null)
+  useEffect(() => () => waiting.current?.cancel(), []) // leaving the lesson drops a pending advance
+  const onDone = (missed: string[]) => {
+    if (waiting.current?.step === step) return
+    waiting.current = { step, cancel: () => {} }
+    waiting.current.cancel = whenQuiet(() => finish(missed))
+  }
   // The focused Continue button left with the last exercise: move focus to the new question, not <body> (keyboard and
   // screen reader users start there). An exercise that focuses its own input or button (autoFocus) keeps it.
   useEffect(() => {
