@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { speakAll, useJaVoice } from '../audio'
+import { NO_VOICE, speakAll, useJaVoice } from '../audio'
 import type { Db } from '../db/db'
 import { ExitButton, Icon } from '../icons'
 import { DIALOGUES } from '../path/dialogues'
@@ -23,7 +23,6 @@ const HEARD_KEY = 'nihongo.heard'
 const heardSet = () => { try { return new Set<string>(JSON.parse(localStorage.getItem(HEARD_KEY) ?? '[]')) } catch { return new Set<string>() } }
 const markHeard = (id: string) => { try { localStorage.setItem(HEARD_KEY, JSON.stringify([...heardSet(), id])) } catch { /* per device only */ } }
 const spoken = (tokens: string[]) => displayJp(tokens.map(readingOf)).replace(/？。$/, '？')
-const NO_VOICE = 'Needs a Japanese voice on this device (on iPhone and iPad: Settings → Accessibility → Spoken content → Voices).'
 
 /** JLPT-style listening: hear a dialogue or a story without its text, answer questions, then read along. */
 export function Listening({ db, onExit }: { db: Db; onExit: () => void }) {

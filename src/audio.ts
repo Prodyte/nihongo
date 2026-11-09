@@ -93,6 +93,8 @@ export function unlockAudio() {
 /** Browsers load the voice list lazily on first use; ask early so the first spoken card isn't silent. */
 export const warmUpVoices = () => { void synth()?.getVoices(); unlockAudio() }
 
+export const NO_VOICE = 'Needs a Japanese voice on this device (on iPhone and iPad: Settings → Accessibility → Spoken content → Voices).'
+
 /** Whether a Japanese voice exists, or may (the voice list loads asynchronously in most browsers). */
 export function useJaVoice(): boolean {
   const [has, setHas] = useState(canSpeak)

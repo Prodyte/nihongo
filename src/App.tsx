@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { warmUpVoices } from './audio'
 import { openDb, reviewCounts, seedKana, type Db } from './db/db'
 import { Icon, Logo } from './icons'
@@ -105,6 +105,8 @@ export default function App() {
   // The phone's back button / swipe goes back a screen instead of leaving the app. Opening a screen pushes a history
   // entry (switching tabs replaces it, so back doesn't replay every tab); leaving one with its own exit button pops it.
   const popping = useRef(false) // our own history.back(): the view is already set
+  const guard = useRef<(() => boolean) | null>(null) // a screen that asks before back leaves it (a mock test under way)
+  const setGuard = useCallback((ask: (() => boolean) | null) => { guard.current = ask }, [])
   const go = (v: View) => {
     if (v === view) return
     if (TABS.some(([t]) => t === v)) history.replaceState({ view: v, pushed: history.state?.pushed }, '')
@@ -119,6 +121,7 @@ export default function App() {
     history.replaceState({ view }, '')
     const pop = (e: PopStateEvent) => {
       if (popping.current) { popping.current = false; return }
+      if (guard.current && !guard.current()) { history.pushState({ view: 'mock', pushed: true }, ''); return } // stay: put its entry back
       setView((e.state?.view as View | undefined) ?? 'today')
     }
     addEventListener('popstate', pop)
@@ -214,7 +217,7 @@ export default function App() {
         ) : unit ? (
           <TestOut key={unit.id} db={db} unit={unit} onExit={() => leave('path')} />
         ) : view === 'mock' ? (
-          <MockTest key={mockLevel} level={mockLevel} onExit={() => leave('review')} />
+          <MockTest key={mockLevel} level={mockLevel} onExit={() => leave('review')} onGuard={setGuard} />
         ) : view === 'drill' ? (
           <Drill key={drill} db={db} kind={drill} onExit={() => leave('review')} />
         ) : view === 'reading' ? (

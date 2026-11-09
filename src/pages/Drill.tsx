@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useJaVoice } from '../audio'
+import { NO_VOICE, useJaVoice } from '../audio'
 import type { Db } from '../db/db'
 import { ExitButton } from '../icons'
 import { buildDrill, DRILL_TITLE, learnedForDrills, type DrillKind } from '../path/drills'
@@ -57,7 +57,7 @@ export function Drill({ db, kind, onExit }: { db: Db; kind: DrillKind; onExit: (
         <ExitButton onClick={onExit} />
         <progress max={exs.length} value={step} aria-label={`${DRILL_TITLE[kind]} progress`} />
       </div>
-      {(kind === 'listen' || kind === 'shadow') && !voice && <p className="hint">This needs a Japanese voice on your device (Settings → Accessibility → Spoken content on iPad).</p>}
+      {(kind === 'listen' || kind === 'shadow') && !voice && <p className="hint">{NO_VOICE}</p>}
       <ExerciseView ex={exs[step]} step={step} autoplay={false} onDone={done} onSkipSpeaking={onExit} />
     </div>
   )

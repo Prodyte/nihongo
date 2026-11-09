@@ -23,26 +23,33 @@ const STAGE_HINT: Record<Stage, string> = { Apprentice: 'under a week', Guru: 'u
 
 export function Stats({ db }: { db: Db }) {
   const [s, setS] = useState<S | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [now] = useState(() => new Date())
   useEffect(() => {
+    let live = true
     void (async () => {
-      const [cards, reviews, activity, p] = await Promise.all([db.getAll('cards'), db.getAll('reviews'), db.getAll('activity'), getProgress(db)])
       const start = new Date(now)
       start.setHours(0, 0, 0, 0)
+      // counts, not records: a year of reviews is too many to read
+      const [cards, total, missed, today, activity, p] = await Promise.all([db.getAll('cards'), db.count('reviews'), db.countFromIndex('reviews', 'by-grade', Rating.Again), db.countFromIndex('reviews', 'by-at', IDBKeyRange.lowerBound(start)), db.getAll('activity'), getProgress(db)])
       const stages = Object.fromEntries(STAGES.map((x) => [x, 0])) as Record<Stage, number>
       for (const c of cards) { const st = stage(c.fsrs); if (st) stages[st]++ }
-      setS({
+      if (live) setS({
         stages,
         leeches: cards.filter((c) => isLeech(c.fsrs)).length,
-        total: reviews.length,
-        correct: reviews.filter((r) => r.grade !== Rating.Again).length,
-        today: reviews.filter((r) => r.at >= start).length,
+        total,
+        correct: total - missed,
+        today,
         levels: coverage(LESSONS, ITEMS, p.done),
         ahead: forecast(cards, now),
         days: new Map(activity.map((a) => [a.date, a.xp])),
       })
-    })()
+    })().catch((e) => live && setError(`Couldn't load your stats (${e}).`))
+    return () => {
+      live = false
+    }
   }, [db, now])
+  if (error) return <p role="alert" className="bad">{error}</p>
   if (!s) return <Loading />
   const peak = Math.max(1, ...s.ahead.map((d) => d.count))
   return (
@@ -97,9 +104,10 @@ function Heatmap({ days, now }: { days: Map<string, number>; now: Date }) {
   const cells: { key: string; xp: number; future: boolean }[] = []
   for (const d = new Date(first); cells.length < WEEKS * 7; d.setDate(d.getDate() + 1)) cells.push({ key: dayKey(d), xp: days.get(dayKey(d)) ?? 0, future: d > today })
   const active = cells.filter((c) => c.xp > 0).length
+  const past = cells.filter((c) => !c.future).length // the grid runs to the end of this week
   const level = (xp: number) => (xp === 0 ? 0 : xp < 10 ? 1 : xp < 20 ? 2 : xp < 50 ? 3 : 4)
   return (
-    <div className="heatmap" role="img" aria-label={`Active on ${active} of the last ${WEEKS * 7} days`}>
+    <div className="heatmap" role="img" aria-label={`Active on ${active} of the last ${past} days`}>
       {cells.map((c) => <span key={c.key} className={c.future ? 'future' : `l${level(c.xp)}`} title={`${c.key}${c.xp ? ': studied' : ''}`} />)}
     </div>
   )

@@ -65,3 +65,23 @@ it('a first attempt becomes the best score', () => {
   expect(screen.getByText('A new best for N3.')).toBeTruthy()
   expect(localStorage.getItem(mockBestKey(3))).toBe('0')
 })
+
+it('leaving mid-test asks first; before the first answer it just leaves', () => {
+  const onExit = vi.fn()
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  render(<MockTest level={5} onExit={onExit} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Exit' }))
+  expect(confirm).not.toHaveBeenCalled()
+  expect(onExit).toHaveBeenCalledTimes(1)
+  fireEvent.click(screen.getByRole('group', { name: 'Answers' }).querySelector('button')!)
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Exit' }))
+  expect(confirm).toHaveBeenCalledTimes(1)
+  expect(onExit).toHaveBeenCalledTimes(1) // cancelled: still in the test
+  expect(screen.getByText(`Mock N5 · Vocabulary · 2 of ${MOCK_QUESTIONS}`)).toBeTruthy()
+  confirm.mockReturnValue(true)
+  fireEvent.click(screen.getByRole('button', { name: 'Exit' }))
+  expect(onExit).toHaveBeenCalledTimes(2)
+  confirm.mockRestore()
+})

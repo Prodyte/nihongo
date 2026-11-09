@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { openDb, seedKana } from '../db/db'
 import { ITEMS, LESSONS } from '../path/course'
 import { completeLesson } from '../path/progress'
-import { Today } from './Today'
+import { GREETING, Today } from './Today'
 
 let n = 0
 const freshDb = async () => { const db = await openDb(`today-${n++}`); await seedKana(db); return db }
@@ -49,3 +49,7 @@ it('with cards due, reviewing leads; the streak shows, done for today', async ()
   expect(onReview).toHaveBeenCalled()
 })
 
+
+it('greets by the time of day; the small hours are still evening', () => {
+  expect([2, 4, 10, 11, 17, 18, 23].map((h) => GREETING(h)[1])).toEqual(['Good evening', 'Good morning', 'Good morning', 'Good afternoon', 'Good afternoon', 'Good evening', 'Good evening'])
+})

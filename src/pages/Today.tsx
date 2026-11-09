@@ -9,7 +9,7 @@ import { Levels } from './Levels'
 
 interface State { streak: number; xpToday: number; week: { day: Date; on: boolean }[]; next: (typeof LESSONS)[number] | null; due: number; fresh: number; level: LevelCoverage; nextReview: string | null; hour: number }
 
-const GREETING = (h: number) => (h < 11 ? ['おはよう', 'Good morning'] : h < 18 ? ['こんにちは', 'Good afternoon'] : ['こんばんは', 'Good evening'])
+export const GREETING = (h: number) => (h < 4 || h >= 18 ? ['こんばんは', 'Good evening'] : h < 11 ? ['おはよう', 'Good morning'] : ['こんにちは', 'Good afternoon']) // the small hours are still evening
 
 /** The home screen: one obvious next step. Reviews come first (they are what keeps words in memory), then the next lesson. */
 export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void; onLesson: (id: string) => void }) {

@@ -8,10 +8,12 @@ import { Ruby } from '../path/ui/Ruby'
 import { readInt, writeInt } from '../settings'
 import { sfx } from '../sfx'
 
+const ask = () => window.confirm('Leave the test? This attempt won’t be scored.')
 const clock = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
 
 /** A timed mock JLPT exam over a whole level. Practice only: it saves its best score and nothing else (no cards, lessons or XP). */
-export function MockTest({ level, onExit }: { level: MockLevel; onExit: () => void }) {
+/** `onGuard` gets an "ok to leave?" check while a test is under way (null after), so the back button asks too. */
+export function MockTest({ level, onExit, onGuard }: { level: MockLevel; onExit: () => void; onGuard?: (ask: (() => boolean) | null) => void }) {
   const voice = useJaVoice()
   const [best] = useState(() => readInt(mockBestKey(level), -1)) // before this attempt
   const [qs, setQs] = useState<MockQuestion[] | null>(null)
@@ -21,6 +23,13 @@ export function MockTest({ level, onExit }: { level: MockLevel; onExit: () => vo
   const done = !!qs && (answers.length >= qs.length || now >= end)
   const right = qs ? qs.map((_, i) => !!answers[i]) : []
   const pct = qs ? Math.round((100 * right.filter(Boolean).length) / qs.length) : 0
+  const underway = !done && answers.length > 0
+
+  useEffect(() => {
+    if (!onGuard || !underway) return
+    onGuard(ask)
+    return () => onGuard(null)
+  }, [onGuard, underway])
 
   useEffect(() => {
     if (!qs || done) return
@@ -91,10 +100,11 @@ export function MockTest({ level, onExit }: { level: MockLevel; onExit: () => vo
   const left = end - now
   const q = qs[answers.length]
   const answer = (missed: string[]) => setAnswers((a) => [...a, missed.length === 0])
+  const leave = () => { if (!underway || ask()) onExit() }
   return (
     <div className="lesson">
       <div className="bar">
-        <ExitButton onClick={onExit} />
+        <ExitButton onClick={leave} />
         <progress max={qs.length} value={answers.length} aria-label="Test progress" />
         <span className="mock-timer" role="timer">{clock(left)}<span className="visually-hidden"> left</span></span>
       </div>

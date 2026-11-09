@@ -31,7 +31,7 @@ export interface ReviewRecord {
 }
 interface Schema extends DBSchema {
   cards: { key: string; value: StoredCard; indexes: { 'by-deck': string } }
-  reviews: { key: number; value: ReviewRecord; indexes: { 'by-card': string; 'by-at': Date } }
+  reviews: { key: number; value: ReviewRecord; indexes: { 'by-card': string; 'by-at': Date; 'by-grade': number } }
   decks: { key: string; value: DeckRecord }
   media: { key: string; value: MediaRecord }
   lessons: { key: string; value: LessonRecord }
@@ -40,7 +40,7 @@ interface Schema extends DBSchema {
 export type Db = IDBPDatabase<Schema>
 
 export const openDb = (name = 'nihongo') => {
-  const opening: Promise<Db> = openDB<Schema>(name, 4, {
+  const opening: Promise<Db> = openDB<Schema>(name, 5, {
     // another tab opened a newer version: close this connection so its upgrade isn't blocked forever
     blocking() {
       void opening.then((d) => d.close())
@@ -59,6 +59,7 @@ export const openDb = (name = 'nihongo') => {
         db.createObjectStore('activity', { keyPath: 'date' })
       }
       if (old < 4) tx.objectStore('reviews').createIndex('by-at', 'at') // today's or this month's reviews without reading a year of them
+      if (old < 5) tx.objectStore('reviews').createIndex('by-grade', 'grade') // Stats' accuracy as two counts
     },
   })
   return opening

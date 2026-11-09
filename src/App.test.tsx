@@ -151,3 +151,23 @@ it('the Review tab opens Listening full-screen when there is a Japanese voice; E
     vi.unstubAllGlobals()
   }
 })
+
+it("the back button asks before leaving a mock test under way, and stays if you cancel", async () => {
+  const user = userEvent.setup()
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  render(<App />)
+  await screen.findByRole('navigation', { name: 'Main' })
+  await user.click(tab('Review'))
+  await user.click(await screen.findByRole('button', { name: /^Mock N5/ }))
+  await user.click(await screen.findByRole('button', { name: 'Start' }))
+  await user.click(screen.getByRole('group', { name: 'Answers' }).querySelector('button')!)
+  await user.click(screen.getByRole('button', { name: 'Continue' }))
+  history.back()
+  await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1))
+  await new Promise((r) => setTimeout(r, 50))
+  expect(screen.getByText(/^Mock N5 · .* · 2 of/)).toBeTruthy() // still in the test
+  confirm.mockReturnValue(true)
+  history.back()
+  await waitFor(() => expect(current()).toBe('Review'))
+  confirm.mockRestore()
+})

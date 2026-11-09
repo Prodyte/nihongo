@@ -80,7 +80,8 @@ describe('db', () => {
     await v3.add('reviews', { cardId: 'w:火', grade: Rating.Good, at: new Date('2026-03-09T09:00:00'), log })
     v3.close()
     const db = await openDb(name)
-    expect(db.version).toBe(4)
+    expect(db.version).toBe(5)
+    expect(await db.countFromIndex('reviews', 'by-grade', Rating.Good)).toBe(2) // and by grade, for Stats
     expect(await db.count('reviews')).toBe(2)
     expect(await newToday(db, new Date('2026-03-10T13:00:00'))).toBe(1)
   })
