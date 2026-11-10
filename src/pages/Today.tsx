@@ -6,6 +6,7 @@ import { ITEMS, lessonKind, LESSONS, unitOf } from '../path/course'
 import { coverage, currentLesson, getProgress, type LevelCoverage } from '../path/progress'
 import { nextDue, until } from '../srs/stages'
 import { Levels } from './Levels'
+import { SESSION } from './Study'
 
 interface State { streak: number; xpToday: number; week: { day: Date; on: boolean }[]; next: (typeof LESSONS)[number] | null; due: number; fresh: number; level: LevelCoverage; nextReview: string | null; hour: number }
 
@@ -48,7 +49,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
       <span className="review-count" aria-hidden="true">{reviews ? <strong>{reviews}</strong> : <Icon name="check" size={26} />}</span>
       <div className="review-text">
         <strong>{reviews ? `${s.due ? `${s.due} review${s.due === 1 ? '' : 's'} due` : ''}${s.due && s.fresh ? ' + ' : ''}${s.fresh ? `${s.fresh} new` : ''}` : 'All caught up'}</strong>
-        <small>{reviews ? 'Spaced repetition keeps them in memory' : s.nextReview ? `Next review ${s.nextReview}` : 'Finish a lesson to start reviewing'}</small>
+        <small>{reviews > SESSION * 1.5 ? `They come ${SESSION} at a time: do what you can` : reviews ? 'Spaced repetition keeps them in memory' : s.nextReview ? `Next review ${s.nextReview}` : 'Finish a lesson to start reviewing'}</small>
       </div>
       {reviews > 0 && <button className={reviewFirst ? 'primary' : ''} onClick={onReview}>Review</button>}
     </section>
@@ -67,7 +68,7 @@ export function Today({ db, onReview, onLesson }: { db: Db; onReview: () => void
           <div className={`streak-badge${s.streak ? '' : ' off'}`} aria-hidden="true"><Icon name="flame" size={28} /></div>
           <div>
             <p><strong>{s.streak ? `${s.streak}-day streak` : 'No streak yet'}</strong></p>
-            <p className="hint left">{today ? 'Done for today. See you tomorrow.' : s.streak ? 'Do a lesson or a review today to keep it going.' : 'Do a lesson or a review to start one.'}</p>
+            <p className="hint left">{today ? (s.due ? 'Kept for today. Reviews are still due.' : 'Kept for today.') : s.streak ? 'Do a lesson or a review today to keep it going.' : 'Do a lesson or a review to start one.'}</p>
           </div>
         </div>
         <ol className="week" aria-label="The last seven days">

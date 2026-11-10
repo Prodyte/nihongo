@@ -29,7 +29,7 @@ it('a new learner: no streak, just the first lesson (kana come from the path, no
   expect(screen.getByRole('progressbar', { name: 'N5 kanji' })).toBeTruthy()
 })
 
-it('with cards due, reviewing leads; the streak shows, done for today', async () => {
+it('with cards due, reviewing leads; the streak shows as kept, and says reviews are still due', async () => {
   const db = await freshDb()
   await completeLesson(db, LESSONS[0], ITEMS, {}, 1) // 15 XP today
   await completeLesson(db, LESSONS[1], ITEMS, {}, 1) // 30 XP: goal met
@@ -39,7 +39,7 @@ it('with cards due, reviewing leads; the streak shows, done for today', async ()
   const user = userEvent.setup()
   render(<Today db={db} onReview={onReview} onLesson={() => {}} />)
   await screen.findByText('1-day streak')
-  expect(screen.getByText(/Done for today\./)).toBeTruthy()
+  expect(screen.getByText('Kept for today. Reviews are still due.')).toBeTruthy() // never "done" with reviews waiting
   expect(screen.queryByText(/XP/)).toBeNull()
   const [first, second] = buttons()
   expect(first).toEqual(['Review', true]) // reviews first, as the primary action

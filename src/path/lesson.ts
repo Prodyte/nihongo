@@ -85,8 +85,7 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   const toGloss = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: written(it), ...shuffled(it, 'gloss'), answer: it.gloss })
   const toJp = (it: Item): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...shuffled(it, 'jp'), answer: written(it) })
 
-  const out: Exercise[] = taught.filter((it) => !learned.has(it.id)).map((item) => ({ type: 'intro', item }))
-  out.push(...shuffle(mine, rand).map(toGloss))
+  const out = teach(taught.filter((it) => !learned.has(it.id)), shuffle(mine, rand).map(toGloss))
   const pairable = askable.filter((it, i) => askable.findIndex((x) => x.id === it.id) === i) // one script per sound: a pair's id must be unique
   if (pairable.length >= 2) out.push({ type: 'match', pairs: pairable.slice(0, 5).map((it) => ({ id: it.id, jp: written(it), ...(it.written && { reading: it.jp }), gloss: it.gloss })) })
   // ponytail: listening ("Tap what you hear") is off in lessons for now; restore from git (c73d856) to bring it back
@@ -111,6 +110,24 @@ export function buildLesson(lesson: Lesson, items: ReadonlyMap<string, Item>, op
   }
   // a question needs at least two options (a course edit could leave a tiny pool)
   return out.filter((e) => !('options' in e) || e.options.length >= 2)
+}
+
+/**
+ * New items are met a few at a time, each group asked straight after it: meet three, recall those three, then the next
+ * three. Six new words in a row are more than anyone holds on to, and the first questions would be guesses. `asks` are
+ * the first questions (one or more per item, already shuffled); those on items met before (a replay) follow the groups.
+ */
+function teach(fresh: Item[], asks: Exercise[]): Exercise[] {
+  const groups = Math.ceil(fresh.length / 3) // of two or three: five new items are 3 + 2, four are 2 + 2
+  const out: Exercise[] = []
+  let rest = asks
+  for (let g = 0; g < groups; g++) {
+    const group = fresh.slice(Math.round((g * fresh.length) / groups), Math.round(((g + 1) * fresh.length) / groups))
+    const mine = (e: Exercise) => 'item' in e && group.some((it) => it.id === e.item.id)
+    out.push(...group.map((item): Exercise => ({ type: 'intro', item })), ...rest.filter(mine))
+    rest = rest.filter((e) => !mine(e))
+  }
+  return [...out, ...rest]
 }
 
 /** The word bank: the sentence's chunks plus the wrong ones, shuffled, and never handed over already in the right order. */
@@ -169,8 +186,7 @@ function buildKanji(lesson: Lesson, mine: Item[], items: ReadonlyMap<string, Ite
     return { type: 'choice', item: w, dir: 'toReading', prompt: written(w), options: shuffle(readings, rand), answer: w.jp }
   }
 
-  const out: Exercise[] = mine.filter((it) => !learned.has(it.id)).map((item) => ({ type: 'intro', item }))
-  out.push(...shuffle(mine, rand).map((it): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, ...opts(it, 'gloss'), answer: it.gloss })))
+  const out = teach(mine.filter((it) => !learned.has(it.id)), shuffle(mine, rand).map((it): Exercise => ({ type: 'choice', item: it, dir: 'toGloss', prompt: it.jp, ...opts(it, 'gloss'), answer: it.gloss })))
   if (askable.length >= 2) out.push({ type: 'match', pairs: askable.slice(0, 5).map((it) => ({ id: it.id, jp: it.jp, gloss: it.gloss })) })
   out.push(...askable.slice(0, 3).map((it): Exercise => ({ type: 'choice', item: it, dir: 'toJp', prompt: it.gloss, ...opts(it, 'jp'), answer: it.jp })))
   const readWords = shuffle(words, rand)

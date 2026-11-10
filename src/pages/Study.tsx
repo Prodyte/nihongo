@@ -18,12 +18,17 @@ const MODES = { flashcard: Flashcard, typing: Typing, quiz: Quiz }
 /** Deck id for "practise weak spots" (see weakSpots), drilled without changing their schedule. */
 export const MISTAKES = 'mistakes'
 const LEARN_AHEAD = 20 * 60_000
+/** Cards a session takes from a long queue. After a break, hundreds can be due: one sitting of them all has no end in
+ * sight, so they come a batch at a time, with "Keep going" at the end of each. A queue up to half as long again is
+ * taken whole (no five-card tail). */
+export const SESSION = 30
 
 export function Study({ db, deck, mode, autoplay, onExit, onLesson }: { db: Db; deck: string; mode: Mode; autoplay: boolean; onExit: () => void; onLesson?: (id: string) => void }) {
   const practice = deck === MISTAKES
   const [pool, setPool] = useState<StoredCard[]>([])
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
   const [total, setTotal] = useState(0) // cards in the session; a card shown again doesn't add to it
+  const [more, setMore] = useState(0) // cards that were waiting behind this batch when it started
   const [log, setLog] = useState<{ id: string; g: Grade }[]>([]) // every grade, in order
   const [undo, setUndo] = useState<{ queue: StoredCard[]; card: StoredCard } | null>(null) // the last grade, to take back
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +57,10 @@ export function Study({ db, deck, mode, autoplay, onExit, onLesson }: { db: Db; 
       const left = Math.max(0, DAILY_NEW - (await newToday(db)))
       if (!live) return
       setPool(cards)
-      start(dueCards(cards, new Date(), left))
+      const all = dueCards(cards, new Date(), left)
+      const batch = all.length > SESSION * 1.5 ? all.slice(0, SESSION) : all
+      setMore(all.length - batch.length)
+      start(batch)
     })().catch((e) => {
       console.error(e)
       if (live) setError('Couldn’t load your cards.')
@@ -140,6 +148,7 @@ export function Study({ db, deck, mode, autoplay, onExit, onLesson }: { db: Db; 
     return () => window.removeEventListener('keydown', onKey)
   }, [onExit, onUndo])
 
+  const keepGoing = () => { setQueue(null); setLog([]); setUndo(null); setNextAt(null); setAttempt((n) => n + 1) } // the next batch
   const undoBtn = undo && <button type="button" className="ghost undo" onClick={() => void onUndo()}>Undo</button>
   if (!queue)
     return (
@@ -163,11 +172,12 @@ export function Study({ db, deck, mode, autoplay, onExit, onLesson }: { db: Db; 
         {/* focused on arrival, so a screen reader says the session is over */}
         <h2 tabIndex={-1} ref={(h) => h?.focus()}>{log.length ? <>Session complete <span aria-hidden="true">🎉</span></> : 'Nothing due right now'}</h2>
         {log.length > 0 && <p className="summary">{firsts.size} {firsts.size === 1 ? 'card' : 'cards'} · {remembered} remembered first time</p>}
-        {nextAt && <p className="summary">Next review {nextAt}.</p>}
+        {more > 0 ? <p className="summary">{more} more {more === 1 ? 'is' : 'are'} waiting.</p> : nextAt && <p className="summary">Next review {nextAt}.</p>}
         {error && <p role="alert" className="bad">{error}</p>}
         <div className="actions">
-          {nextLesson && onLesson && <button className="primary big" onClick={() => onLesson(nextLesson.id)}>Next lesson: <span lang="ja">{nextLesson.title}</span></button>}
-          <button className={nextLesson && onLesson ? undefined : 'primary'} onClick={onExit}>Done</button>
+          {more > 0 && <button className="primary big" onClick={keepGoing}>Keep going</button>}
+          {nextLesson && onLesson && <button className={more > 0 ? 'big' : 'primary big'} onClick={() => onLesson(nextLesson.id)}>Next lesson: <span lang="ja">{nextLesson.title}</span></button>}
+          <button className={more > 0 || (nextLesson && onLesson) ? undefined : 'primary'} onClick={onExit}>Done</button>
           {undoBtn}
         </div>
       </div>

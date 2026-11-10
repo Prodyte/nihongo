@@ -8,7 +8,7 @@ import { MOCK_LEVELS, mockBestKey, type MockLevel } from '../path/mock'
 import { readInt } from '../settings'
 import { Ruby } from '../path/ui/Ruby'
 import { nextDue, until, weakSpots } from '../srs/stages'
-import type { Mode } from './Study'
+import { SESSION, type Mode } from './Study'
 
 export interface Config { deck: string; mode: Mode }
 
@@ -90,7 +90,7 @@ export function Home({ db, config, onChange, onStart, onPractice, onDrill, onRea
           {counts && total === 0 ? <span className="big-number done" aria-hidden="true"><Icon name="check" size={44} /></span> : <strong className="big-number">{counts ? total : '–'}</strong>}
           <div>
             <p className="counts">{counts ? `${counts.due} due · ${counts.fresh} new` : '…'}</p>
-            <p className="hint left">{total ? 'Cards come back just before you would forget them.' : counts?.empty ? 'No cards here yet: they arrive as you finish lessons on the path.' : `All caught up.${info.next ? ` Next review ${info.next}.` : ''}`}</p>
+            <p className="hint left">{total > SESSION * 1.5 ? `They come ${SESSION} at a time: do what you can.` : total ? 'Cards come back just before you would forget them.' : counts?.empty ? 'No cards here yet: they arrive as you finish lessons on the path.' : `All caught up.${info.next ? ` Next review ${info.next}.` : ''}`}</p>
           </div>
         </div>
         {total > 0 && <div className="row2 left"><button className="primary big" onClick={onStart}>Study</button></div>}

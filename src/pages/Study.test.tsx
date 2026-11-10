@@ -2,11 +2,12 @@
 import 'fake-indexeddb/auto'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { State } from 'ts-fsrs'
 import { afterEach, expect, it } from 'vitest'
 import { openDb } from '../db/db'
 import { LESSONS } from '../path/course'
 import { newFsrsCard } from '../srs/scheduler'
-import { Study } from './Study'
+import { SESSION, Study } from './Study'
 
 afterEach(cleanup)
 
@@ -65,4 +66,41 @@ it('the end of a review offers the next lesson, with Done beside it', async () =
   await user.click(await screen.findByRole('button', { name: /^Next lesson: / }))
   expect(started).toBe(LESSONS[0].id) // nothing done yet: the first lesson
   expect(screen.getByRole('button', { name: 'Done' }).className).not.toContain('primary') // one seal: the lesson is the step
+})
+
+/** A review card that fell due yesterday. */
+const due = (i: number) => ({ id: `c${i}`, deck: 'd', front: `字${i}`, back: [`m${i}`], fsrs: { ...newFsrsCard(), state: State.Review, stability: 30, difficulty: 5, reps: 3, scheduled_days: 30, last_review: new Date(Date.now() - 31 * 864e5), due: new Date(Date.now() - 864e5) } })
+
+it('a long queue comes a batch at a time: 30 cards, how many are waiting, and Keep going takes the next batch', async () => {
+  const db = await openDb('study-batches')
+  for (let i = 0; i < 50; i++) await db.put('cards', due(i))
+  const user = userEvent.setup({ delay: null })
+  render(<Study db={db} deck="d" mode="flashcard" autoplay={false} onExit={() => {}} />)
+  const run = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      await user.click(await screen.findByRole('button', { name: /show answer/i }))
+      await user.click(screen.getByRole('button', { name: /^Good/ }))
+    }
+  }
+  await screen.findByText(`${SESSION} left`) // not "50 left"
+  await run(SESSION)
+  await screen.findByRole('heading', { name: /Session complete/ })
+  screen.getByText('30 cards · 30 remembered first time')
+  screen.getByText('20 more are waiting.')
+  expect(screen.queryByText(/Next review/)).toBeNull() // the next review is now
+  expect(screen.getByRole('button', { name: 'Keep going' }).className).toContain('primary')
+  await user.click(screen.getByRole('button', { name: 'Keep going' }))
+  await screen.findByText('20 left') // the rest: under a batch and a half, so all of it
+  await run(20)
+  await screen.findByRole('heading', { name: /Session complete/ })
+  screen.getByText('20 cards · 20 remembered first time') // this batch's own count
+  expect(screen.queryByRole('button', { name: 'Keep going' })).toBeNull()
+  expect(await db.count('reviews')).toBe(50)
+})
+
+it('a queue up to a batch and a half is taken whole, so nobody is left a handful', async () => {
+  const db = await openDb('study-whole')
+  for (let i = 0; i < 45; i++) await db.put('cards', due(i))
+  render(<Study db={db} deck="d" mode="flashcard" autoplay={false} onExit={() => {}} />)
+  await screen.findByText('45 left')
 })

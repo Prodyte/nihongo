@@ -36,10 +36,25 @@ describe('buildLesson invariants, over every lesson', () => {
           const where = `${lesson.id}`
           const mine = lesson.items.map((id) => ITEMS.get(id)!)
 
-          // intros first, only for unlearned items, none after
-          const firstNonIntro = exs.findIndex((e) => e.type !== 'intro')
-          expect(exs.slice(0, firstNonIntro).every((e) => e.type === 'intro'), where).toBe(true)
-          expect(exs.slice(firstNonIntro).some((e) => e.type === 'intro'), where).toBe(false)
+          // new items are met two or three at a time, and each group is asked straight after it: nothing is asked
+          // before its intro, and every question between two groups of intros is about the group just met
+          let group: string[] = []
+          const met = new Set<string>()
+          let asked = false
+          exs.forEach((e, at) => {
+            if (e.type === 'intro') {
+              if (exs[at - 1]?.type !== 'intro') { if (at > 0) expect(asked, `${where}: a group was not asked before the next`).toBe(true); group = []; asked = false }
+              group.push(e.item.id)
+              met.add(e.item.id)
+              expect(group.length, `${where}: more than three intros in a row`).toBeLessThanOrEqual(3)
+              return
+            }
+            const ids = e.type === 'match' ? e.pairs.map((p) => p.id) : 'item' in e ? [e.item.id] : []
+            if (mode === 'none' && !lesson.explain) for (const id of ids) if (lesson.items.includes(id)) expect(met.has(id), `${where}: ${id} asked before its intro`).toBe(true) // (a kanji's example word has no intro)
+            const more = exs.slice(at).some((x) => x.type === 'intro') // still between groups
+            if (more && group.length) { expect(e.type, where).toBe('choice'); expect(group, where).toContain(ids[0]); asked = true }
+          })
+          if (!lesson.explain && mode !== 'repeat' && mine.length > 3) expect(exs.findIndex((e) => e.type !== 'intro'), `${where}: every intro up front`).toBeLessThan(mine.length)
           // grammar lessons open with one explanation card instead of per-item intros (and skip it when repeating)
           expect(exs.filter((e) => e.type === 'intro').length, where).toBe(lesson.explain || mode === 'repeat' ? 0 : mine.length)
           if (lesson.explain) expect(exs.filter((e) => e.type === 'explain').length, where).toBe(mode === 'repeat' ? 0 : 1)

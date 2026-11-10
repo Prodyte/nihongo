@@ -178,6 +178,8 @@ export default function App() {
   // from a finished review straight into the next lesson: the lesson takes the review's place in history and returns
   // where the review would have (back stays), so phone-back and Exit don't land on a spent session
   const nextLessonAfterReview = (id: string) => { setLessonId(id); history.replaceState({ view: 'lesson', pushed: history.state?.pushed }, ''); setView('lesson') }
+  // and the other way, from a finished lesson into the reviews that are due
+  const reviewAfterLesson = () => { setSession({ deck: 'all', mode: 'flashcard' }); history.replaceState({ view: 'study', pushed: history.state?.pushed }, ''); setView('study') }
   const study = (from: View, c: Config) => { setSession(c); setBack(from); go('study') }
   const lesson = view === 'lesson' && lessonId ? lessonById(lessonId) : undefined
   const unit = view === 'test' ? UNITS.find((u) => u.id === testUnit) : undefined
@@ -213,7 +215,7 @@ export default function App() {
         <LoadFailed key={view}>
         <Suspense fallback={<div className="skeleton tall" />}>
         {lesson ? (
-          <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => leave(back)} onStart={setLessonId} />
+          <Lesson key={lesson.id} db={db} lesson={lesson} autoplay={autoplay} onExit={() => leave(back)} onStart={setLessonId} onReview={reviewAfterLesson} />
         ) : unit ? (
           <TestOut key={unit.id} db={db} unit={unit} onExit={() => leave('path')} />
         ) : view === 'mock' ? (

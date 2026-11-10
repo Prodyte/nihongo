@@ -6,11 +6,19 @@ export const newFsrsCard = (now = new Date()): Card => createEmptyCard(now)
 
 export const schedule = (card: Card, grade: Grade, now = new Date()) => f.next(card, now, grade)
 
-/** Due reviews/learning cards (oldest first), then up to `newLimit` unseen cards. */
-export function dueCards<T extends { fsrs: Card }>(cards: T[], now = new Date(), newLimit = 20): T[] {
-  const due = cards.filter((c) => c.fsrs.state !== State.New && c.fsrs.due <= now)
-  due.sort((a, b) => a.fsrs.due.getTime() - b.fsrs.due.getTime())
-  return [...due, ...cards.filter((c) => c.fsrs.state === State.New).slice(0, newLimit)]
+/**
+ * A session's cards: those still being learned (their steps are minutes long, so oldest first), then due reviews by the
+ * day they fell due, then up to `newLimit` unseen cards. Reviews due the same day come in a random order: a lesson's
+ * words are graded together and would otherwise come back together, in lesson order, for good, each one a cue for the next.
+ */
+export function dueCards<T extends { fsrs: Card }>(cards: T[], now = new Date(), newLimit = 20, rand: () => number = Math.random): T[] {
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const due = cards.filter((c) => c.fsrs.state !== State.New && c.fsrs.due <= now).map((c) => {
+    const review = c.fsrs.state === State.Review
+    return { c, review, at: review ? day(c.fsrs.due) : c.fsrs.due.getTime(), tie: rand() }
+  })
+  due.sort((a, b) => Number(a.review) - Number(b.review) || a.at - b.at || a.tie - b.tie)
+  return [...due.map((d) => d.c), ...cards.filter((c) => c.fsrs.state === State.New).slice(0, newLimit)]
 }
 
 /** When each grade would schedule the card next, units spelled out ("10 min", "3 hours", "1 day", "2 months"): shown on the grade buttons. */

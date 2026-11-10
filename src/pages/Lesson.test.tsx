@@ -187,6 +187,77 @@ it('leaving mid-lesson saves nothing', async () => {
   expect(await db.count('reviews')).toBe(0)
 })
 
+it('a lesson left part-way carries on from the same exercise when it is opened again, and says so until the next answer', async () => {
+  const db = await freshDb()
+  const lesson = lessonById('kana-basic-1')!
+  const u = user()
+  const first = mount(db, lesson)
+  for (let i = 0; i < 3; i++) await u.click(await screen.findByRole('button', { name: 'Got it' })) // the first group's intros
+  const question = (await screen.findByRole('group', { name: 'Answers' })).textContent
+  const bar = () => (screen.getByRole('progressbar', { name: 'Lesson progress' }) as HTMLProgressElement).value
+  const at = bar()
+  expect(at).toBe(3)
+  first.unmount() // the app was closed, or ✕ tapped
+
+  mount(db, lesson)
+  expect((await screen.findByRole('group', { name: 'Answers' })).textContent).toBe(question) // the same question, same options
+  expect(bar()).toBe(at)
+  expect(screen.getByText('Carrying on where you left off.').getAttribute('role')).toBe('status') // announced
+  await u.click(within(screen.getByRole('group', { name: 'Answers' })).getAllByRole('button')[0])
+  await u.click(await screen.findByRole('button', { name: 'Continue' }))
+  await waitFor(() => expect(screen.queryByText('Carrying on where you left off.')).toBeNull())
+  await drive(u, lesson)
+  expect(await db.get('lessons', 'kana-basic-1')).toMatchObject({ plays: 1 })
+  expect(localStorage.getItem('nihongo.lesson')).toBeNull() // finished: nothing left to carry on
+})
+
+it('a saved run is only used for its own lesson, for a day, and never when its data is not this version\'s', async () => {
+  const db = await freshDb()
+  const u = user()
+  const first = mount(db, lessonById('kana-basic-1')!)
+  await u.click(await screen.findByRole('button', { name: 'Got it' }))
+  await u.click(await screen.findByRole('button', { name: 'Got it' }))
+  first.unmount()
+  const saved = JSON.parse(localStorage.getItem('nihongo.lesson')!)
+  const fresh = async (lesson: string) => {
+    const r = mount(db, lessonById(lesson)!)
+    await screen.findByRole('button', { name: 'Got it' })
+    const v = (screen.getByRole('progressbar', { name: 'Lesson progress' }) as HTMLProgressElement).value
+    r.unmount()
+    return v === 0
+  }
+  expect(await fresh('kana-basic-2')).toBe(true) // another lesson starts at its beginning
+  for (const bad of [{ ...saved, at: Date.now() - 25 * 3600_000 }, { ...saved, v: 0 }, { ...saved, run: { ...saved.run, queue: [{ type: 'intro', item: { id: 'kana:nope' } }] } }, 'not json']) {
+    localStorage.setItem('nihongo.lesson', typeof bad === 'string' ? bad : JSON.stringify(bad))
+    expect(await fresh('kana-basic-1'), JSON.stringify(bad).slice(0, 40)).toBe(true)
+  }
+})
+
+it('with reviews due, the end of a lesson offers them first; Next lesson stays, second', async () => {
+  const db = await freshDb()
+  const c = (await db.get('cards', 'kana:ん'))!
+  await db.put('cards', { ...c, fsrs: { ...c.fsrs, state: State.Review, due: new Date(0) } })
+  const onReview = vi.fn()
+  const lesson = lessonById('kana-basic-1')!
+  const u = user()
+  mount(db, lesson, { onReview })
+  await drive(u, lesson)
+  const actions = [...document.querySelectorAll('.actions button')].map((b) => [b.textContent, b.classList.contains('primary')])
+  expect(actions).toEqual([['Review 1 due', true], ['Next lesson: かきくけこ カキクケコ', false], ['Done', false]])
+  expect(screen.getByText('A review is due. Do it before learning more.')).toBeTruthy()
+  await u.click(screen.getByRole('button', { name: 'Review 1 due' }))
+  expect(onReview).toHaveBeenCalled()
+})
+
+it('with nothing due (this lesson\'s own cards come back in minutes), the end of a lesson leads with Next lesson', async () => {
+  const db = await freshDb()
+  const lesson = lessonById('kana-basic-1')!
+  const u = user()
+  mount(db, lesson, { onReview: () => {} })
+  await drive(u, lesson)
+  expect([...document.querySelectorAll('.actions button')].map((b) => [b.textContent, b.classList.contains('primary')])).toEqual([['Next lesson: かきくけこ カキクケコ', true], ['Done', false]])
+})
+
 it('Continue and Got it ignore a held (auto-repeating) key, so one Enter cannot skip several steps', async () => {
   const db = await freshDb()
   mount(db, lessonById('kana-basic-1')!)
